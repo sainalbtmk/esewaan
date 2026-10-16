@@ -30,9 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 419);
             }
 
-            return redirect()->back()
-                ->withInput($request->except(['password', 'password_confirmation', '_token']))
-                ->with('error', 'Sesi lama tamat atau tidak sah. Sila muat semula halaman (F5) dan cuba lagi.');
+            return redirect()
+                ->guest(route('login'))
+                ->with('error', 'Sesi tamat atau tidak sah. Sila log masuk semula.');
         });
 
         $exceptions->renderable(function (TooManyRequestsHttpException $e, Request $request) {

@@ -364,7 +364,7 @@ test('admin hq can review application content', function () {
         ->assertSee('No. Rujukan')
         ->assertSee('AADK/BKP/PB 200-3/02')
         ->assertSee('Tarikh Surat')
-        ->assertSee('Saya mengesahkan surat niat telah dihantar ke premis')
+        ->assertSee('Saya mengesahkan surat niat telah dihantar ke pemilik premis')
         ->assertSee('Surat tawaran pemilik premis telah diterima dan dimuat naik ke PROMIS')
         ->assertSee('Saya mengesahkan maklumat ini tepat dan benar')
         ->assertSee('Maklumat ini telah dimuat naik ke dalam sistem PROMIS.')

@@ -133,10 +133,20 @@ class StatusTindakan
                 ->groupBy('workflow_tahap')
                 ->pluck('total', 'workflow_tahap');
 
+        $underEightMonthsCount = self::underEightMonthsActiveCount($negeri);
+        $semakanCpSebelumBphCount = self::checklistTriggeredCount(
+            HqJrpChecklist::AADK_SUBMIT_BPH,
+            $negeri,
+        );
+
         return collect($definitions)
-            ->map(function (array $row) use ($progressCounts): array {
-                $count = collect($row['workflows'])
-                    ->sum(fn (string $workflow): int => (int) ($progressCounts[$workflow] ?? 0));
+            ->map(function (array $row) use ($progressCounts, $underEightMonthsCount, $semakanCpSebelumBphCount): array {
+                $count = match ($row['key']) {
+                    self::BARU_TERIMA_PERMOHONAN => $underEightMonthsCount,
+                    self::SEMAKAN_CP_SEBELUM_BPH => $semakanCpSebelumBphCount,
+                    default => collect($row['workflows'])
+                        ->sum(fn (string $workflow): int => (int) ($progressCounts[$workflow] ?? 0)),
+                };
 
                 return [
                     'key' => $row['key'],
@@ -146,5 +156,50 @@ class StatusTindakan
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * Active HQ-approved contracts with remaining term under 8 months.
+     */
+    public static function underEightMonthsActiveCount(?string $negeri = null): int
+    {
+        return RentalContract::query()
+            ->hqApproved()
+            ->notSuperseded()
+            ->kontrakNotExpired()
+            ->when(
+                filled($negeri),
+                fn ($query) => $query->whereHas('premise', fn ($premiseQuery) => $premiseQuery->where('negeri', $negeri))
+            )
+            ->get()
+            ->filter->isContractEndWithinEightMonths()
+            ->count();
+    }
+
+    /**
+     * Incomplete applications whose HQ JRP checklist item is checked.
+     * Completed (HQ-approved) contracts are excluded from Status Tindakan counts.
+     */
+    public static function checklistTriggeredCount(string $checklistKey, ?string $negeri = null): int
+    {
+        return RentalContract::query()
+            ->notSuperseded()
+            ->whereNotIn('workflow_tahap', RentalContract::hqApprovedWorkflows())
+            ->when(
+                filled($negeri),
+                fn ($query) => $query->whereHas('premise', fn ($premiseQuery) => $premiseQuery->where('negeri', $negeri))
+            )
+            ->whereNotNull('hq_jrp_checklist')
+            ->get()
+            ->filter(function (RentalContract $contract) use ($checklistKey): bool {
+                $checklist = $contract->hq_jrp_checklist;
+
+                if (! is_array($checklist)) {
+                    return false;
+                }
+
+                return filter_var($checklist[$checklistKey] ?? false, FILTER_VALIDATE_BOOLEAN) === true;
+            })
+            ->count();
     }
 }

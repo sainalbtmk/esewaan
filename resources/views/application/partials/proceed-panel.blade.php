@@ -127,7 +127,7 @@
                             <span class="text-sm text-slate-700">
                                 <span class="font-medium text-slate-900">
                                     @if($panel['position'] === 1)
-                                        Saya mengesahkan surat niat telah dihantar ke premis
+                                        Saya mengesahkan surat niat telah dihantar ke pemilik premis
                                     @elseif($panel['key'] === \App\Support\AdminProceedSteps::STEP_BORANG_JRP)
                                         Saya mengesahkan borang JRP telah diisi dan dimuat naik ke PROMIS
                                     @else

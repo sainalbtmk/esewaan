@@ -42,8 +42,8 @@ class AdminProceedSteps
             ],
             4 => [
                 'key' => self::STEP_SURAT_JPPH,
-                'title' => 'Surat kepada JPPH',
-                'description' => 'Keluarkan surat kepada JPPH untuk mohon penilaian kadar sewa dengan kepilkan salinan borang JRP.',
+                'title' => 'Surat kepada Jabatan Penilaian dan Perkhidmatan Harta',
+                'description' => 'Keluarkan surat kepada Jabatan Penilaian dan Perkhidmatan Harta untuk mohon penilaian kadar sewa dengan kepilkan salinan borang JRP.',
                 'has_notes' => false,
             ],
             5 => [
@@ -95,7 +95,7 @@ class AdminProceedSteps
     public static function agencyDefinitions(): array
     {
         return [
-            'surat_jpph' => 'Surat JPPH',
+            'surat_jpph' => 'Surat Jabatan Penilaian dan Perkhidmatan Harta',
             'kpksm' => 'Ketua Pegawai Keselamatan Kerajaan Malaysia',
             'bomba' => 'Jabatan Bomba dan Penyelamat Malaysia',
             'jktg' => 'Jabatan Ketua Pengarah Tanah dan Galian Persekutuan',

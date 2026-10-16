@@ -57,7 +57,7 @@ test('admin negeri can view dashboard scoped to their negeri only', function () 
     $response->assertSuccessful()
         ->assertViewHas('scopedNegeri', 'Johor')
         ->assertViewHas('permohonanBaharu', 1)
-        ->assertViewHas('progressPermohonan', 1)
+        ->assertViewHas('progressPermohonan', 2)
         ->assertViewHas('kontrakAktif', 2)
         ->assertViewHas('kontrakTigaBulan', 1)
         ->assertViewHas('kontrakLebihLapanBulan', 1)
@@ -65,9 +65,11 @@ test('admin negeri can view dashboard scoped to their negeri only', function () 
         ->assertSee('Ringkasan permohonan dan kontrak sewaan untuk Johor');
 
     $tigaList = $response->viewData('alertListTigaBulan');
+    $breakdown = $response->viewData('dalamTindakanByStatus');
 
     expect($tigaList)->toHaveCount(1)
-        ->and($tigaList->first()->premise?->negeri)->toBe('Johor');
+        ->and($tigaList->first()->premise?->negeri)->toBe('Johor')
+        ->and(collect($breakdown)->firstWhere('key', \App\Support\StatusTindakan::BARU_TERIMA_PERMOHONAN)['count'])->toBe(1);
 });
 
 test('dashboard shows accurate counts based on current workflow data', function () {
@@ -84,7 +86,7 @@ test('dashboard shows accurate counts based on current workflow data', function 
 
     $response->assertSuccessful()
         ->assertViewHas('permohonanBaharu', 1)
-        ->assertViewHas('progressPermohonan', 2)
+        ->assertViewHas('progressPermohonan', 4)
         ->assertViewHas('kontrakAktif', 3)
         ->assertViewHas('kontrakLapanBulan', 1)
         ->assertViewHas('kontrakTigaBulan', 1)
@@ -110,9 +112,10 @@ test('dashboard shows accurate counts based on current workflow data', function 
     $breakdown = $response->viewData('dalamTindakanByStatus');
 
     expect($breakdown)->toHaveCount(13)
+        ->and(collect($breakdown)->firstWhere('key', \App\Support\StatusTindakan::BARU_TERIMA_PERMOHONAN)['count'])->toBe(2)
         ->and(collect($breakdown)->firstWhere('key', \App\Support\StatusTindakan::SEDIA_DRAF_PERJANJIAN)['count'])->toBe(1)
         ->and(collect($breakdown)->firstWhere('key', \App\Support\StatusTindakan::SEMAKAN_PUU)['count'])->toBe(1)
-        ->and(collect($breakdown)->sum('count'))->toBe(2);
+        ->and(collect($breakdown)->sum('count'))->toBe(4);
 
     $tigaList = $response->viewData('alertListTigaBulan');
     $lapanList = $response->viewData('alertListLapanBulan');
@@ -143,4 +146,69 @@ test('dashboard excludes superseded contracts from active count', function () {
         ->get(route('dashboard'))
         ->assertSuccessful()
         ->assertViewHas('kontrakAktif', 1);
+});
+
+test('ticking aadk submit bph checklist counts toward semakan cp sebelum bph', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+
+    $triggered = createDashboardContract(RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ, 'Johor');
+    $triggered->update([
+        'hq_jrp_checklist' => [
+            \App\Support\HqJrpChecklist::KP => true,
+            \App\Support\HqJrpChecklist::MOF => false,
+            \App\Support\HqJrpChecklist::EPU => false,
+            \App\Support\HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS => false,
+            \App\Support\HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS => false,
+            \App\Support\HqJrpChecklist::AADK_SUBMIT_BPH => true,
+            \App\Support\HqJrpChecklist::AADK_RECEIVE_BPH_APPROVAL => false,
+            'dates' => [
+                \App\Support\HqJrpChecklist::AADK_SUBMIT_BPH => '2026-10-16',
+            ],
+        ],
+    ]);
+
+    $unticked = createDashboardContract(RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ, 'Johor');
+    $unticked->update([
+        'hq_jrp_checklist' => [
+            \App\Support\HqJrpChecklist::AADK_SUBMIT_BPH => false,
+        ],
+    ]);
+
+    $otherNegeri = createDashboardContract(RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ, 'Melaka');
+    $otherNegeri->update([
+        'hq_jrp_checklist' => [
+            \App\Support\HqJrpChecklist::AADK_SUBMIT_BPH => true,
+            'dates' => [
+                \App\Support\HqJrpChecklist::AADK_SUBMIT_BPH => '2026-10-16',
+            ],
+        ],
+    ]);
+
+    $completed = createDashboardContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
+        'Johor',
+        now()->addMonths(12)->toDateString(),
+    );
+    $completed->update([
+        'hq_jrp_checklist' => [
+            \App\Support\HqJrpChecklist::AADK_SUBMIT_BPH => true,
+            'dates' => [
+                \App\Support\HqJrpChecklist::AADK_SUBMIT_BPH => '2026-10-16',
+            ],
+        ],
+    ]);
+
+    $response = $this->actingAs($admin)->get(route('dashboard'));
+
+    $breakdown = collect($response->viewData('dalamTindakanByStatus'));
+
+    expect($breakdown->firstWhere('key', \App\Support\StatusTindakan::SEMAKAN_CP_SEBELUM_BPH)['count'])->toBe(2);
+
+    $negeriAdmin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
+
+    $negeriBreakdown = collect(
+        $this->actingAs($negeriAdmin)->get(route('dashboard'))->viewData('dalamTindakanByStatus')
+    );
+
+    expect($negeriBreakdown->firstWhere('key', \App\Support\StatusTindakan::SEMAKAN_CP_SEBELUM_BPH)['count'])->toBe(1);
 });

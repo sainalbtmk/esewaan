@@ -73,6 +73,7 @@
                     @if(auth()->user()->isAdmin())
                     @include('partials.sidebar-pengurusan-permohonan')
                     @include('partials.sidebar-kontrak-sewaan')
+                    @include('partials.sidebar-jana-laporan')
                     @include('partials.sidebar-pengurusan-pengguna')
                     @else
                     @include('partials.sidebar-kontrak-sewaan')
@@ -129,6 +130,7 @@
                     @if(auth()->user()->isAdmin())
                     @include('partials.sidebar-pengurusan-permohonan')
                     @include('partials.sidebar-kontrak-sewaan')
+                    @include('partials.sidebar-jana-laporan')
                     @include('partials.sidebar-pengurusan-pengguna')
                     @else
                     @include('partials.sidebar-kontrak-sewaan')

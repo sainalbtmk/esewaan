@@ -117,7 +117,7 @@
                             <span @class(['leading-relaxed text-slate-700', 'text-sm' => ! $compact, 'text-xs' => $compact])>
                                 <span class="font-medium text-slate-900">
                                     @if(($panel['position'] ?? null) === 1)
-                                        Saya mengesahkan surat niat telah dihantar ke premis
+                                        Saya mengesahkan surat niat telah dihantar ke pemilik premis
                                     @elseif(($panel['key'] ?? null) === \App\Support\AdminProceedSteps::STEP_BORANG_JRP)
                                         Saya mengesahkan borang JRP telah diisi dan dimuat naik ke PROMIS
                                     @else

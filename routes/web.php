@@ -12,6 +12,7 @@ use App\Http\Controllers\KontrakSewaanController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RentalApplicationController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SidebarNotificationController;
 use App\Http\Controllers\StatusPermohonanController;
 use App\Http\Controllers\UserController;
@@ -78,6 +79,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
 Route::middleware(['auth', 'admin.hq'])->group(function () {
     Route::patch('/pengguna/{user}/status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+    Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/laporan/pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
 });
 
 Route::middleware(['auth'])->group(function () {

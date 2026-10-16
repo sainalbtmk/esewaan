@@ -76,14 +76,14 @@ test('admin negeri can view dedicated tindakan page', function () {
         ->assertDontSee('proceed_no_rujukan_borang_jrp', false)
         ->assertDontSee('proceed_no_rujukan_surat_jpph', false)
         ->assertDontSee('proceed_no_rujukan_surat_agensi', false)
-        ->assertSee('Saya mengesahkan surat niat telah dihantar ke premis')
+        ->assertSee('Saya mengesahkan surat niat telah dihantar ke pemilik premis')
         ->assertSee('Saya mengesahkan borang JRP telah diisi dan dimuat naik ke PROMIS')
         ->assertDontSee('name="proceed_steps[borang_jrp][completed]"', false)
         ->assertSee('Surat tawaran pemilik premis telah diterima dan dimuat naik ke PROMIS')
         ->assertSee('Catatan', false)
         ->assertSee('Surat kepada agensi')
-        ->assertSee('Surat JPPH')
-        ->assertDontSee('Surat kepada JPPH')
+        ->assertSee('Surat Jabatan Penilaian dan Perkhidmatan Harta')
+        ->assertDontSee('Surat kepada Jabatan Penilaian dan Perkhidmatan Harta')
         ->assertDontSee('Keluarkan surat kepada agensi berikut dengan dikepilkan Borang JRP')
         ->assertSee('Langkah 3 / 3', false);
 });
@@ -243,7 +243,7 @@ test('surat agensi step shows agency checklist and requires all agencies before 
     $this->actingAs($admin)
         ->get(route('admin-proceed.show', ['contract' => $contract, 'step' => 5]))
         ->assertSuccessful()
-        ->assertSee('Surat JPPH', false)
+        ->assertSee('Surat Jabatan Penilaian dan Perkhidmatan Harta', false)
         ->assertDontSee('Keluarkan surat kepada agensi berikut dengan dikepilkan Borang JRP', false)
         ->assertSee('Ketua Pegawai Keselamatan Kerajaan Malaysia', false)
         ->assertSee('Gambar Bangunan Terkini', false);
