@@ -511,7 +511,7 @@ class AdminProceedSteps
             $progress[$key] = $entry;
         }
 
-        $contract->update(['admin_proceed_progress' => $progress]);
+        $contract->commit(['admin_proceed_progress' => $progress]);
 
         self::syncSuratNiatContractFields($contract, $progress);
     }
@@ -552,7 +552,7 @@ class AdminProceedSteps
 
         $progress[$key] = $entry;
 
-        $contract->update(['admin_proceed_progress' => $progress]);
+        $contract->commit(['admin_proceed_progress' => $progress]);
 
         self::syncSuratNiatContractFields($contract, $progress);
     }

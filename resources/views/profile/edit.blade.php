@@ -53,9 +53,15 @@
                 <p class="mt-1 text-xs text-slate-500">Peranan hanya boleh diubah oleh pentadbir.</p>
             </div>
             <div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <p class="mb-3 text-sm font-medium text-amber-900">Tukar kata laluan</p>
-                <p class="mb-4 text-xs text-amber-800">Biarkan kosong jika tidak mahu menukar kata laluan.</p>
+                <p class="mb-3 text-sm font-medium text-amber-900">Pengesahan dan kata laluan</p>
+                <p class="mb-4 text-xs text-amber-800">Kata laluan semasa diperlukan jika emel atau kata laluan ditukar. Biarkan kata laluan baharu kosong jika tidak mahu menukarnya.</p>
                 <div class="space-y-4">
+                    <x-auth.password-field
+                        label="Kata laluan semasa"
+                        name="current_password"
+                        input-id="profile-current-password"
+                        autocomplete="current-password"
+                    />
                     <x-auth.password-field
                         label="Kata laluan baharu"
                         name="password"

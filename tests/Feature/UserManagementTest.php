@@ -120,8 +120,8 @@ test('admin registering user redirects to users index', function () {
         ->post(route('users.store'), [
             'name' => 'Pengguna Baru',
             'email' => 'baru@example.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
             'role' => 'admin_negeri',
             'negeri' => 'Johor',
         ])
@@ -138,8 +138,8 @@ test('admin can register admin role without selecting negeri', function () {
         ->post(route('users.store'), [
             'name' => 'Admin Baru',
             'email' => 'admin-baru@example.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
             'role' => 'admin_hq',
         ])
         ->assertRedirect(route('users.index'))
@@ -159,8 +159,8 @@ test('admin registration requires negeri when role is negeri', function () {
         ->post(route('users.store'), [
             'name' => 'Negeri Baru',
             'email' => 'negeri-baru@example.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
             'role' => 'admin_negeri',
         ])
         ->assertSessionHasErrors('negeri');
@@ -272,8 +272,8 @@ test('admin can update user profile and reset password', function () {
             'email' => 'baru@example.test',
             'negeri' => 'Selangor',
             'role' => 'admin_negeri',
-            'password' => 'katalaluanbaru',
-            'password_confirmation' => 'katalaluanbaru',
+            'password' => 'KatalaluanBaru1',
+            'password_confirmation' => 'KatalaluanBaru1',
         ])
         ->assertRedirect(route('users.index'))
         ->assertSessionHas('success');
@@ -381,7 +381,7 @@ test('admin negeri cannot edit admin hq even in same negeri', function () {
 
     $this->actingAs($admin)
         ->get(route('users.edit', $hq))
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 test('admin negeri registration always uses admin negeri role and negeri', function () {
@@ -391,8 +391,8 @@ test('admin negeri registration always uses admin negeri role and negeri', funct
         ->post(route('users.store'), [
             'name' => 'Pengguna Lain',
             'email' => 'lain@example.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
             'role' => 'admin_negeri',
             'negeri' => 'Selangor',
         ])
@@ -412,8 +412,8 @@ test('admin negeri registers users with locked negeri', function () {
         ->post(route('users.store'), [
             'name' => 'Negeri Johor',
             'email' => 'negeri-johor@example.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
             'role' => 'admin_negeri',
             'negeri' => 'Johor',
         ])
@@ -429,7 +429,7 @@ test('admin negeri cannot edit users from other negeri', function () {
 
     $this->actingAs($admin)
         ->get(route('users.edit', $other))
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 test('admin hq can deactivate and reactivate user from list', function () {

@@ -7,11 +7,17 @@ use App\Models\ContractDocument;
 use App\Models\Premise;
 use App\Models\RentalContract;
 use App\Models\User;
+use App\Support\AdminProceedSteps;
 use App\Support\ApplicationCategories;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\Mailer\Envelope;
+use Symfony\Component\Mailer\Exception\TransportException;
+use Symfony\Component\Mailer\SentMessage;
+use Symfony\Component\Mailer\Transport\TransportInterface;
+use Symfony\Component\Mime\RawMessage;
 
 uses(RefreshDatabase::class);
 
@@ -289,7 +295,7 @@ test('admin negeri cannot delete permohonan from other negeri', function () {
 
     $this->actingAs($admin)
         ->delete(route('status-permohonan.destroy', $contract))
-        ->assertForbidden();
+        ->assertNotFound();
 
     expect(RentalContract::query()->count())->toBe(1);
 });
@@ -674,11 +680,13 @@ test('status list search matches displayed status label', function () {
     $other = createStatusListContract('Johor');
     $other->premise->update(['nama_ptj' => 'Premis Tindakan']);
 
-    $this->actingAs($admin)
-        ->get(route('status-permohonan.index', ['search' => 'Menunggu semakan Ibu Pejabat']))
-        ->assertSuccessful()
-        ->assertSee('Menunggu semakan Ibu Pejabat')
-        ->assertDontSee('Menunggu langkah tindakan');
+    $response = $this->actingAs($admin)
+        ->get(route('status-permohonan.index', ['search' => 'Menunggu semakan Ibu Pejabat']));
+
+    $response->assertSuccessful()
+        ->assertSee('Menunggu semakan Ibu Pejabat');
+
+    expect($response->viewData('contracts')->pluck('id')->all())->toBe([$match->id]);
 });
 
 test('status list live search returns table partial only', function () {
@@ -890,6 +898,41 @@ test('submitting application to hq sends email to configured test recipient when
     Mail::assertSent(ApplicationSubmittedToAdminNegeriNotification::class, 1);
 });
 
+test('submitting application to hq still succeeds when email delivery fails', function () {
+    config(['mail.test_recipient' => null]);
+
+    Mail::setSymfonyTransport(new class implements TransportInterface
+    {
+        public function send(RawMessage $message, ?Envelope $envelope = null): ?SentMessage
+        {
+            throw new TransportException('535 Username and Password not accepted');
+        }
+
+        public function __toString(): string
+        {
+            return 'failing';
+        }
+    });
+
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
+    User::factory()->create(['role' => 'admin_hq', 'is_active' => true, 'email' => 'hq-active@example.test']);
+    $contract = createStatusListContract('Johor');
+    $contract->update([
+        'admin_proceed_progress' => collect(AdminProceedSteps::definitions())
+            ->mapWithKeys(fn (array $definition): array => [
+                $definition['key'] => ['completed' => true],
+            ])
+            ->all(),
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('status-permohonan.submit-hq', $contract))
+        ->assertRedirect(route('status-permohonan.index'))
+        ->assertSessionHas('error', 'Permohonan telah dihantar kepada Ibu Pejabat untuk semakan. Notifikasi emel gagal dihantar.');
+
+    expect($contract->fresh()->workflow_tahap)->toBe(RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+});
+
 test('admin negeri can edit pending proceed application from status list', function () {
     $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $contract = createStatusListContract('Johor');
@@ -911,6 +954,7 @@ test('admin negeri can edit pending proceed application from status list', funct
             'jenis_bangunan' => 'kompleks kerajaan',
             'kadar_sewa' => '1500.00',
             'keluasan_mp' => '180.00',
+            'tarikh_mula_tawaran' => now()->format('Y-m-d'),
             'sah_sehingga' => now()->addMonths(6)->format('Y-m-d'),
             'step' => \App\Support\AdminProceedSteps::firstIncompleteStep($contract),
         ])
@@ -955,7 +999,7 @@ test('admin hq sees luluskan and batalkan actions on semakan puu review page', f
 });
 
 test('admin negeri upload draft requires pdf file', function () {
-    Storage::fake('public');
+    Storage::fake('local');
     $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $contract = createStatusListContract('Johor', RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN);
 
@@ -969,7 +1013,7 @@ test('admin negeri upload draft requires pdf file', function () {
 });
 
 test('admin negeri upload draft rejects file larger than app size limit', function () {
-    Storage::fake('public');
+    Storage::fake('local');
     $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $contract = createStatusListContract('Johor', RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN);
     $oversizedKilobytes = \App\Support\UploadLimits::APP_MAX_KILOBYTES + 1;
@@ -1000,7 +1044,7 @@ test('draft upload form shows size limit and client side size guard', function (
 });
 
 test('admin negeri upload draft pdf moves application to semakan 1', function () {
-    Storage::fake('public');
+    Storage::fake('local');
     $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $contract = createStatusListContract('Johor', RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN);
     $contract->update(['admin_negeri_user_id' => $admin->id]);
@@ -1022,11 +1066,11 @@ test('admin negeri upload draft pdf moves application to semakan 1', function ()
 });
 
 test('draft agreement pdf opens via authenticated download route not public storage url', function () {
-    Storage::fake('public');
+    Storage::fake('local');
     $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $contract = createStatusListContract('Johor', RentalContract::WORKFLOW_SEMAKAN_PUU);
     $path = 'contract-documents/'.$contract->id.'/draf.pdf';
-    Storage::disk('public')->put($path, '%PDF-1.4 test');
+    Storage::disk('local')->put($path, '%PDF-1.4 test');
     $document = ContractDocument::query()->create([
         'contract_id' => $contract->id,
         'nama_fail' => 'draf.pdf',
@@ -1045,7 +1089,7 @@ test('draft agreement pdf opens via authenticated download route not public stor
 });
 
 test('approve and reject puu review label semakan documents as diluluskan or dibatalkan', function () {
-    Storage::fake('public');
+    Storage::fake('local');
     $negeri = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $hq = User::factory()->create(['role' => 'admin_hq']);
     $contract = createStatusListContract('Johor', RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN);
@@ -1080,7 +1124,7 @@ test('approve and reject puu review label semakan documents as diluluskan or dib
 });
 
 test('admin negeri review page shows semakan status labels in draft history', function () {
-    Storage::fake('public');
+    Storage::fake('local');
     $negeri = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $hq = User::factory()->create(['role' => 'admin_hq']);
     $contract = createStatusListContract('Johor', RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN);
@@ -1124,7 +1168,7 @@ test('admin negeri review page shows semakan status labels in draft history', fu
 });
 
 test('admin negeri re-upload after puu rejection increments semakan count and keeps history', function () {
-    Storage::fake('public');
+    Storage::fake('local');
     $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $hq = User::factory()->create(['role' => 'admin_hq']);
     $contract = createStatusListContract('Johor', RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN);
@@ -1199,7 +1243,7 @@ test('admin negeri only sees semak action for draft agreement application', func
 });
 
 test('admin negeri cannot upload draft when not in penyediaan draf stage', function () {
-    Storage::fake('public');
+    Storage::fake('local');
     $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $contract = createStatusListContract('Johor', RentalContract::WORKFLOW_SEMAKAN_PUU);
 
@@ -1376,7 +1420,7 @@ test('admin negeri cannot return draft from another negeri', function () {
 
     $this->actingAs($admin)
         ->post(route('status-permohonan.return-hq', $contract), negeriReturnDraftAcknowledgements())
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 test('admin negeri cannot return draft when not in draf perjanjian lulus stage', function () {
@@ -1590,4 +1634,26 @@ test('admin negeri cannot edit application after it has been sent to hq', functi
     $this->actingAs($admin)
         ->get(route('application.edit', $contract))
         ->assertForbidden();
+});
+
+test('admin negeri can view review page while application waits for hq', function () {
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
+    $contract = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+
+    $this->actingAs($admin)
+        ->get(route('status-permohonan.review', $contract))
+        ->assertSuccessful()
+        ->assertSee('Menunggu semakan Ibu Pejabat')
+        ->assertSee('Permohonan ini sedang menunggu semakan Ibu Pejabat.')
+        ->assertDontSee('Teruskan Dengan Draf Perjanjian')
+        ->assertDontSee(route('status-permohonan.approve', $contract, false));
+});
+
+test('admin negeri cannot view hq review for another negeri', function () {
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
+    $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+
+    $this->actingAs($admin)
+        ->get(route('status-permohonan.review', $contract))
+        ->assertNotFound();
 });

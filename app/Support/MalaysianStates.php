@@ -24,6 +24,8 @@ class MalaysianStates
             'Selangor' => 'Selangor',
             'Terengganu' => 'Terengganu',
             'W.P. Kuala Lumpur' => 'W.P. Kuala Lumpur',
+            'W.P. Labuan' => 'W.P. Labuan',
+            'W.P. Putrajaya' => 'W.P. Putrajaya',
         ];
     }
 

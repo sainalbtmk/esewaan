@@ -13,7 +13,7 @@
             <form method="POST" action="{{ route('users.toggle-status', $user) }}"
                 class="flex justify-center"
                 data-user-status-toggle
-                onsubmit="return confirm('{{ $user->isActive() ? 'Nyahaktifkan akaun ' . $user->name . '?' : 'Aktifkan semula akaun ' . $user->name . '?' }}');">
+                data-confirm="{{ $user->isActive() ? 'Nyahaktifkan akaun '.$user->name.'?' : 'Aktifkan semula akaun '.$user->name.'?' }}">
                 @csrf
                 @method('PATCH')
                 <button type="submit"

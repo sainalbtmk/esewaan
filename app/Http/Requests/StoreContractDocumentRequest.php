@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\RentalContract;
 use App\Support\UploadLimits;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\File;
@@ -11,16 +12,18 @@ class StoreContractDocumentRequest extends FormRequest
     public function authorize(): bool
     {
         $user = $this->user();
-        if (! $user?->isAdmin()) {
+        /** @var RentalContract|null $contract */
+        $contract = $this->route('contract');
+
+        if ($user === null || $contract === null) {
             return false;
         }
-        if ($user->isAdminHq()) {
+
+        if ($user->can('accessDocuments', $contract)) {
             return true;
         }
-        $contract = $this->route('contract');
-        $contract->loadMissing('premise');
 
-        return $user->isAdminNegeri() && $contract->premise?->negeri === $user->negeri;
+        abort(404);
     }
 
     /**

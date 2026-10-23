@@ -36,6 +36,10 @@
         </a>
     </div>
 
+    @if($canManageUserStatus && $emelJawatan->isNotEmpty())
+        @include('users.partials.emel-jawatan')
+    @endif
+
     <div id="users-list" class="space-y-4">
         @include('users.partials.table')
     </div>

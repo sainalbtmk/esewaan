@@ -2,8 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\ActivityLog;
+use App\Models\ContractDocument;
 use App\Models\RentalContract;
+use App\Support\ContractNegeriReport;
 use App\Support\MalaysianStates;
+use App\Support\RentalStatusReport;
 use App\Support\StatusTindakan;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -16,6 +20,10 @@ class HqReportService
 
     public const TYPE_KONTRAK_AKTIF = 'kontrak_aktif';
 
+    public const TYPE_KONTRAK_NEGERI = 'kontrak_negeri';
+
+    public const TYPE_STATUS_SEWAAN = 'status_sewaan';
+
     /**
      * @return array<string, string>
      */
@@ -25,6 +33,8 @@ class HqReportService
             self::TYPE_RINGKASAN => 'Ringkasan Keseluruhan',
             self::TYPE_PERMOHONAN => 'Senarai Permohonan',
             self::TYPE_KONTRAK_AKTIF => 'Senarai Kontrak Aktif',
+            self::TYPE_KONTRAK_NEGERI => 'Laporan Kontrak mengikut Negeri',
+            self::TYPE_STATUS_SEWAAN => 'Laporan Status Sewaan',
         ];
     }
 
@@ -45,7 +55,8 @@ class HqReportService
      *     summary: array{permohonanBaharu: int, dalamTindakan: int, kontrakAktif: int, kontrakLapanBulan: int, kontrakTigaBulan: int},
      *     statusBreakdown: list<array{key: string, status: string, count: int}>,
      *     negeriBreakdown: list<array{negeri: string, permohonan: int, kontrak_aktif: int}>,
-     *     rows: Collection<int, RentalContract>
+     *     rows: Collection<int, RentalContract>,
+     *     statusGroups: list<array{key: string, title: string, rows: Collection<int, RentalContract>}>
      * }
      */
     public function build(?string $jenis = null, ?string $negeri = null): array
@@ -71,6 +82,16 @@ class HqReportService
             ->values()
             ->all();
 
+        $rows = $this->rowsForType($jenis, $negeri, $activeContracts);
+        $statusGroups = [];
+
+        if ($jenis === self::TYPE_STATUS_SEWAAN) {
+            $statusGroups = RentalStatusReport::groups($rows);
+            $rows = collect($statusGroups)
+                ->flatMap(fn (array $group) => $group['rows'])
+                ->values();
+        }
+
         return [
             'jenis' => $jenis,
             'jenisLabel' => self::typeLabels()[$jenis],
@@ -85,7 +106,8 @@ class HqReportService
             ],
             'statusBreakdown' => $statusBreakdown,
             'negeriBreakdown' => $this->negeriBreakdown($negeri),
-            'rows' => $this->rowsForType($jenis, $negeri, $activeContracts),
+            'rows' => $rows,
+            'statusGroups' => $statusGroups,
         ];
     }
 
@@ -147,6 +169,23 @@ class HqReportService
                 ->sortBy(fn (RentalContract $contract) => $contract->premise?->nama_ptj ?? '')
                 ->values(),
             self::TYPE_PERMOHONAN => $this->permohonanQuery($negeri)->get(),
+            self::TYPE_STATUS_SEWAAN => $this->statusSewaanContracts($negeri),
+            self::TYPE_KONTRAK_NEGERI => $this->attachChronology(
+                RentalContract::query()
+                    ->notSuperseded()
+                    ->tap(fn (Builder $query) => $this->scopeToNegeri($query, $negeri))
+                    ->with([
+                        'premise',
+                        'processLogs' => fn ($query) => $query->orderBy('tarikh_tindakan')->orderBy('id'),
+                    ])
+                    ->get()
+                    ->sortBy(fn (RentalContract $contract): array => [
+                        $contract->premise?->negeri ?? '',
+                        $contract->premise?->nama_ptj ?? '',
+                        $contract->id,
+                    ])
+                    ->values()
+            ),
             default => $this->permohonanQuery($negeri)->get()
                 ->concat($activeContracts)
                 ->sortBy(fn (RentalContract $contract) => [
@@ -155,6 +194,77 @@ class HqReportService
                 ])
                 ->values(),
         };
+    }
+
+    /**
+     * @return Collection<int, RentalContract>
+     */
+    private function statusSewaanContracts(?string $negeri): Collection
+    {
+        $inProcess = RentalContract::query()
+            ->notSuperseded()
+            ->whereIn('workflow_tahap', StatusTindakan::sentToHqWorkflows())
+            ->tap(fn (Builder $query) => $this->scopeToNegeri($query, $negeri))
+            ->with([
+                'premise',
+                'parentContract',
+                'documents' => fn ($query) => $query
+                    ->select(['id', 'contract_id', 'jenis', 'semakan_status'])
+                    ->where('jenis', ContractDocument::JENIS_DRAF_PERJANJIAN),
+            ])
+            ->get();
+
+        $awaitingFollowUp = RentalContract::query()
+            ->hqApproved()
+            ->notSuperseded()
+            ->kontrakNotExpired()
+            ->whereDoesntHave(
+                'followUpApplications',
+                fn (Builder $query) => $query->where(
+                    'workflow_tahap',
+                    '!=',
+                    RentalContract::WORKFLOW_MENUNGGU_PROCEED_NEGERI,
+                ),
+            )
+            ->tap(fn (Builder $query) => $this->scopeToNegeri($query, $negeri))
+            ->with(['premise', 'parentContract', 'followUpApplications'])
+            ->get()
+            ->filter(fn (RentalContract $contract): bool => $contract->isContractEndWithinEightMonths());
+
+        return $inProcess
+            ->concat($awaitingFollowUp)
+            ->unique('id')
+            ->values();
+    }
+
+    /**
+     * @param  Collection<int, RentalContract>  $contracts
+     * @return Collection<int, RentalContract>
+     */
+    private function attachChronology(Collection $contracts): Collection
+    {
+        if ($contracts->isEmpty()) {
+            return $contracts;
+        }
+
+        $ids = $contracts->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
+
+        $logsByContract = ActivityLog::query()
+            ->whereIn('metadata->contract_id', $ids)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get()
+            ->groupBy(fn (ActivityLog $log): int => (int) ($log->metadata['contract_id'] ?? 0));
+
+        return $contracts->each(function (RentalContract $contract) use ($logsByContract): void {
+            $contract->setAttribute(
+                'laporan_kronologi',
+                ContractNegeriReport::chronologyLines(
+                    $contract,
+                    $logsByContract->get($contract->id, collect()),
+                ),
+            );
+        });
     }
 
     /**

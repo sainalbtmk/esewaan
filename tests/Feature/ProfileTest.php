@@ -52,8 +52,9 @@ test('admin negeri can update own profile without changing negeri', function () 
             'name' => 'Nama Baharu',
             'email' => 'baru@example.test',
             'negeri' => 'Selangor',
-            'password' => 'passwordbaru',
-            'password_confirmation' => 'passwordbaru',
+            'current_password' => 'password',
+            'password' => 'PasswordBaru1',
+            'password_confirmation' => 'PasswordBaru1',
         ])
         ->assertRedirect(route('profile.show'));
 

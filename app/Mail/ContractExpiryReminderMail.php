@@ -2,34 +2,37 @@
 
 namespace App\Mail;
 
+use App\Support\ContractExpiryReminderTier;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Collection;
 
-class ContractExpiryNotification extends Mailable
+class ContractExpiryReminderMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     /**
-     * @param  \Illuminate\Support\Collection<int, \App\Models\RentalContract>  $contracts
+     * @param  Collection<int, \App\Models\RentalContract>  $contracts
      */
     public function __construct(
-        public $contracts
+        public Collection $contracts,
+        public ContractExpiryReminderTier $tier,
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'E-Sewaan AADK: Peringatan Kontrak Kurang 8 Bulan',
+            subject: $this->tier->subject(),
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.contract-expiry',
+            view: 'emails.contract-expiry-reminder',
         );
     }
 

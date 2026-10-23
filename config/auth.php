@@ -112,4 +112,8 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    'mfa' => [
+        'required' => env('AUTH_MFA_REQUIRED'),
+    ],
+
 ];

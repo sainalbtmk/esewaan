@@ -5,6 +5,8 @@ use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\Auth\TwoFactorSetupController;
 use App\Http\Controllers\ContractDocumentController;
 use App\Http\Controllers\ContractFollowUpController;
 use App\Http\Controllers\DashboardController;
@@ -29,12 +31,17 @@ Route::middleware('guest')->group(function () {
     Route::post('/lupa-kata-laluan', [PasswordResetLinkController::class, 'store'])->name('password.email')->middleware('throttle:password-reset');
     Route::get('/set-semula-kata-laluan/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('/set-semula-kata-laluan', [NewPasswordController::class, 'store'])->name('password.update')->middleware('throttle:password-reset');
+    Route::get('/log-masuk/pengesahan', [TwoFactorChallengeController::class, 'create'])->name('two-factor.login');
+    Route::post('/log-masuk/pengesahan', [TwoFactorChallengeController::class, 'store'])->name('two-factor.login.store')->middleware('throttle:two-factor');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/pengguna', [UserController::class, 'index'])->name('users.index');
+    Route::put('/pengguna/emel-jawatan', [UserController::class, 'updateEmelJawatan'])
+        ->name('users.emel-jawatan.update')
+        ->middleware(['admin.hq', 'throttle:form-actions']);
     Route::get('/pengguna/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('/pengguna/{user}', [UserController::class, 'update'])->name('users.update');
     Route::get('/pengguna/{user}/audit-trail', [UserController::class, 'auditTrail'])->name('users.audit-trail');
@@ -59,7 +66,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::patch('/status-permohonan/{contract}/checklist-autosave', [StatusPermohonanController::class, 'autosaveChecklist'])->name('status-permohonan.checklist-autosave')->middleware('throttle:autosave');
     Route::post('/status-permohonan/{contract}/tarik-semula', [StatusPermohonanController::class, 'requestWithdrawal'])->name('status-permohonan.request-withdrawal')->middleware('throttle:form-actions');
     Route::post('/status-permohonan/{contract}/tarik-semula/keputusan', [StatusPermohonanController::class, 'resolveWithdrawal'])->name('status-permohonan.resolve-withdrawal')->middleware('throttle:form-actions');
-    Route::delete('/status-permohonan/{contract}', [StatusPermohonanController::class, 'destroy'])->name('status-permohonan.destroy');
+    Route::delete('/status-permohonan/{contract}', [StatusPermohonanController::class, 'destroy'])->name('status-permohonan.destroy')->middleware('throttle:form-actions');
     Route::post('/status-permohonan/{contract}/hantar-hq', [StatusPermohonanController::class, 'submitToHq'])->name('status-permohonan.submit-hq')->middleware('throttle:form-actions');
     Route::post('/kontrak-sewaan/{contract}/permohonan-susulan', [ContractFollowUpController::class, 'store'])->name('kontrak-sewaan.follow-up')->middleware('throttle:form-actions');
     Route::delete('/permohonan-susulan/{contract}', [ContractFollowUpController::class, 'destroy'])->name('kontrak-sewaan.follow-up.cancel')->middleware('throttle:form-actions');
@@ -71,14 +78,14 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/kontrak/{contract}/proceed', [AdminProceedController::class, 'show'])->name('admin-proceed.show');
     Route::put('/kontrak/{contract}/proceed', [AdminProceedController::class, 'update'])->name('admin-proceed.update')->middleware('throttle:form-actions');
     Route::get('/kontrak/{contract}/dokumen', [ContractDocumentController::class, 'create'])->name('documents.create');
-    Route::post('/kontrak/{contract}/dokumen', [ContractDocumentController::class, 'store'])->name('documents.store');
+    Route::post('/kontrak/{contract}/dokumen', [ContractDocumentController::class, 'store'])->name('documents.store')->middleware('throttle:form-actions');
     Route::get('/kontrak/{contract}/dokumen/{document}', [ContractDocumentController::class, 'show'])
         ->name('documents.show')
         ->scopeBindings();
 });
 
 Route::middleware(['auth', 'admin.hq'])->group(function () {
-    Route::patch('/pengguna/{user}/status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+    Route::patch('/pengguna/{user}/status', [UserController::class, 'toggleStatus'])->name('users.toggle-status')->middleware('throttle:form-actions');
     Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/laporan/pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
 });
@@ -99,7 +106,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/profil', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profil/kemaskini', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update')->middleware('throttle:form-actions');
+    Route::get('/profil/pengesahan-dua-faktor', [TwoFactorSetupController::class, 'create'])->name('two-factor.setup');
+    Route::post('/profil/pengesahan-dua-faktor', [TwoFactorSetupController::class, 'store'])->name('two-factor.confirm')->middleware('throttle:two-factor');
+    Route::get('/profil/kod-pemulihan', [TwoFactorSetupController::class, 'recovery'])->name('two-factor.recovery');
 
     Route::get('/penampilan', [AppearanceController::class, 'show'])->name('penampilan.show');
 });

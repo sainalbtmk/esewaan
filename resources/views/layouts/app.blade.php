@@ -15,16 +15,22 @@
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet">
     @include('partials.appearance-boot')
     @include('partials.sidebar-scroll-styles')
     @include('partials.glass-theme')
     @include('partials.appearance-theme')
+    @include('partials.corporate-theme')
     @stack('styles')
 </head>
-<body class="liquid-bg min-h-screen font-sans antialiased">
+<body @class([
+    'min-h-screen font-sans antialiased',
+    'liquid-bg' => auth()->check(),
+    'corp-app' => auth()->check(),
+    'corp-auth' => request()->routeIs('login'),
+    'corp-guest' => ! auth()->check() && ! request()->routeIs('login'),
+])>
     @include('partials.global-loading-overlay')
     <div class="liquid-bg-mesh" aria-hidden="true">
         <div class="liquid-orb liquid-orb-1"></div>
@@ -191,61 +197,77 @@
     @include('partials.list-interaction')
     @else
     @if(request()->routeIs('login'))
-    <main class="relative z-10 min-h-screen">
-        @if(session('success'))
-            <div class="absolute left-1/2 top-4 z-30 w-[min(28rem,calc(100%-2rem))] -translate-x-1/2 rounded-xl glass-alert-success p-4 text-sm text-green-800 shadow-lg lg:left-auto lg:right-6 lg:translate-x-0">{{ session('success') }}</div>
-        @endif
-        @if(session('error'))
-            <div class="absolute left-1/2 top-4 z-30 w-[min(28rem,calc(100%-2rem))] -translate-x-1/2 rounded-xl glass-alert-error p-4 text-sm text-red-800 shadow-lg lg:left-auto lg:right-6 lg:translate-x-0">{{ session('error') }}</div>
-        @endif
-        @if(isset($errors) && $errors->any())
-            <div class="absolute left-1/2 top-4 z-30 w-[min(28rem,calc(100%-2rem))] -translate-x-1/2 rounded-xl glass-alert-warning p-4 text-sm text-amber-900 shadow-lg lg:left-auto lg:right-6 lg:translate-x-0">
-                <ul class="list-inside list-disc">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-            </div>
-        @endif
+    <main>
         @yield('content')
     </main>
     @else
-    <div class="flex min-h-screen flex-col">
-    <header class="glass-header sticky top-0 z-20 flex-shrink-0">
-        <div class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-            <a href="{{ route('login') }}" class="flex items-center gap-3">
-                @php
-                    $guestLogoPath = null;
-                    $custom = config('app.logo');
-                    if ($custom && file_exists(public_path($custom))) {
-                        $guestLogoPath = $custom;
-                    } else {
-                        foreach (['aadk.png', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'images/logo.png', 'images/logo.jpg', 'images/logo.jpeg', 'images/logo.webp'] as $name) {
-                            if (file_exists(public_path($name))) {
-                                $guestLogoPath = $name;
-                                break;
-                            }
-                        }
-                    }
-                @endphp
+    @php
+        $guestLogoPath = null;
+        $custom = config('app.logo');
+        if ($custom && file_exists(public_path($custom))) {
+            $guestLogoPath = $custom;
+        } else {
+            foreach (['aadk.png', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'images/logo.png', 'images/logo.jpg', 'images/logo.jpeg', 'images/logo.webp'] as $name) {
+                if (file_exists(public_path($name))) {
+                    $guestLogoPath = $name;
+                    break;
+                }
+            }
+        }
+    @endphp
+    <div class="corp-guest">
+        <header class="corp-header">
+            <a href="{{ route('login') }}" class="corp-lockup">
                 @if($guestLogoPath)
-                    <img src="{{ asset($guestLogoPath) }}" alt="E-SEWAAN" class="h-9 w-9 rounded-lg object-contain flex-shrink-0">
+                    <img src="{{ asset($guestLogoPath) }}" alt="AADK" class="corp-logo">
                 @endif
-                <span class="text-lg font-semibold text-gray-900">E-SEWAAN</span>
+                <div>
+                    <p class="corp-system">E-SEWAAN</p>
+                    <p class="corp-agency">Agensi Antidadah Kebangsaan</p>
+                </div>
             </a>
-            <div class="flex items-center gap-2">
-                <a href="{{ route('login') }}" class="glass-btn-primary rounded-xl px-4 py-2 text-sm font-medium">Log masuk</a>
+            <a href="{{ route('login') }}" class="corp-guest-login">Log Masuk</a>
+        </header>
+        <div class="corp-rule" aria-hidden="true"></div>
+        <main class="corp-guest-main">
+            <div>
+                @if(session('success'))<div class="mb-4 glass-alert-success p-4 text-sm text-green-800">{{ session('success') }}</div>@endif
+                @if(session('error'))<div class="mb-4 glass-alert-error p-4 text-sm text-red-800">{{ session('error') }}</div>@endif
+                @if(isset($errors) && $errors->any())<div class="mb-4 glass-alert-warning p-4 text-sm text-amber-900"><ul>@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
+                @yield('content')
             </div>
-        </div>
-    </header>
-    <main class="flex flex-1 items-center justify-center px-4 py-6 sm:px-8">
-        <div class="w-full max-w-md">
-            @if(session('success'))<div class="mb-4 rounded-xl glass-alert-success p-4 text-green-800 text-sm">{{ session('success') }}</div>@endif
-            @if(session('error'))<div class="mb-4 rounded-xl glass-alert-error p-4 text-red-800 text-sm">{{ session('error') }}</div>@endif
-            @if(isset($errors) && $errors->any())<div class="mb-4 rounded-xl glass-alert-warning p-4 text-amber-800 text-sm"><ul class="list-disc list-inside">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
-            @yield('content')
-        </div>
-    </main>
+        </main>
+        <footer class="corp-guest-footer">
+            <span>© {{ date('Y') }} Agensi Antidadah Kebangsaan. Hak cipta terpelihara.</span>
+            <span>Sistem rasmi kegunaan dalaman</span>
+        </footer>
     </div>
     @endif
     @endauth
 
     @stack('scripts')
+    <script>
+        document.addEventListener('submit', function (event) {
+            var form = event.target;
+            if (!(form instanceof HTMLFormElement)) {
+                return;
+            }
+            var message = form.getAttribute('data-confirm');
+            if (message && ! window.confirm(message)) {
+                event.preventDefault();
+            }
+        }, true);
+
+        document.addEventListener('click', function (event) {
+            var trigger = event.target instanceof Element ? event.target.closest('[data-confirm-click]') : null;
+            if (! trigger) {
+                return;
+            }
+            var message = trigger.getAttribute('data-confirm-click');
+            if (message && ! window.confirm(message)) {
+                event.preventDefault();
+            }
+        }, true);
+    </script>
 </body>
 </html>

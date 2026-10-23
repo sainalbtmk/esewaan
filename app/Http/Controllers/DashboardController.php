@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ContractDocument;
 use App\Models\RentalContract;
+use App\Support\RentalStatusReport;
 use App\Support\StatusTindakan;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -71,13 +72,32 @@ class DashboardController extends Controller
             'kontrakLebihLapanBulan' => $kontrakLebihLapanBulan,
             'alertListTigaBulan' => $kontrakTigaBulanList->take(20),
             'alertListLapanBulan' => $kontrakLapanBulanList->take(20),
-            'kontrakClassChart' => $this->kontrakClassChartData(
-                $kontrakLebihLapanBulan,
-                $kontrakLapanBulan,
-                $kontrakTigaBulan,
-            ),
-            'statusChart' => $this->statusChartData($dalamTindakanByStatus),
+            'portfolio' => RentalStatusReport::portfolio($this->portfolioContracts($negeri)),
+            'portfolioYear' => now()->year,
         ]);
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, RentalContract>
+     */
+    private function portfolioContracts(?string $negeri): \Illuminate\Support\Collection
+    {
+        return RentalContract::query()
+            ->notSuperseded()
+            ->where(function (Builder $query): void {
+                $query->whereIn('workflow_tahap', StatusTindakan::sentToHqWorkflows())
+                    ->orWhereIn('workflow_tahap', RentalContract::hqApprovedWorkflows());
+            })
+            ->tap(fn (Builder $query) => $this->scopeToNegeri($query, $negeri))
+            ->with([
+                'premise',
+                'parentContract',
+                'followUpApplications',
+                'documents' => fn ($query) => $query
+                    ->select(['id', 'contract_id', 'jenis', 'semakan_status'])
+                    ->where('jenis', ContractDocument::JENIS_DRAF_PERJANJIAN),
+            ])
+            ->get();
     }
 
     /**
@@ -91,49 +111,5 @@ class DashboardController extends Controller
         }
 
         return $query->whereHas('premise', fn (Builder $premiseQuery) => $premiseQuery->where('negeri', $negeri));
-    }
-
-    /**
-     * @return array{labels: list<string>, values: list<int>, colors: list<string>, total: int}
-     */
-    private function kontrakClassChartData(int $lebihLapan, int $lapan, int $tiga): array
-    {
-        return [
-            'labels' => [
-                'Lebih 8 bulan',
-                'Bawah 8 bulan',
-                'Bawah 3 bulan',
-            ],
-            'values' => [$lebihLapan, $lapan, $tiga],
-            'colors' => ['#059669', '#d97706', '#dc2626'],
-            'total' => $lebihLapan + $lapan + $tiga,
-        ];
-    }
-
-    /**
-     * @param  Collection<int, array{key: string, status: string, count: int}>  $rows
-     * @return array{labels: list<string>, values: list<int>, max: int}
-     */
-    private function statusChartData(Collection $rows): array
-    {
-        $withCounts = $rows
-            ->filter(fn (array $row): bool => $row['count'] > 0)
-            ->values();
-
-        if ($withCounts->isEmpty()) {
-            return [
-                'labels' => [],
-                'values' => [],
-                'max' => 1,
-            ];
-        }
-
-        $values = $withCounts->pluck('count')->map(fn ($count): int => (int) $count)->all();
-
-        return [
-            'labels' => $withCounts->pluck('status')->all(),
-            'values' => $values,
-            'max' => max($values),
-        ];
     }
 }

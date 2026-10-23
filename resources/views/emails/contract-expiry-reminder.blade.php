@@ -8,14 +8,12 @@
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background: #f4f4f4; }
         .muted { color: #64748b; font-size: 13px; }
+        .warning { color: #991b1b; }
     </style>
 </head>
 <body>
-    <h2>Peringatan Mingguan: Kontrak Sewaan Bawah 3 Bulan</h2>
-    <p>
-        Terdapat kontrak sewaan aktif dengan baki tempoh bawah 3 bulan yang belum mula tindakan lanjutan/pindah.
-        Sila mula tindakan segera melalui sistem e-Sewaan.
-    </p>
+    <h2 @if($tier === \App\Support\ContractExpiryReminderTier::ThreeMonth) style="color: #991b1b;" @endif>{{ $tier->heading() }}</h2>
+    <p>{{ $tier->intro() }}</p>
     <table>
         <thead>
             <tr>
@@ -39,10 +37,7 @@
     <p>
         <a href="{{ route('kontrak-sewaan.index') }}">Buka Senarai Kontrak Sewaan</a>
     </p>
-    <p class="muted">
-        Emel ini dihantar setiap Isnin pukul 9:00 pagi dan akan berhenti secara automatik
-        selepas Negeri memulakan permohonan lanjutan atau pindah untuk kontrak berkenaan.
-    </p>
+    <p class="muted">{{ $tier->footnote() }}</p>
     <p class="muted">Ini adalah notifikasi automatik daripada Sistem E-Sewaan AADK.</p>
 </body>
 </html>

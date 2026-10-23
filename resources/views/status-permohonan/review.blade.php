@@ -137,7 +137,7 @@
 
         {{-- Langkah 2: Semakan Ibu Pejabat --}}
         <div data-step-panel="1" class="space-y-4 {{ $currentStepIndex === 1 ? '' : 'hidden' }}">
-            @if($contract->isPendingHqReview())
+            @if($contract->isPendingHqReview() && auth()->user()->isAdminHq())
                 <section class="glass-card overflow-hidden">
                     <div class="glass-divider-soft border-b px-4 py-3">
                         <h2 class="text-base font-semibold text-slate-900">Pengesahan Ibu Pejabat</h2>
@@ -240,10 +240,27 @@
             @else
                 <section class="glass-card overflow-hidden">
                     <div class="glass-divider-soft border-b px-4 py-3">
-                        <h2 class="text-base font-semibold text-slate-900">Langkah Tindakan Pentadbir</h2>
-                        <p class="mt-0.5 text-xs text-slate-500">Rekod checklist JRP yang telah dilengkapkan.</p>
+                        <h2 class="text-base font-semibold text-slate-900">
+                            @if($contract->isPendingHqReview())
+                                Semakan Ibu Pejabat
+                            @else
+                                Langkah Tindakan Pentadbir
+                            @endif
+                        </h2>
+                        <p class="mt-0.5 text-xs text-slate-500">
+                            @if($contract->isPendingHqReview())
+                                Permohonan ini sedang menunggu semakan Ibu Pejabat.
+                            @else
+                                Rekod checklist JRP yang telah dilengkapkan.
+                            @endif
+                        </p>
                     </div>
-                    <div class="px-4 py-3">
+                    <div class="space-y-3 px-4 py-3">
+                        @if($contract->isPendingHqReview())
+                            <span class="{{ $contract->applicationStatusBadgeClass() }} inline-flex">
+                                {{ $contract->applicationStatusLabel(auth()->user()) }}
+                            </span>
+                        @endif
                         @include('status-permohonan.partials.hq-jrp-checklist-readonly', ['contract' => $contract])
                     </div>
                 </section>

@@ -226,7 +226,7 @@ test('admin negeri cannot start follow-up for a contract outside their negeri', 
         ->post(route('kontrak-sewaan.follow-up', $parent), [
             'kategori_permohonan' => ApplicationCategories::LANJUTAN,
         ])
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 test('approving a follow-up supersedes the parent contract', function () {
@@ -392,7 +392,7 @@ test('admin negeri cannot revert a follow-up outside their negeri', function () 
 
     $this->actingAs($kelantanAdmin)
         ->delete(route('kontrak-sewaan.follow-up.cancel', $child))
-        ->assertForbidden();
+        ->assertNotFound();
 
     expect(RentalContract::query()->find($child->id))->not->toBeNull();
 });
@@ -544,4 +544,32 @@ test('remark is saved when updating a follow-up application', function () {
         ->and($child->premise->nama_ptj)->toBe('Premis Baharu Pindah')
         ->and((float) $child->kadar_sewa_bulanan)->toBe(1550.0)
         ->and((float) $child->keluasan_mp)->toBe(200.0);
+});
+
+test('kontrak sewaan follow-up link opens review after submission to hq', function () {
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
+    $parent = createApprovedParentContract('Johor');
+    $child = RentalContract::query()->create([
+        'parent_contract_id' => $parent->id,
+        'premise_id' => $parent->premise_id,
+        'tarikh_mula' => RentalContract::PLACEHOLDER_CONTRACT_DATE,
+        'tarikh_tamat' => RentalContract::PLACEHOLDER_CONTRACT_DATE,
+        'kadar_sewa_bulanan' => 1200,
+        'status_aktif' => 'dalam_proses',
+        'workflow_tahap' => RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ,
+        'kategori_permohonan' => ApplicationCategories::PINDAH,
+        'admin_negeri_user_id' => $admin->id,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('kontrak-sewaan.index'))
+        ->assertSuccessful()
+        ->assertSee('Dalam Tindakan Pindah')
+        ->assertSee(route('status-permohonan.review', $child), false);
+
+    $this->actingAs($admin)
+        ->get(route('status-permohonan.review', $child))
+        ->assertSuccessful()
+        ->assertSee('Menunggu semakan Ibu Pejabat')
+        ->assertDontSee('Teruskan Dengan Draf Perjanjian');
 });

@@ -8,6 +8,17 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
+/**
+ * @return array<string, string>
+ */
+function kontrakListPartialHeaders(): array
+{
+    return [
+        'X-Requested-With' => 'XMLHttpRequest',
+        'Accept' => 'text/html',
+    ];
+}
+
 function createKontrakSewaanContract(
     string $negeri = 'Johor',
     string $workflow = RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
@@ -77,7 +88,7 @@ test('kontrak sewaan active list sorts by shortest remaining period and highligh
     $normal->update(['sah_sehingga' => now()->addMonths(18)]);
 
     $html = $this->actingAs($admin)
-        ->get(route('kontrak-sewaan.index'))
+        ->get(route('kontrak-sewaan.index', ['partial' => 1]), kontrakListPartialHeaders())
         ->assertSuccessful()
         ->assertSee('Premis Kritikal 2 Bulan')
         ->assertSee('Premis Amaran 6 Bulan')
@@ -147,7 +158,7 @@ test('pending hq review contract does not appear in kontrak sewaan', function ()
         ->update(['nama_ptj' => 'Premis Belum Disahkan']);
 
     $this->actingAs($admin)
-        ->get(route('kontrak-sewaan.index'))
+        ->get(route('kontrak-sewaan.index', ['partial' => 1]), kontrakListPartialHeaders())
         ->assertSuccessful()
         ->assertDontSee('Premis Belum Disahkan');
 });
@@ -159,7 +170,10 @@ test('hq approved contract is removed from admin negeri status permohonan list',
         ->update(['nama_ptj' => 'Premis Dalam Kontrak Sewaan']);
 
     $this->actingAs($admin)
-        ->get(route('status-permohonan.index'))
+        ->get(route('status-permohonan.index', ['partial' => 1]), [
+            'X-Requested-With' => 'XMLHttpRequest',
+            'Accept' => 'text/html',
+        ])
         ->assertSuccessful()
         ->assertDontSee('Premis Dalam Kontrak Sewaan');
 });
@@ -192,12 +206,15 @@ test('proceeding with draft agreement moves contract to draft preparation, not k
         ->and($contract->workflow_tahap)->toBe(RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN);
 
     $this->actingAs($negeriAdmin)
-        ->get(route('kontrak-sewaan.index'))
+        ->get(route('kontrak-sewaan.index', ['partial' => 1]), kontrakListPartialHeaders())
         ->assertSuccessful()
         ->assertDontSee('Premis Draf Perjanjian');
 
     $this->actingAs($negeriAdmin)
-        ->get(route('status-permohonan.index'))
+        ->get(route('status-permohonan.index', ['partial' => 1]), [
+            'X-Requested-With' => 'XMLHttpRequest',
+            'Accept' => 'text/html',
+        ])
         ->assertSuccessful()
         ->assertSee('Admin Melaka')
         ->assertSee('Penyediaan Draf Perjanjian');
@@ -216,7 +233,7 @@ test('kontrak sewaan search filters by nama premis and admin negeri name', funct
         ->update(['nama_ptj' => 'Premis Lain']);
 
     $this->actingAs($admin)
-        ->get(route('kontrak-sewaan.index', ['search' => 'Khas']))
+        ->get(route('kontrak-sewaan.index', ['search' => 'Khas', 'partial' => 1]), kontrakListPartialHeaders())
         ->assertSuccessful()
         ->assertSee('Admin Johor Khas')
         ->assertSee('Premis Carian Khas')
@@ -254,12 +271,16 @@ test('expired kontrak appears in sejarah tab and not in active tab', function ()
         ->get(route('kontrak-sewaan.index'))
         ->assertSuccessful()
         ->assertSee('Senarai Aktif')
-        ->assertSee('Sejarah')
+        ->assertSee('Sejarah');
+
+    $this->actingAs($admin)
+        ->get(route('kontrak-sewaan.index', ['partial' => 1]), kontrakListPartialHeaders())
+        ->assertSuccessful()
         ->assertSee('Premis Aktif Melaka')
         ->assertDontSee('Premis Tamat Melaka');
 
     $this->actingAs($admin)
-        ->get(route('kontrak-sewaan.index', ['tab' => 'history']))
+        ->get(route('kontrak-sewaan.index', ['tab' => 'history', 'partial' => 1]), kontrakListPartialHeaders())
         ->assertSuccessful()
         ->assertSee('Premis Tamat Melaka')
         ->assertSee('Tamat tempoh', false)
@@ -277,12 +298,12 @@ test('placeholder kontrak moves to sejarah when offer end date has passed', func
     expect($contract->fresh()->isExpired())->toBeTrue();
 
     $this->actingAs($admin)
-        ->get(route('kontrak-sewaan.index'))
+        ->get(route('kontrak-sewaan.index', ['partial' => 1]), kontrakListPartialHeaders())
         ->assertSuccessful()
         ->assertDontSee('Premis Tawaran Luput');
 
     $this->actingAs($admin)
-        ->get(route('kontrak-sewaan.index', ['tab' => 'history']))
+        ->get(route('kontrak-sewaan.index', ['tab' => 'history', 'partial' => 1]), kontrakListPartialHeaders())
         ->assertSuccessful()
         ->assertSee('Premis Tawaran Luput')
         ->assertSee('Tamat tempoh', false);
@@ -298,12 +319,12 @@ test('expired kontrak with real end date appears in sejarah tab', function () {
     ]);
 
     $this->actingAs($admin)
-        ->get(route('kontrak-sewaan.index'))
+        ->get(route('kontrak-sewaan.index', ['partial' => 1]), kontrakListPartialHeaders())
         ->assertSuccessful()
         ->assertDontSee('Premis Tarikh Tamat Luput');
 
     $this->actingAs($admin)
-        ->get(route('kontrak-sewaan.index', ['tab' => 'history']))
+        ->get(route('kontrak-sewaan.index', ['tab' => 'history', 'partial' => 1]), kontrakListPartialHeaders())
         ->assertSuccessful()
         ->assertSee('Premis Tarikh Tamat Luput');
 });

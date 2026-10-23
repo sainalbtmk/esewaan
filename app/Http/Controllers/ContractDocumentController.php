@@ -7,8 +7,8 @@ use App\Http\Requests\StoreContractDocumentRequest;
 use App\Models\ContractDocument;
 use App\Models\RentalContract;
 use App\Services\ActivityLogger;
+use App\Support\ContractDocumentStorage;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -17,10 +17,11 @@ class ContractDocumentController extends Controller
     public function create(RentalContract $contract): View
     {
         $contract->load('premise');
-        $user = request()->user();
-        if ($user->isAdminNegeri() && $contract->premise?->negeri !== $user->negeri) {
-            abort(403, 'Akses ditolak. Dokumen hanya boleh dimuat naik untuk kontrak dalam negeri anda.');
-        }
+
+        abort_unless(
+            request()->user()?->can('accessDocuments', $contract) === true,
+            404,
+        );
 
         return view('documents.create', ['contract' => $contract]);
     }
@@ -28,7 +29,7 @@ class ContractDocumentController extends Controller
     public function store(StoreContractDocumentRequest $request, RentalContract $contract): RedirectResponse
     {
         $file = $request->file('document');
-        $path = $file->store('contract-documents/'.$contract->id, 'public');
+        $path = ContractDocumentStorage::store('contract-documents/'.$contract->id, $file);
 
         $safeName = $this->sanitizeFilename($file->getClientOriginalName());
 
@@ -54,12 +55,11 @@ class ContractDocumentController extends Controller
 
     public function show(DownloadContractDocumentRequest $request, RentalContract $contract, ContractDocument $document): StreamedResponse
     {
-        abort_unless(Storage::disk('public')->exists($document->path), 404);
+        abort_unless(ContractDocumentStorage::exists($document->path), 404);
 
-        return Storage::disk('public')->response(
+        return ContractDocumentStorage::response(
             $document->path,
             $document->nama_fail,
-            ['Content-Type' => 'application/pdf'],
         );
     }
 

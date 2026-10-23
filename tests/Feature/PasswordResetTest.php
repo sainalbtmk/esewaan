@@ -9,10 +9,20 @@ use Illuminate\Support\Facades\Password;
 
 uses(RefreshDatabase::class);
 
+test('password reset page uses the corporate guest shell', function () {
+    $this->get(route('password.request'))
+        ->assertSuccessful()
+        ->assertSee('corp-guest', false)
+        ->assertSee('Agensi Antidadah Kebangsaan', false)
+        ->assertSee('Lupa Kata Laluan', false);
+});
+
 test('login page shows forgot password link', function () {
     $this->get(route('login'))
         ->assertSuccessful()
         ->assertSee('Lupa Katalaluan?', false)
+        ->assertSee('Agensi Antidadah Kebangsaan', false)
+        ->assertSee('corp-login', false)
         ->assertSee(route('password.request', absolute: false), false);
 });
 
@@ -77,15 +87,15 @@ test('user can reset password using email link token', function () {
     $this->post(route('password.update'), [
         'token' => $token,
         'email' => $user->email,
-        'password' => 'password-baharu',
-        'password_confirmation' => 'password-baharu',
+        'password' => 'Password-baharu1',
+        'password_confirmation' => 'Password-baharu1',
     ])
         ->assertRedirect(route('login'))
         ->assertSessionHas('success');
 
     $user->refresh();
 
-    expect(Hash::check('password-baharu', $user->password))->toBeTrue();
+    expect(Hash::check('Password-baharu1', $user->password))->toBeTrue();
 });
 
 test('reset password page can be opened from emailed link', function () {

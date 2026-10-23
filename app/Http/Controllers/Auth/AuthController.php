@@ -11,6 +11,8 @@ use App\Support\MalaysianStates;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -23,7 +25,22 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): RedirectResponse
     {
-        if (! Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+        $this->ensureLoginIsNotLocked($request);
+
+        if (! Auth::attempt($request->only('email', 'password'), false)) {
+            Log::warning('login_failed', [
+                'email' => strtolower((string) $request->input('email')),
+                'ip' => $request->ip(),
+            ]);
+
+            RateLimiter::hit($this->loginLockKey($request), 15 * 60);
+
+            if (RateLimiter::tooManyAttempts($this->loginLockKey($request), 5)) {
+                throw ValidationException::withMessages([
+                    'email' => [$this->loginLockMessage($request)],
+                ]);
+            }
+
             throw ValidationException::withMessages([
                 'email' => [__('auth.failed')],
             ]);
@@ -37,15 +54,30 @@ class AuthController extends Controller
             ]);
         }
 
+        $user = $request->user();
+        RateLimiter::clear($this->loginLockKey($request));
+
+        if (config('auth.mfa.required') && $user->hasConfirmedTwoFactor()) {
+            Auth::logout();
+            $request->session()->put('login.mfa_user_id', $user->id);
+            $request->session()->regenerate();
+
+            return redirect()->route('two-factor.login');
+        }
+
         $request->session()->regenerate();
 
         ActivityLogger::log(
-            $request->user(),
+            $user,
             'login',
             'Pengguna log masuk ke sistem.',
         );
 
-        return redirect($request->user()->homeRoute());
+        if (config('auth.mfa.required')) {
+            return redirect()->route('two-factor.setup');
+        }
+
+        return redirect($user->homeRoute());
     }
 
     public function showRegisterForm(): View
@@ -61,13 +93,16 @@ class AuthController extends Controller
 
     public function storeUser(RegisterRequest $request): RedirectResponse
     {
-        $user = User::query()->create([
+        $user = new User([
             'name' => $request->validated('name'),
             'email' => $request->validated('email'),
             'password' => $request->validated('password'),
-            'role' => $request->validated('role'),
             'negeri' => $request->resolvedNegeri(),
         ]);
+        $user->forceFill([
+            'role' => $request->validated('role'),
+            'is_active' => true,
+        ])->save();
 
         ActivityLogger::log(
             $user,
@@ -96,5 +131,28 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    private function ensureLoginIsNotLocked(LoginRequest $request): void
+    {
+        if (! RateLimiter::tooManyAttempts($this->loginLockKey($request), 5)) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'email' => [$this->loginLockMessage($request)],
+        ]);
+    }
+
+    private function loginLockKey(LoginRequest $request): string
+    {
+        return 'login-lock:'.strtolower((string) $request->input('email'));
+    }
+
+    private function loginLockMessage(LoginRequest $request): string
+    {
+        $seconds = RateLimiter::availableIn($this->loginLockKey($request));
+
+        return 'Terlalu banyak percubaan gagal. Sila cuba lagi dalam '.$seconds.' saat.';
     }
 }

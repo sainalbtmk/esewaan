@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use App\Models\ContractDocument;
 use App\Models\RentalContract;
+use Illuminate\Database\Eloquent\Collection;
 
 class StatusTindakan
 {
@@ -35,7 +37,7 @@ class StatusTindakan
     /**
      * Ordered status labels shown on the dashboard "Status Tindakan" section.
      *
-     * @return list<array{key: string, label: string, workflows: list<string>}>
+     * @return list<array{key: string, label: string}>
      */
     public static function definitions(): array
     {
@@ -43,69 +45,70 @@ class StatusTindakan
             [
                 'key' => self::BARU_TERIMA_PERMOHONAN,
                 'label' => 'Belum Terima Permohonan',
-                'workflows' => [],
             ],
             [
                 'key' => self::SEMAKAN_CP_SEBELUM_BPH,
                 'label' => 'Semakan Cawangan Pembangunan Sebelum ke BPH',
-                'workflows' => [],
             ],
             [
                 'key' => self::MINIT_CERAIAN_KELULUSAN_KOS,
                 'label' => 'Minit Ceraian Kelulusan Kos',
-                'workflows' => [],
             ],
             [
                 'key' => self::PERTIMBANGAN_MOF,
                 'label' => 'Pertimbangan MOF',
-                'workflows' => [],
             ],
             [
                 'key' => self::PERTIMBANGAN_KE,
                 'label' => 'Pertimbangan KE',
-                'workflows' => [],
             ],
             [
                 'key' => self::PERTIMBANGAN_BPH_SUPS,
                 'label' => 'Pertimbangan BPH/SUPS',
-                'workflows' => [],
             ],
             [
                 'key' => self::SEDIA_DRAF_PERJANJIAN,
                 'label' => 'Sedia Draf Perjanjian',
-                'workflows' => [RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN],
             ],
             [
                 'key' => self::SEMAKAN_CP_SEBELUM_PUU,
                 'label' => 'Semakan Cawangan Pembangunan Sebelum ke PUU',
-                'workflows' => [],
             ],
             [
                 'key' => self::SEMAKAN_PUU,
                 'label' => 'Semakan PUU',
-                'workflows' => [RentalContract::WORKFLOW_SEMAKAN_PUU],
             ],
             [
                 'key' => self::KUIRI_PUU,
                 'label' => 'Kuiri PUU',
-                'workflows' => [],
             ],
             [
                 'key' => self::PINDAAN_SYOR_PUU_TANDATANGAN_PEMILIK,
                 'label' => 'Pindaan Berdasarkan Syor PUU dan Tandatangan Pemilik Premis',
-                'workflows' => [RentalContract::WORKFLOW_PINDAAN_BERDASARKAN_PUU],
             ],
             [
                 'key' => self::TANDATANGAN_PENYEWA_AADK,
                 'label' => 'Tandatangan Penyewa (AADK)',
-                'workflows' => [RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS, RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ],
             ],
             [
                 'key' => self::TINDAKAN_METERI_SETEM,
                 'label' => 'Tindakan Mati Setem',
-                'workflows' => [RentalContract::WORKFLOW_MATI_SETEM],
             ],
         ];
+    }
+
+    /**
+     * Workflows reached after Negeri presses "Hantar ke Ibu Pejabat",
+     * before the application becomes an active rental contract.
+     *
+     * @return list<string>
+     */
+    public static function sentToHqWorkflows(): array
+    {
+        return array_merge(
+            [RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ],
+            RentalContract::draftAgreementWorkflows(),
+        );
     }
 
     /**
@@ -113,39 +116,15 @@ class StatusTindakan
      */
     public static function breakdownWithCounts(?string $negeri = null): array
     {
-        $definitions = self::definitions();
-
-        $workflowKeys = collect($definitions)
-            ->flatMap(fn (array $row): array => $row['workflows'])
-            ->unique()
-            ->values()
-            ->all();
-
-        $progressCounts = empty($workflowKeys)
-            ? collect()
-            : RentalContract::query()
-                ->whereIn('workflow_tahap', $workflowKeys)
-                ->when(
-                    filled($negeri),
-                    fn ($query) => $query->whereHas('premise', fn ($premiseQuery) => $premiseQuery->where('negeri', $negeri))
-                )
-                ->selectRaw('workflow_tahap, COUNT(*) as total')
-                ->groupBy('workflow_tahap')
-                ->pluck('total', 'workflow_tahap');
-
+        $sentContracts = self::sentToHqContracts($negeri);
         $underEightMonthsCount = self::underEightMonthsActiveCount($negeri);
-        $semakanCpSebelumBphCount = self::checklistTriggeredCount(
-            HqJrpChecklist::AADK_SUBMIT_BPH,
-            $negeri,
-        );
 
-        return collect($definitions)
-            ->map(function (array $row) use ($progressCounts, $underEightMonthsCount, $semakanCpSebelumBphCount): array {
+        return collect(self::definitions())
+            ->map(function (array $row) use ($sentContracts, $underEightMonthsCount): array {
                 $count = match ($row['key']) {
                     self::BARU_TERIMA_PERMOHONAN => $underEightMonthsCount,
-                    self::SEMAKAN_CP_SEBELUM_BPH => $semakanCpSebelumBphCount,
-                    default => collect($row['workflows'])
-                        ->sum(fn (string $workflow): int => (int) ($progressCounts[$workflow] ?? 0)),
+                    self::KUIRI_PUU => $sentContracts->filter(fn (RentalContract $contract): bool => self::isKuiriPuu($contract))->count(),
+                    default => $sentContracts->reject(fn (RentalContract $contract): bool => self::isCleared($contract, $row['key']))->count(),
                 };
 
                 return [
@@ -159,7 +138,8 @@ class StatusTindakan
     }
 
     /**
-     * Active HQ-approved contracts with remaining term under 8 months.
+     * Active HQ-approved contracts with remaining term under 8 months
+     * whose follow-up has not yet been sent to HQ for verification.
      */
     public static function underEightMonthsActiveCount(?string $negeri = null): int
     {
@@ -167,6 +147,14 @@ class StatusTindakan
             ->hqApproved()
             ->notSuperseded()
             ->kontrakNotExpired()
+            ->whereDoesntHave(
+                'followUpApplications',
+                fn ($query) => $query->where(
+                    'workflow_tahap',
+                    '!=',
+                    RentalContract::WORKFLOW_MENUNGGU_PROCEED_NEGERI,
+                ),
+            )
             ->when(
                 filled($negeri),
                 fn ($query) => $query->whereHas('premise', fn ($premiseQuery) => $premiseQuery->where('negeri', $negeri))
@@ -177,29 +165,119 @@ class StatusTindakan
     }
 
     /**
-     * Incomplete applications whose HQ JRP checklist item is checked.
-     * Completed (HQ-approved) contracts are excluded from Status Tindakan counts.
+     * @return Collection<int, RentalContract>
      */
-    public static function checklistTriggeredCount(string $checklistKey, ?string $negeri = null): int
+    private static function sentToHqContracts(?string $negeri): Collection
     {
         return RentalContract::query()
             ->notSuperseded()
-            ->whereNotIn('workflow_tahap', RentalContract::hqApprovedWorkflows())
+            ->whereIn('workflow_tahap', self::sentToHqWorkflows())
             ->when(
                 filled($negeri),
                 fn ($query) => $query->whereHas('premise', fn ($premiseQuery) => $premiseQuery->where('negeri', $negeri))
             )
-            ->whereNotNull('hq_jrp_checklist')
-            ->get()
-            ->filter(function (RentalContract $contract) use ($checklistKey): bool {
-                $checklist = $contract->hq_jrp_checklist;
+            ->with(['documents' => function ($query): void {
+                $query->select(['id', 'contract_id', 'jenis', 'semakan_status'])
+                    ->where('jenis', ContractDocument::JENIS_DRAF_PERJANJIAN);
+            }])
+            ->get();
+    }
 
-                if (! is_array($checklist)) {
-                    return false;
-                }
+    private static function isCleared(RentalContract $contract, string $statusKey): bool
+    {
+        return match ($statusKey) {
+            self::SEMAKAN_CP_SEBELUM_BPH => self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_BPH_APPROVAL),
+            self::MINIT_CERAIAN_KELULUSAN_KOS => self::checklistChecked($contract, HqJrpChecklist::MOF),
+            self::PERTIMBANGAN_MOF => self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS),
+            self::PERTIMBANGAN_KE => self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS),
+            self::PERTIMBANGAN_BPH_SUPS => self::checklistChecked($contract, HqJrpChecklist::AADK_SUBMIT_BPH),
+            self::SEDIA_DRAF_PERJANJIAN, self::SEMAKAN_CP_SEBELUM_PUU => self::hasReachedSemakanOne($contract),
+            self::SEMAKAN_PUU => self::puuReviewApproved($contract),
+            self::PINDAAN_SYOR_PUU_TANDATANGAN_PEMILIK => self::acknowledgementChecked(
+                $contract->negeri_draft_acknowledgements,
+                NegeriDraftAcknowledgements::DOKUMEN_DITANDATANGANI,
+            ),
+            self::TANDATANGAN_PENYEWA_AADK => self::acknowledgementChecked(
+                $contract->hq_draft_acknowledgements,
+                HqDraftAcknowledgements::PERJANJIAN_DITANDATANGANI,
+            ),
+            self::TINDAKAN_METERI_SETEM => self::acknowledgementChecked(
+                $contract->negeri_mati_setem_acknowledgements,
+                NegeriMatiSetemAcknowledgements::MATI_SETEM_LHDN,
+            ),
+            default => false,
+        };
+    }
 
-                return filter_var($checklist[$checklistKey] ?? false, FILTER_VALIDATE_BOOLEAN) === true;
-            })
-            ->count();
+    /**
+     * Sedia Draf and Semakan Cawangan Pembangunan Sebelum ke PUU drop once
+     * Status Semasa has reached Semakan 1, including later rounds.
+     */
+    private static function hasReachedSemakanOne(RentalContract $contract): bool
+    {
+        if ((int) $contract->semakan_count >= 1) {
+            return true;
+        }
+
+        return in_array($contract->workflow_tahap, [
+            RentalContract::WORKFLOW_SEMAKAN_PUU,
+            RentalContract::WORKFLOW_PINDAAN_BERDASARKAN_PUU,
+            RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS,
+            RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ,
+            RentalContract::WORKFLOW_MATI_SETEM,
+        ], true);
+    }
+
+    /**
+     * Semakan PUU and Kuiri PUU drop after "Ya, Luluskan".
+     */
+    private static function puuReviewApproved(RentalContract $contract): bool
+    {
+        if (in_array($contract->workflow_tahap, [
+            RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS,
+            RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ,
+            RentalContract::WORKFLOW_MATI_SETEM,
+        ], true)) {
+            return true;
+        }
+
+        return $contract->documents->contains(
+            fn (ContractDocument $document): bool => $document->semakan_status === ContractDocument::SEMAKAN_DILULUSKAN
+        );
+    }
+
+    /**
+     * Kuiri PUU rises after "Ya, Semak Semula" and stays until PUU is approved.
+     */
+    private static function isKuiriPuu(RentalContract $contract): bool
+    {
+        $rejected = $contract->documents->contains(
+            fn (ContractDocument $document): bool => $document->semakan_status === ContractDocument::SEMAKAN_DIBATALKAN
+        );
+
+        return $rejected && ! self::puuReviewApproved($contract);
+    }
+
+    private static function checklistChecked(RentalContract $contract, string $key): bool
+    {
+        $checklist = $contract->hq_jrp_checklist;
+
+        if (! is_array($checklist)) {
+            return false;
+        }
+
+        return filter_var($checklist[$key] ?? false, FILTER_VALIDATE_BOOLEAN) === true;
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $acknowledgements
+     */
+    private static function acknowledgementChecked(?array $acknowledgements, string $key): bool
+    {
+        if (! is_array($acknowledgements)) {
+            return false;
+        }
+
+        return filter_var($acknowledgements[$key] ?? false, FILTER_VALIDATE_BOOLEAN) === true;
     }
 }

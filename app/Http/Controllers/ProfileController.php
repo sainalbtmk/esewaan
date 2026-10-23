@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Services\ActivityLogger;
 use App\Support\MalaysianStates;
+use App\Support\UserSessionGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -50,6 +51,8 @@ class ProfileController extends Controller
         );
 
         if ($passwordChanged) {
+            UserSessionGuard::invalidateOtherSessions($user);
+
             ActivityLogger::log(
                 $user,
                 'password_reset',

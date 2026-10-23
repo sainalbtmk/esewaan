@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Support\UserSessionGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
@@ -29,6 +30,8 @@ class NewPasswordController extends Controller
                 $user->forceFill([
                     'password' => $password,
                 ])->save();
+
+                UserSessionGuard::invalidateOtherSessions($user);
 
                 ActivityLogger::log(
                     $user,

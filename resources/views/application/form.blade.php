@@ -356,7 +356,7 @@
                     type="submit"
                     form="cancel-follow-up-form"
                     class="text-sm font-medium text-red-600 transition-colors hover:text-red-700"
-                    onclick="return confirm('Batalkan permohonan {{ \App\Support\ApplicationCategories::label($contract->kategori_permohonan) }} ini dan kembali ke kontrak asal? Semua maklumat yang dimasukkan akan dibuang.');"
+                    data-confirm-click="Batalkan permohonan {{ \App\Support\ApplicationCategories::label($contract->kategori_permohonan) }} ini dan kembali ke kontrak asal? Semua maklumat yang dimasukkan akan dibuang."
                 >
                     Batal permohonan susulan
                 </button>

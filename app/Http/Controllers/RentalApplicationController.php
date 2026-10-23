@@ -61,7 +61,7 @@ class RentalApplicationController extends Controller
             'kadar_sewa' => $validated['kadar_sewa'],
         ]);
 
-        $contract = RentalContract::query()->create([
+        $contract = RentalContract::createCommitted([
             'premise_id' => $premise->id,
             'submitted_by_user_id' => null,
             'admin_negeri_user_id' => $admin->id,

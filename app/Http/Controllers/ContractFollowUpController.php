@@ -47,7 +47,7 @@ class ContractFollowUpController extends Controller
                 ? $contract->keluasan_mp
                 : null;
 
-            $followUp = RentalContract::query()->create([
+            $followUp = RentalContract::createCommitted([
                 'parent_contract_id' => $contract->id,
                 'premise_id' => $premise->id,
                 'submitted_by_user_id' => $contract->submitted_by_user_id,

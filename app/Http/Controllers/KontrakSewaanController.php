@@ -117,22 +117,9 @@ class KontrakSewaanController extends Controller
 
     private function ensureCanView(Request $request, RentalContract $contract): void
     {
-        $user = $request->user();
-
-        if (! $contract->isHqApproved()) {
-            abort(404);
-        }
-
-        if ($user?->isAdminHq()) {
-            return;
-        }
-
-        $contract->loadMissing('premise');
-
-        if ($user?->isAdminNegeri() && filled($user->negeri) && $contract->premise?->negeri === $user->negeri) {
-            return;
-        }
-
-        abort(403, 'Akses ditolak.');
+        abort_unless(
+            $request->user()?->can('viewKontrak', $contract) === true,
+            404,
+        );
     }
 }

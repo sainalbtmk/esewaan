@@ -67,7 +67,7 @@ class UpdateUserRequest extends FormRequest
                 Rule::requiredIf(fn () => ! $target->is($this->user())),
                 Rule::in($allowedRoles),
             ],
-            'password' => ['nullable', 'string', 'confirmed', Password::min(8)],
+            'password' => ['nullable', 'string', 'confirmed', Password::defaults()],
         ];
     }
 
@@ -85,6 +85,8 @@ class UpdateUserRequest extends FormRequest
             'role.in' => 'Peranan tidak sah.',
             'password.confirmed' => 'Kata laluan tidak sama.',
             'password.min' => 'Kata laluan sekurang-kurangnya 8 aksara.',
+            'password.mixed' => 'Kata laluan mesti mengandungi huruf besar dan kecil.',
+            'password.numbers' => 'Kata laluan mesti mengandungi sekurang-kurangnya satu nombor.',
         ];
     }
 
@@ -111,6 +113,7 @@ class UpdateUserRequest extends FormRequest
             if ($admin->isAdminHq() && ! $target->is($admin) && $target->isAdminHq() && $this->input('role') !== 'admin_hq') {
                 $remainingAdmins = User::query()
                     ->where('role', 'admin_hq')
+                    ->where('is_active', true)
                     ->whereKeyNot($target->getKey())
                     ->exists();
 

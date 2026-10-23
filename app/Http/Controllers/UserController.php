@@ -3,15 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\RespondsWithTablePartial;
+use App\Http\Requests\UpdateEmelJawatanRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\ActivityLog;
 use App\Models\ContractDocument;
+use App\Models\EmelJawatan;
 use App\Models\ProcessLog;
 use App\Models\RentalContract;
 use App\Models\User;
 use App\Services\ActivityLogger;
 use App\Support\ListSearch;
 use App\Support\MalaysianStates;
+use App\Support\UserSessionGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -47,6 +50,9 @@ class UserController extends Controller
             'direction' => $direction,
             'canManageUserStatus' => $admin->isAdminHq(),
             'showAdminSection' => $admin->isAdminHq(),
+            'emelJawatan' => $admin->isAdminHq()
+                ? EmelJawatan::query()->orderBy('susunan')->orderBy('id')->get()
+                : collect(),
         ];
 
         if ($this->wantsTablePartial($request)) {
@@ -79,13 +85,15 @@ class UserController extends Controller
         $previousRole = $user->role;
         $newRole = $request->resolvedRole();
 
-        $user->update([
+        $user->fill([
             'name' => $data['name'],
             'email' => $data['email'],
             'negeri' => $request->resolvedNegeri(),
-            'role' => $newRole,
             ...($passwordChanged ? ['password' => $data['password']] : []),
         ]);
+        $user->forceFill([
+            'role' => $newRole,
+        ])->save();
 
         ActivityLogger::log(
             $user,
@@ -95,6 +103,8 @@ class UserController extends Controller
         );
 
         if ($passwordChanged) {
+            UserSessionGuard::invalidateOtherSessions($user);
+
             ActivityLogger::log(
                 $user,
                 'password_reset',
@@ -159,7 +169,7 @@ class UserController extends Controller
         }
 
         $wasActive = $user->is_active;
-        $user->update(['is_active' => ! $wasActive]);
+        $user->forceFill(['is_active' => ! $wasActive])->save();
 
         ActivityLogger::log(
             $user,
@@ -177,6 +187,42 @@ class UserController extends Controller
         return redirect()
             ->route('users.index')
             ->with('success', $message);
+    }
+
+    public function updateEmelJawatan(UpdateEmelJawatanRequest $request): RedirectResponse
+    {
+        /** @var array<string, string> $emails */
+        $emails = $request->validated('emails');
+        $changes = [];
+
+        foreach (EmelJawatan::query()->orderBy('susunan')->get() as $jawatan) {
+            $email = $emails[$jawatan->kod] ?? null;
+
+            if (! is_string($email) || strcasecmp($jawatan->email, $email) === 0) {
+                continue;
+            }
+
+            $changes[$jawatan->nama_jawatan] = [
+                'dari' => $jawatan->email,
+                'kepada' => $email,
+            ];
+
+            $jawatan->update(['email' => $email]);
+        }
+
+        if ($changes !== []) {
+            ActivityLogger::log(
+                $request->user(),
+                'emel_jawatan_updated',
+                'Emel salinan jawatan dikemaskini.',
+                ['perubahan' => $changes],
+                $request->user(),
+            );
+        }
+
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'Emel jawatan berjaya dikemaskini.');
     }
 
     /**
@@ -300,7 +346,7 @@ class UserController extends Controller
         $admin = auth()->user();
 
         if (! $admin || ! $user->isVisibleToAdmin($admin)) {
-            abort(403, 'Akses ditolak.');
+            abort(404);
         }
     }
 
@@ -328,6 +374,7 @@ class UserController extends Controller
             'account_activated' => 'Aktifkan akaun',
             'account_deactivated' => 'Nyahaktif akaun',
             'user_created' => 'Akaun didaftarkan',
+            'emel_jawatan_updated' => 'Kemaskini emel jawatan',
             'application_submitted' => 'Hantar permohonan',
             'document_uploaded' => 'Muat naik dokumen',
             'contract_status_updated' => 'Kemaskini status kontrak',

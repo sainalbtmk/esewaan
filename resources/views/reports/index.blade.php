@@ -29,6 +29,7 @@
                         <option value="{{ $value }}" @selected(($filters['negeri'] ?? '') === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
+                <p class="mt-1 text-xs text-slate-500">Laporan mengikut negeri dijana berdasarkan negeri yang dipilih.</p>
             </div>
             <div class="flex flex-col gap-2 sm:flex-row lg:col-span-4">
                 <button type="submit" class="glass-btn-primary inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium">
@@ -121,7 +122,18 @@
 
     <section class="glass-card overflow-hidden">
         <div class="border-b border-slate-200/80 px-5 py-4">
-            <h2 class="text-sm font-semibold text-slate-900">{{ $report['jenisLabel'] }}</h2>
+            <h2 class="text-sm font-semibold text-slate-900">
+                @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
+                    {{ \App\Support\ContractNegeriReport::title($report['negeri']) }}
+                @elseif(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_STATUS_SEWAAN)
+                    {{ \App\Support\RentalStatusReport::title() }}
+                @else
+                    {{ $report['jenisLabel'] }}
+                @endif
+            </h2>
+            @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_STATUS_SEWAAN)
+                <p class="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Lampiran 1</p>
+            @endif
             <p class="mt-0.5 text-xs text-slate-500">
                 Dijana pada {{ $report['generatedAt'] }}
                 @if(filled($report['negeri']))
@@ -130,43 +142,52 @@
                     · Skop: Semua negeri
                 @endif
                 · {{ number_format($rows->count()) }} rekod
+                @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
+                    · Laporan secara individu beserta kronologi
+                @endif
             </p>
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-left text-sm">
-                <thead class="bg-slate-50/80 text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                        <th class="px-4 py-3 font-semibold">No.</th>
-                        <th class="px-4 py-3 font-semibold">Premis</th>
-                        <th class="px-4 py-3 font-semibold">Negeri</th>
-                        <th class="px-4 py-3 font-semibold">Kategori</th>
-                        <th class="px-4 py-3 font-semibold">Status</th>
-                        <th class="px-4 py-3 font-semibold">Tarikh Tamat</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($rows as $index => $contract)
-                        <tr class="border-t border-slate-100">
-                            <td class="px-4 py-3 text-slate-500">{{ $index + 1 }}</td>
-                            <td class="px-4 py-3 font-medium text-slate-900">{{ $contract->premise?->nama_ptj ?? '–' }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $contract->premise?->negeri ?? '–' }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ \App\Support\ApplicationCategories::label($contract->kategori_permohonan) }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $contract->workflowLabel() }}</td>
-                            <td class="px-4 py-3 text-slate-700">
-                                @php
-                                    $endDate = $contract->contractEndDate();
-                                @endphp
-                                {{ $endDate ? $endDate->format('d/m/Y') : '–' }}
-                            </td>
-                        </tr>
-                    @empty
+        @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
+            @include('reports.partials.kontrak-negeri-table', ['rows' => $rows])
+        @elseif(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_STATUS_SEWAAN)
+            @include('reports.partials.status-sewaan-table', ['groups' => $report['statusGroups'] ?? []])
+        @else
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm">
+                    <thead class="bg-slate-50/80 text-xs uppercase tracking-wide text-slate-500">
                         <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-slate-500">Tiada rekod untuk laporan ini.</td>
+                            <th class="px-4 py-3 font-semibold">No.</th>
+                            <th class="px-4 py-3 font-semibold">Premis</th>
+                            <th class="px-4 py-3 font-semibold">Negeri</th>
+                            <th class="px-4 py-3 font-semibold">Kategori</th>
+                            <th class="px-4 py-3 font-semibold">Status</th>
+                            <th class="px-4 py-3 font-semibold">Tarikh Tamat</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        @forelse($rows as $index => $contract)
+                            <tr class="border-t border-slate-100">
+                                <td class="px-4 py-3 text-slate-500">{{ $index + 1 }}</td>
+                                <td class="px-4 py-3 font-medium text-slate-900">{{ $contract->premise?->nama_ptj ?? '–' }}</td>
+                                <td class="px-4 py-3 text-slate-700">{{ $contract->premise?->negeri ?? '–' }}</td>
+                                <td class="px-4 py-3 text-slate-700">{{ \App\Support\ApplicationCategories::label($contract->kategori_permohonan) }}</td>
+                                <td class="px-4 py-3 text-slate-700">{{ $contract->workflowLabel() }}</td>
+                                <td class="px-4 py-3 text-slate-700">
+                                    @php
+                                        $endDate = $contract->contractEndDate();
+                                    @endphp
+                                    {{ $endDate ? $endDate->format('d/m/Y') : '–' }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-4 py-8 text-center text-slate-500">Tiada rekod untuk laporan ini.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </section>
 </div>
 @endsection

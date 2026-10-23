@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
 class ResetPasswordRequest extends FormRequest
 {
@@ -19,7 +20,7 @@ class ResetPasswordRequest extends FormRequest
         return [
             'token' => ['required', 'string'],
             'email' => ['required', 'string', 'email', 'max:255'],
-            'password' => ['required', 'string', 'min:8', 'max:255', 'confirmed'],
+            'password' => ['required', 'string', 'max:255', 'confirmed', Password::defaults()],
         ];
     }
 
@@ -33,6 +34,8 @@ class ResetPasswordRequest extends FormRequest
             'email.email' => 'Sila masukkan emel yang sah.',
             'password.required' => 'Kata laluan baharu diperlukan.',
             'password.min' => 'Kata laluan mestilah sekurang-kurangnya 8 aksara.',
+            'password.mixed' => 'Kata laluan mesti mengandungi huruf besar dan kecil.',
+            'password.numbers' => 'Kata laluan mesti mengandungi sekurang-kurangnya satu nombor.',
             'password.confirmed' => 'Pengesahan kata laluan tidak sepadan.',
         ];
     }

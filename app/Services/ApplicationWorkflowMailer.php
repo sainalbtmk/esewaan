@@ -8,20 +8,29 @@ use App\Mail\ApplicationSubmittedToHqNotification;
 use App\Mail\ApplicationWorkflowStageNotification;
 use App\Models\RentalContract;
 use App\Models\User;
+use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 class ApplicationWorkflowMailer
 {
+    private bool $notificationFailed = false;
+
+    public function notificationFailed(): bool
+    {
+        return $this->notificationFailed;
+    }
+
     public function notifySubmittedToHq(RentalContract $contract, User $submittedBy): void
     {
         $contract->loadMissing(['premise', 'adminNegeriUser', 'submittedBy']);
 
         foreach ($this->adminHqNotificationRecipients() as $email) {
-            Mail::to($email)->send(new ApplicationSubmittedToHqNotification($contract, $submittedBy));
+            $this->deliver($email, new ApplicationSubmittedToHqNotification($contract, $submittedBy));
         }
 
         foreach ($this->adminNegeriNotificationRecipients($contract) as $email) {
-            Mail::to($email)->send(new ApplicationSubmittedToAdminNegeriNotification($contract, $submittedBy));
+            $this->deliver($email, new ApplicationSubmittedToAdminNegeriNotification($contract, $submittedBy));
         }
     }
 
@@ -30,11 +39,11 @@ class ApplicationWorkflowMailer
         $contract->loadMissing(['premise', 'adminNegeriUser', 'submittedBy']);
 
         foreach ($this->adminNegeriNotificationRecipients($contract) as $email) {
-            Mail::to($email)->send(new ApplicationApprovedByHqNotification($contract, $approvedBy));
+            $this->deliver($email, new ApplicationApprovedByHqNotification($contract, $approvedBy));
         }
 
         foreach ($this->adminHqNotificationRecipients() as $email) {
-            Mail::to($email)->send(new ApplicationApprovedByHqNotification($contract, $approvedBy));
+            $this->deliver($email, new ApplicationApprovedByHqNotification($contract, $approvedBy));
         }
     }
 
@@ -120,7 +129,18 @@ class ApplicationWorkflowMailer
         $contract->loadMissing(['premise', 'adminNegeriUser', 'submittedBy']);
 
         foreach ($this->workflowRecipients($contract) as $email) {
-            Mail::to($email)->send(new ApplicationWorkflowStageNotification($contract, $actedBy, $payload));
+            $this->deliver($email, new ApplicationWorkflowStageNotification($contract, $actedBy, $payload));
+        }
+    }
+
+    private function deliver(string $email, Mailable $mailable): void
+    {
+        try {
+            Mail::to($email)->send($mailable);
+        } catch (Throwable $exception) {
+            $this->notificationFailed = true;
+
+            report($exception);
         }
     }
 

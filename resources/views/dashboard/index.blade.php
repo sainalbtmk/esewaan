@@ -8,21 +8,20 @@
 
 @section('content')
 @php
-    $kontrakClassTotal = max(1, (int) ($kontrakClassChart['total'] ?? 0));
-    $kontrakClassValues = $kontrakClassChart['values'] ?? [0, 0, 0];
-    $kontrakClassColors = $kontrakClassChart['colors'] ?? ['#059669', '#d97706', '#dc2626'];
-    $kontrakClassLabels = $kontrakClassChart['labels'] ?? [];
-    $donutStops = [];
-    $cursor = 0;
-    foreach ($kontrakClassValues as $index => $value) {
-        $start = $cursor;
-        $share = ((int) $value / $kontrakClassTotal) * 100;
-        $cursor += $share;
-        $donutStops[] = ($kontrakClassColors[$index] ?? '#94a3b8').' '.$start.'% '.$cursor.'%';
+    $portfolioSlices = $portfolio['slices'] ?? [];
+    $portfolioTotal = (int) ($portfolio['total'] ?? 0);
+    $leftSlices = [];
+    $rightSlices = [];
+    foreach ($portfolioSlices as $index => $slice) {
+        if ($index % 2 === 0) {
+            $leftSlices[] = $slice;
+        } else {
+            $rightSlices[] = $slice;
+        }
     }
-    $donutBackground = $donutStops === []
-        ? 'conic-gradient(#e2e8f0 0% 100%)'
-        : 'conic-gradient('.implode(', ', $donutStops).')';
+    $donutRadius = 68;
+    $donutCircumference = 2 * M_PI * $donutRadius;
+    $donutOffset = 0;
 @endphp
 
 <div class="space-y-6">
@@ -84,69 +83,120 @@
         </a>
     </div>
 
-    {{-- Charts --}}
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section class="glass-card overflow-hidden p-5">
-            <div class="mb-4">
-                <h3 class="font-semibold text-slate-900">Taburan Baki Tempoh Kontrak</h3>
-                <p class="mt-0.5 text-xs text-slate-500">Bilangan kontrak aktif mengikut kelas baki tempoh</p>
-            </div>
-            <div class="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
-                <div
-                    class="relative h-40 w-40 shrink-0 rounded-full"
-                    style="background: {{ $donutBackground }};"
-                    role="img"
-                    aria-label="Carta taburan baki tempoh kontrak"
-                >
-                    <div class="absolute inset-6 flex flex-col items-center justify-center rounded-full bg-white shadow-inner">
-                        <p class="text-2xl font-bold text-slate-900">{{ number_format($kontrakAktif) }}</p>
-                        <p class="text-[11px] font-medium text-slate-500">aktif</p>
-                    </div>
-                </div>
-                <ul class="w-full space-y-3">
-                    @foreach($kontrakClassLabels as $index => $label)
-                        <li class="flex items-center justify-between gap-3">
-                            <div class="flex min-w-0 items-center gap-2">
-                                <span class="h-3 w-3 shrink-0 rounded-full" style="background: {{ $kontrakClassColors[$index] }}"></span>
-                                <span class="truncate text-sm text-slate-700">{{ $label }}</span>
-                            </div>
-                            <span class="text-sm font-semibold text-slate-900">{{ number_format($kontrakClassValues[$index] ?? 0) }}</span>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
-        </section>
-
-        <section class="glass-card overflow-hidden p-5">
-            <div class="mb-4">
-                <h3 class="font-semibold text-slate-900">Bilangan Mengikut Status Tindakan</h3>
-                <p class="mt-0.5 text-xs text-slate-500">Hanya status yang mempunyai kontrak dipaparkan</p>
-            </div>
-            @if(($statusChart['labels'] ?? []) === [])
-                <div class="flex h-40 items-center justify-center text-sm text-slate-500">
-                    Tiada permohonan dalam tindakan buat masa ini.
-                </div>
-            @else
-                <div class="space-y-3">
-                    @foreach($statusChart['labels'] as $index => $label)
-                        @php
-                            $value = (int) ($statusChart['values'][$index] ?? 0);
-                            $width = max(4, (int) round(($value / max(1, (int) $statusChart['max'])) * 100));
-                        @endphp
-                        <div>
-                            <div class="mb-1 flex items-center justify-between gap-3">
-                                <p class="truncate text-xs font-medium text-slate-700" title="{{ $label }}">{{ $label }}</p>
-                                <p class="shrink-0 text-xs font-semibold text-indigo-700">{{ number_format($value) }}</p>
-                            </div>
-                            <div class="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                                <div class="h-full rounded-full bg-indigo-500" style="width: {{ $width }}%"></div>
+    <section class="glass-card overflow-hidden">
+        <div class="border-b border-slate-200/80 px-5 py-4">
+            <h3 class="text-center text-sm font-semibold uppercase tracking-wide text-slate-900">
+                Status Kontrak Sewaan Premis AADK {{ $portfolioYear }}
+            </h3>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2">
+            <div class="border-b border-slate-200/80 p-5 lg:border-r lg:border-b-0">
+                <h4 class="text-base font-semibold text-slate-900">Status Keseluruhan Portfolio</h4>
+                <div class="mt-5 flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
+                    <ul class="order-2 w-full space-y-3 sm:order-1 sm:max-w-40">
+                        @foreach($leftSlices as $slice)
+                            <li class="text-xs leading-snug text-slate-600">
+                                <span class="mr-1 inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $slice['color'] }}"></span>
+                                <span class="font-semibold uppercase text-slate-800">{{ $slice['label'] }}:</span>
+                                {{ number_format($slice['count']) }} ({{ number_format($slice['percent'], 1) }}%)
+                            </li>
+                        @endforeach
+                    </ul>
+                    <div class="relative order-1 shrink-0 sm:order-2">
+                        <svg viewBox="0 0 200 200" class="h-52 w-52" role="img" aria-label="Carta pai status keseluruhan portfolio">
+                            @if($portfolioTotal === 0)
+                                <circle cx="100" cy="100" r="{{ $donutRadius }}" fill="none" stroke="#e2e8f0" stroke-width="28"></circle>
+                            @else
+                                @foreach($portfolioSlices as $slice)
+                                    @php
+                                        $segment = ($slice['count'] / $portfolioTotal) * $donutCircumference;
+                                    @endphp
+                                    <circle
+                                        cx="100"
+                                        cy="100"
+                                        r="{{ $donutRadius }}"
+                                        fill="none"
+                                        stroke="{{ $slice['color'] }}"
+                                        stroke-width="28"
+                                        stroke-dasharray="{{ $segment }} {{ $donutCircumference }}"
+                                        stroke-dashoffset="{{ -$donutOffset }}"
+                                        transform="rotate(-90 100 100)"
+                                    ></circle>
+                                    @php $donutOffset += $segment; @endphp
+                                @endforeach
+                            @endif
+                        </svg>
+                        <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+                            <div class="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-white px-2 text-center">
+                                <p class="text-[9px] font-semibold uppercase leading-tight tracking-wide text-slate-500">Jumlah<br>Keseluruhan</p>
+                                <p class="my-0.5 text-2xl font-bold leading-none text-slate-900">{{ number_format($portfolioTotal) }}</p>
+                                <p class="text-[9px] font-medium uppercase leading-tight text-slate-500">Kontrak<br>Sewaan Premis</p>
                             </div>
                         </div>
-                    @endforeach
+                    </div>
+                    <ul class="order-3 w-full space-y-3 sm:max-w-44">
+                        @foreach($rightSlices as $slice)
+                            <li class="text-xs leading-snug text-slate-600">
+                                <span class="mr-1 inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $slice['color'] }}"></span>
+                                <span class="font-semibold uppercase text-slate-800">{{ $slice['label'] }}:</span>
+                                {{ number_format($slice['count']) }} ({{ number_format($slice['percent'], 1) }}%)
+                            </li>
+                        @endforeach
+                    </ul>
                 </div>
-            @endif
-        </section>
-    </div>
+            </div>
+
+            <div class="p-5">
+                <h4 class="text-base font-semibold leading-snug text-slate-900">
+                    Tindakan Segera:
+                    <span class="text-red-600">{{ number_format($portfolio['urgentPercent'] ?? 0, 1) }}%</span>
+                    ({{ number_format($portfolio['urgentCount'] ?? 0) }} Kontrak)
+                </h4>
+                <p class="mt-1 text-sm font-medium text-slate-800">
+                    Berbaki <span class="font-semibold text-red-600">Kurang 8 Bulan</span> &amp; Belum Mengemukakan Permohonan
+                </p>
+                <div class="mt-4 max-h-96 overflow-auto">
+                    <table class="min-w-full text-left text-sm">
+                        <thead class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                            <tr>
+                                <th class="px-2 py-2 font-semibold">Bil.</th>
+                                <th class="px-2 py-2 font-semibold">Negeri</th>
+                                <th class="px-2 py-2 font-semibold">PTJ</th>
+                                <th class="px-2 py-2 font-semibold">Baki Bulan</th>
+                                <th class="px-2 py-2 font-semibold">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($portfolio['urgentRows'] ?? [] as $index => $contract)
+                                @php
+                                    $bakiBulan = \App\Support\RentalStatusReport::bakiBulan($contract);
+                                @endphp
+                                <tr class="border-b border-slate-100 align-top">
+                                    <td class="px-2 py-2 text-slate-500">{{ $index + 1 }}</td>
+                                    <td class="px-2 py-2 text-slate-800">{{ $contract->premise?->negeri ?? '–' }}</td>
+                                    <td class="px-2 py-2 font-medium text-slate-900">
+                                        <a href="{{ route('kontrak-sewaan.show', $contract) }}" class="hover:underline">{{ $contract->premise?->nama_ptj ?? '–' }}</a>
+                                    </td>
+                                    <td class="px-2 py-2">
+                                        <span @class([
+                                            'inline-flex rounded px-2 py-1 text-xs font-bold',
+                                            'bg-red-600 text-white' => $bakiBulan !== null && $bakiBulan < 0,
+                                            'bg-amber-400 text-slate-900' => $bakiBulan === null || $bakiBulan >= 0,
+                                        ])>{{ $bakiBulan === null ? '–' : $bakiBulan.' Bulan' }}</span>
+                                    </td>
+                                    <td class="px-2 py-2 text-slate-700">Belum Terima Permohonan</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-2 py-8 text-center text-sm text-slate-500">Tiada kontrak berbaki kurang 8 bulan yang belum mengemukakan permohonan.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
 
     {{-- Dalam Tindakan: pecahan mengikut status --}}
     <div id="dalam-tindakan" class="glass-card overflow-hidden scroll-mt-24">

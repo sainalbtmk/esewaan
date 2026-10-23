@@ -16,7 +16,7 @@ class DownloadContractDocumentRequest extends FormRequest
         /** @var ContractDocument|null $document */
         $document = $this->route('document');
 
-        if ($user?->isAdmin() !== true || $document === null || $contract === null) {
+        if ($user === null || $document === null || $contract === null) {
             return false;
         }
 
@@ -24,15 +24,12 @@ class DownloadContractDocumentRequest extends FormRequest
             return false;
         }
 
-        if ($user->isAdminHq()) {
+        if ($user->can('view', $document)) {
             return true;
         }
 
-        $contract->loadMissing('premise');
-
-        return $user->isAdminNegeri()
-            && filled($user->negeri)
-            && $contract->premise?->negeri === $user->negeri;
+        // Avoid confirming resource existence across negeri boundaries.
+        abort(404);
     }
 
     /**

@@ -13,7 +13,7 @@
     --color-brand-soft: #e8eef5;
 }
 
-/* Glass theme utilities — also defined inline in partials/glass-theme.blade.php for CDN fallback */
+/* Glass theme utilities used by the compiled stylesheet. */
 @layer components {
     .glass-input,
     .liquid-bg input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]):not([type="range"]):not([type="color"]),

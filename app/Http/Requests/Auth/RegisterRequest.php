@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Support\MalaysianStates;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
 
 class RegisterRequest extends FormRequest
@@ -57,7 +58,7 @@ class RegisterRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'max:255', 'confirmed'],
+            'password' => ['required', 'string', 'max:255', 'confirmed', Password::defaults()],
             'role' => ['required', Rule::in($allowedRoles)],
             'negeri' => $negeriRules,
         ];
@@ -73,8 +74,10 @@ class RegisterRequest extends FormRequest
             'email.required' => 'Emel diperlukan.',
             'email.unique' => 'Emel ini telah didaftarkan.',
             'password.required' => 'Kata laluan diperlukan.',
-            'password.min' => 'Kata laluan sekurang-kurangnya 8 aksara.',
             'password.confirmed' => 'Kata laluan tidak sama.',
+            'password.mixed' => 'Kata laluan mesti mengandungi huruf besar dan kecil.',
+            'password.numbers' => 'Kata laluan mesti mengandungi sekurang-kurangnya satu nombor.',
+            'password.min' => 'Kata laluan sekurang-kurangnya 8 aksara.',
             'negeri.required' => 'Negeri diperlukan untuk peranan Negeri.',
             'negeri.in' => 'Negeri tidak sah untuk pentadbir negeri anda.',
             'role.in' => 'Peranan tidak sah.',

@@ -314,7 +314,7 @@ test('admin negeri cannot access edit page for contract in other negeri', functi
 
     $this->actingAs($admin)
         ->get(route('application.edit', $contract))
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 test('admin negeri cannot access tindakan page after application is no longer pending proceed', function () {

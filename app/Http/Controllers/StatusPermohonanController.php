@@ -26,6 +26,7 @@ use App\Services\ApplicationWorkflowMailer;
 use App\Services\SidebarNotificationService;
 use App\Support\AdminProceedSteps;
 use App\Support\ApplicationCategories;
+use App\Support\ContractDocumentStorage;
 use App\Support\HqDraftAcknowledgements;
 use App\Support\HqJrpChecklist;
 use App\Support\NegeriDraftAcknowledgements;
@@ -119,7 +120,7 @@ class StatusPermohonanController extends Controller
 
         $nextWorkflow = RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN;
 
-        $contract->update([
+        $contract->commit([
             'workflow_tahap' => $nextWorkflow,
             'hq_approved_at' => now(),
             'hq_jrp_checklist' => HqJrpChecklist::normalizeInput(
@@ -139,9 +140,10 @@ class StatusPermohonanController extends Controller
 
         $this->workflowMailer->notifyApprovedByHq($contract->fresh(['premise', 'submittedBy', 'adminNegeriUser']), $hqUser);
 
-        return redirect()
-            ->route('status-permohonan.index')
-            ->with('success', 'Permohonan diteruskan ke penyediaan draf perjanjian.');
+        return $this->redirectWithWorkflowNotice(
+            'status-permohonan.index',
+            'Permohonan diteruskan ke penyediaan draf perjanjian.',
+        );
     }
 
     /**
@@ -154,7 +156,7 @@ class StatusPermohonanController extends Controller
         $user = $request->user();
 
         $file = $request->file('document');
-        $path = $file->store('contract-documents/'.$contract->id, 'public');
+        $path = ContractDocumentStorage::store('contract-documents/'.$contract->id, $file);
         $safeName = $this->sanitizeFilename($file->getClientOriginalName());
         $nextCount = (int) $contract->semakan_count + 1;
 
@@ -168,7 +170,7 @@ class StatusPermohonanController extends Controller
             'user_id' => $user->id,
         ]);
 
-        $contract->update([
+        $contract->commit([
             'workflow_tahap' => RentalContract::WORKFLOW_SEMAKAN_PUU,
             'semakan_count' => $nextCount,
         ]);
@@ -182,9 +184,11 @@ class StatusPermohonanController extends Controller
 
         $this->workflowMailer->notifyDraftUploaded($contract->fresh(['premise', 'submittedBy', 'adminNegeriUser']), $user);
 
-        return redirect()
-            ->route('status-permohonan.review', $contract)
-            ->with('success', 'Draf perjanjian berjaya dimuat naik dan dihantar untuk Semakan '.$nextCount.'.');
+        return $this->redirectWithWorkflowNotice(
+            'status-permohonan.review',
+            'Draf perjanjian berjaya dimuat naik dan dihantar untuk Semakan '.$nextCount.'.',
+            $contract,
+        );
     }
 
     /**
@@ -197,7 +201,7 @@ class StatusPermohonanController extends Controller
 
         ContractDocument::markSemakanOutcome($contract, ContractDocument::SEMAKAN_DILULUSKAN);
 
-        $contract->update([
+        $contract->commit([
             'workflow_tahap' => RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS,
         ]);
 
@@ -210,9 +214,10 @@ class StatusPermohonanController extends Controller
 
         $this->workflowMailer->notifyDraftApproved($contract->fresh(['premise', 'submittedBy', 'adminNegeriUser']), $hqUser);
 
-        return redirect()
-            ->route('status-permohonan.index')
-            ->with('success', 'Semakan PUU diluluskan. Status permohonan dikemaskini kepada Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan AADK.');
+        return $this->redirectWithWorkflowNotice(
+            'status-permohonan.index',
+            'Semakan PUU diluluskan. Status permohonan dikemaskini kepada Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan AADK.',
+        );
     }
 
     /**
@@ -226,7 +231,7 @@ class StatusPermohonanController extends Controller
 
         ContractDocument::markSemakanOutcome($contract, ContractDocument::SEMAKAN_DIBATALKAN);
 
-        $contract->update([
+        $contract->commit([
             'workflow_tahap' => RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN,
         ]);
 
@@ -239,9 +244,10 @@ class StatusPermohonanController extends Controller
 
         $this->workflowMailer->notifyPuuRejected($contract->fresh(['premise', 'submittedBy', 'adminNegeriUser']), $hqUser);
 
-        return redirect()
-            ->route('status-permohonan.index')
-            ->with('success', 'Semakan PUU dibatalkan. Negeri perlu muat naik draf semula.');
+        return $this->redirectWithWorkflowNotice(
+            'status-permohonan.index',
+            'Semakan PUU dibatalkan. Negeri perlu muat naik draf semula.',
+        );
     }
 
     /**
@@ -252,7 +258,7 @@ class StatusPermohonanController extends Controller
         $contract->loadMissing(['premise', 'submittedBy', 'adminNegeriUser']);
         $hqUser = $request->user();
 
-        $contract->update([
+        $contract->commit([
             'workflow_tahap' => RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS,
         ]);
 
@@ -265,9 +271,10 @@ class StatusPermohonanController extends Controller
 
         $this->workflowMailer->notifyDraftApproved($contract->fresh(['premise', 'submittedBy', 'adminNegeriUser']), $hqUser);
 
-        return redirect()
-            ->route('status-permohonan.index')
-            ->with('success', 'Draf perjanjian diluluskan tanpa pindaan dan dikembalikan kepada Negeri.');
+        return $this->redirectWithWorkflowNotice(
+            'status-permohonan.index',
+            'Draf perjanjian diluluskan tanpa pindaan dan dikembalikan kepada Negeri.',
+        );
     }
 
     /**
@@ -279,7 +286,7 @@ class StatusPermohonanController extends Controller
         $contract->loadMissing(['premise', 'submittedBy', 'adminNegeriUser']);
         $user = $request->user();
 
-        $contract->update([
+        $contract->commit([
             'workflow_tahap' => RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ,
             'negeri_draft_acknowledgements' => NegeriDraftAcknowledgements::normalizeInput($request->validated()),
         ]);
@@ -293,9 +300,10 @@ class StatusPermohonanController extends Controller
 
         $this->workflowMailer->notifyReturnedToHq($contract->fresh(['premise', 'submittedBy', 'adminNegeriUser']), $user);
 
-        return redirect()
-            ->route('status-permohonan.index')
-            ->with('success', 'Draf akhir telah dikembalikan kepada Ibu Pejabat (Cawangan Pembangunan AADK).');
+        return $this->redirectWithWorkflowNotice(
+            'status-permohonan.index',
+            'Draf akhir telah dikembalikan kepada Ibu Pejabat (Cawangan Pembangunan AADK).',
+        );
     }
 
     /**
@@ -307,7 +315,7 @@ class StatusPermohonanController extends Controller
         $contract->loadMissing(['premise', 'submittedBy', 'adminNegeriUser']);
         $hqUser = $request->user();
 
-        $contract->update([
+        $contract->commit([
             'workflow_tahap' => RentalContract::WORKFLOW_MATI_SETEM,
             'hq_draft_acknowledgements' => HqDraftAcknowledgements::normalizeInput($request->validated()),
         ]);
@@ -321,9 +329,10 @@ class StatusPermohonanController extends Controller
 
         $this->workflowMailer->notifySentForStampDuty($contract->fresh(['premise', 'submittedBy', 'adminNegeriUser']), $hqUser);
 
-        return redirect()
-            ->route('status-permohonan.index')
-            ->with('success', 'Dokumen telah dihantar kepada Negeri untuk Mati Setem.');
+        return $this->redirectWithWorkflowNotice(
+            'status-permohonan.index',
+            'Dokumen telah dihantar kepada Negeri untuk Mati Setem.',
+        );
     }
 
     /**
@@ -335,7 +344,7 @@ class StatusPermohonanController extends Controller
         $contract->loadMissing(['premise', 'submittedBy', 'adminNegeriUser']);
         $user = $request->user();
 
-        $contract->update([
+        $contract->commit([
             'workflow_tahap' => RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
             'status_aktif' => 'aktif',
             'hq_approved_at' => $contract->hq_approved_at ?? now(),
@@ -351,14 +360,15 @@ class StatusPermohonanController extends Controller
 
         $this->workflowMailer->notifyCompleted($contract->fresh(['premise', 'submittedBy', 'adminNegeriUser']), $user);
 
-        return redirect()
-            ->route('kontrak-sewaan.index')
-            ->with('success', 'Permohonan telah selesai dan dimasukkan ke dalam Senarai Kontrak Sewaan.');
+        return $this->redirectWithWorkflowNotice(
+            'kontrak-sewaan.index',
+            'Permohonan telah selesai dan dimasukkan ke dalam Senarai Kontrak Sewaan.',
+        );
     }
 
     public function autosaveChecklist(AutosaveHqJrpChecklistRequest $request, RentalContract $contract): JsonResponse
     {
-        $contract->update([
+        $contract->commit([
             'hq_jrp_checklist' => HqJrpChecklist::normalizeInput(
                 $request->validated('jrp_checklist') ?? [],
                 $contract,
@@ -374,7 +384,7 @@ class StatusPermohonanController extends Controller
 
     public function autosaveNegeriDraftAcknowledgements(AutosaveNegeriDraftAcknowledgementsRequest $request, RentalContract $contract): JsonResponse
     {
-        $contract->update([
+        $contract->commit([
             'negeri_draft_acknowledgements' => NegeriDraftAcknowledgements::normalizeInput(
                 $request->validated('acknowledgements') ?? [],
             ),
@@ -389,7 +399,7 @@ class StatusPermohonanController extends Controller
 
     public function autosaveHqDraftAcknowledgements(AutosaveHqDraftAcknowledgementsRequest $request, RentalContract $contract): JsonResponse
     {
-        $contract->update([
+        $contract->commit([
             'hq_draft_acknowledgements' => HqDraftAcknowledgements::normalizeInput(
                 $request->validated('acknowledgements') ?? [],
             ),
@@ -404,7 +414,7 @@ class StatusPermohonanController extends Controller
 
     public function autosaveNegeriMatiSetemAcknowledgements(AutosaveNegeriMatiSetemAcknowledgementsRequest $request, RentalContract $contract): JsonResponse
     {
-        $contract->update([
+        $contract->commit([
             'negeri_mati_setem_acknowledgements' => NegeriMatiSetemAcknowledgements::normalizeInput(
                 $request->validated('acknowledgements') ?? [],
             ),
@@ -429,7 +439,7 @@ class StatusPermohonanController extends Controller
             return;
         }
 
-        $parent->update([
+        $parent->commit([
             'superseded_at' => now(),
             'superseded_by_contract_id' => $contract->id,
             'status_aktif' => 'tamat_tempoh',
@@ -449,7 +459,7 @@ class StatusPermohonanController extends Controller
         $premiseName = $contract->premise?->nama_ptj ?? '–';
         $deleteReason = $request->validated('delete_reason');
 
-        $contract->update([
+        $contract->commit([
             'delete_reason' => $deleteReason,
             'deleted_by_user_id' => $request->user()->id,
         ]);
@@ -476,7 +486,7 @@ class StatusPermohonanController extends Controller
     {
         $contract->loadMissing(['premise', 'submittedBy']);
 
-        $contract->update([
+        $contract->commit([
             'withdrawal_status' => RentalContract::WITHDRAWAL_PENDING,
             'withdrawal_reason' => $request->validated('withdrawal_reason'),
             'withdrawal_requested_at' => now(),
@@ -508,7 +518,7 @@ class StatusPermohonanController extends Controller
         $hqUser = $request->user();
 
         if ($decision === 'approve') {
-            $contract->update([
+            $contract->commit([
                 'workflow_tahap' => RentalContract::WORKFLOW_MENUNGGU_PROCEED_NEGERI,
                 'withdrawal_status' => RentalContract::WITHDRAWAL_APPROVED,
                 'withdrawal_resolved_at' => now(),
@@ -528,7 +538,7 @@ class StatusPermohonanController extends Controller
                 ->with('success', 'Permohonan tarik semula telah diluluskan. Pentadbir negeri boleh mengemaskini semula permohonan.');
         }
 
-        $contract->update([
+        $contract->commit([
             'withdrawal_status' => RentalContract::WITHDRAWAL_REJECTED,
             'withdrawal_resolved_at' => now(),
             'withdrawal_resolved_by_user_id' => $hqUser->id,
@@ -573,7 +583,7 @@ class StatusPermohonanController extends Controller
                 ->with('error', 'Sila isi Remark sebelum menghantar permohonan ke Ibu Pejabat.');
         }
 
-        $contract->update([
+        $contract->commit([
             'workflow_tahap' => RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ,
             'admin_negeri_user_id' => $user->id,
         ]);
@@ -587,9 +597,23 @@ class StatusPermohonanController extends Controller
 
         $this->workflowMailer->notifySubmittedToHq($contract, $user);
 
+        return $this->redirectWithWorkflowNotice(
+            'status-permohonan.index',
+            'Permohonan telah dihantar kepada Ibu Pejabat untuk semakan.',
+        );
+    }
+
+    private function redirectWithWorkflowNotice(string $route, string $message, mixed $parameters = []): RedirectResponse
+    {
+        if ($this->workflowMailer->notificationFailed()) {
+            return redirect()
+                ->route($route, $parameters)
+                ->with('error', $message.' Notifikasi emel gagal dihantar.');
+        }
+
         return redirect()
-            ->route('status-permohonan.index')
-            ->with('success', 'Permohonan telah dihantar kepada Ibu Pejabat untuk semakan.');
+            ->route($route, $parameters)
+            ->with('success', $message);
     }
 
     private function listFingerprint(User $user, string $search, string $tab): string
@@ -707,7 +731,9 @@ class StatusPermohonanController extends Controller
         if ($user?->isAdminNegeri()) {
             $contract->loadMissing('premise');
 
-            if (! $contract->isInDraftAgreementStage() || $contract->premise?->negeri !== $user->negeri) {
+            $canView = $contract->isInDraftAgreementStage() || $contract->isPendingHqReview();
+
+            if (! $canView || $contract->premise?->negeri !== $user->negeri) {
                 abort(403, 'Akses ditolak.');
             }
 

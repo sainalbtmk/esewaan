@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class User extends Authenticatable
@@ -23,9 +25,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
         'negeri',
-        'is_active',
     ];
 
     /**
@@ -36,6 +36,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     /**
@@ -49,7 +51,36 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    public function hasConfirmedTwoFactor(): bool
+    {
+        return $this->two_factor_confirmed_at !== null;
+    }
+
+    public function consumeRecoveryCode(string $code): bool
+    {
+        $normalized = strtolower(trim($code));
+        $codes = $this->two_factor_recovery_codes ?? [];
+
+        foreach ($codes as $index => $hashed) {
+            if (! is_string($hashed) || ! Hash::check($normalized, $hashed)) {
+                continue;
+            }
+
+            unset($codes[$index]);
+            $this->forceFill([
+                'two_factor_recovery_codes' => array_values($codes),
+            ])->save();
+
+            return true;
+        }
+
+        return false;
     }
 
     public function isAdmin(): bool
@@ -139,6 +170,14 @@ class User extends Authenticatable
 
     public function sendPasswordResetNotification($token): void
     {
+        if (config('mail.block_password_reset_log')) {
+            Log::error('password_reset_blocked_log_mailer', [
+                'user_id' => $this->id,
+            ]);
+
+            return;
+        }
+
         Mail::to($this->email)->send(new PasswordResetMail(
             user: $this,
             resetUrl: route('password.reset', [

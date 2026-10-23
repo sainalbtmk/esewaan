@@ -33,11 +33,15 @@ class ReportController extends Controller
         $report = $this->reports->build($filters['jenis'], $filters['negeri']);
 
         $filename = 'laporan-esewaan-'.now()->format('Ymd-His').'.pdf';
+        $paper = in_array($report['jenis'], [
+            HqReportService::TYPE_KONTRAK_NEGERI,
+            HqReportService::TYPE_STATUS_SEWAAN,
+        ], true) ? 'a3' : 'a4';
 
         return Pdf::loadView('reports.pdf', [
             'report' => $report,
         ])
-            ->setPaper('a4', 'landscape')
+            ->setPaper($paper, 'landscape')
             ->download($filename);
     }
 }

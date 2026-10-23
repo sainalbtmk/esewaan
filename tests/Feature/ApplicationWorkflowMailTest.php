@@ -50,7 +50,7 @@ function assertStageMailSentToHqAndNegeri(User $hq, User $negeri, string $subjec
 
 test('uploading draft agreement emails hq and negeri for puu stage', function () {
     Mail::fake();
-    Storage::fake('public');
+    Storage::fake('local');
 
     $negeri = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $hq = User::factory()->create(['role' => 'admin_hq']);

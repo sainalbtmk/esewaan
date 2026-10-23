@@ -16,6 +16,18 @@
         table.data th, table.data td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; vertical-align: top; }
         table.data th { background: #e2e8f0; font-size: 10px; text-transform: uppercase; }
         .muted { color: #64748b; }
+        table.wide { font-size: 8px; }
+        table.wide th, table.wide td { padding: 4px; }
+        table.wide th { background: #1e293b; color: #fff; }
+        .baki-kritikal { background: #dc2626; color: #fff; font-weight: bold; text-align: center; }
+        .baki-amaran { background: #fef3c7; color: #78350f; font-weight: bold; text-align: center; }
+        .kategori { background: #fde68a; font-weight: bold; text-align: center; }
+        .status-terima { background: #059669; color: #fff; font-weight: bold; text-align: center; }
+        .status-lain { background: #e2e8f0; font-weight: bold; text-align: center; }
+        .status-belum { background: #fee2e2; color: #b91c1c; font-weight: bold; text-align: center; }
+        .baki-negatif { color: #dc2626; font-weight: bold; text-align: center; }
+        .section-bar { background: #1e293b; color: #fff; padding: 6px 8px; font-size: 11px; }
+        .pre { white-space: pre-line; }
     </style>
 </head>
 <body>
@@ -24,11 +36,22 @@
     $rows = $report['rows'];
 @endphp
 
-    <h1>Laporan E-Sewaan AADK</h1>
+    <h1>
+        @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
+            {{ \App\Support\ContractNegeriReport::title($report['negeri']) }}
+        @elseif(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_STATUS_SEWAAN)
+            {{ \App\Support\RentalStatusReport::title() }}
+        @else
+            Laporan E-Sewaan AADK
+        @endif
+    </h1>
     <p class="meta">
         {{ $report['jenisLabel'] }}
         · Dijana pada {{ $report['generatedAt'] }}
         · Skop: {{ filled($report['negeri']) ? $report['negeri'] : 'Semua negeri' }}
+        @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
+            · Laporan secara individu beserta kronologi
+        @endif
     </p>
 
     <table class="cards">
@@ -102,7 +125,21 @@
         </tbody>
     </table>
 
-    <h2>{{ $report['jenisLabel'] }} ({{ number_format($rows->count()) }} rekod)</h2>
+    <h2>
+        @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
+            {{ \App\Support\ContractNegeriReport::title($report['negeri']) }}
+        @elseif(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_STATUS_SEWAAN)
+            {{ \App\Support\RentalStatusReport::title() }}
+        @else
+            {{ $report['jenisLabel'] }}
+        @endif
+        ({{ number_format($rows->count()) }} rekod)
+    </h2>
+    @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
+        @include('reports.partials.kontrak-negeri-pdf-table', ['rows' => $rows])
+    @elseif(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_STATUS_SEWAAN)
+        @include('reports.partials.status-sewaan-pdf-table', ['groups' => $report['statusGroups'] ?? []])
+    @else
     <table class="data">
         <thead>
             <tr>
@@ -136,5 +173,6 @@
             @endforelse
         </tbody>
     </table>
+    @endif
 </body>
 </html>

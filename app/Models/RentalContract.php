@@ -28,6 +28,24 @@ class RentalContract extends Model
         });
     }
 
+    /**
+     * Decision fields that must be written with forceFill or commit().
+     *
+     * @var list<string>
+     */
+    public const STATE_ATTRIBUTES = [
+        'workflow_tahap',
+        'semakan_count',
+        'withdrawal_status',
+        'withdrawal_resolved_at',
+        'withdrawal_resolved_by_user_id',
+        'hq_approved_at',
+        'superseded_at',
+        'superseded_by_contract_id',
+    ];
+
+    private static bool $allowStateAssignment = false;
+
     protected $fillable = [
         'premise_id',
         'parent_contract_id',
@@ -42,32 +60,109 @@ class RentalContract extends Model
         'tarikh_surat_niat',
         'catatan_hq',
         'remark',
-        'workflow_tahap',
-        'semakan_count',
         'kategori_permohonan',
         'tarikh_mula_tawaran',
         'sah_sehingga',
         'admin_proceed_progress',
         'delete_reason',
         'deleted_by_user_id',
-        'withdrawal_status',
         'withdrawal_reason',
         'withdrawal_requested_at',
         'withdrawal_requested_by_user_id',
-        'withdrawal_resolved_at',
-        'withdrawal_resolved_by_user_id',
         'withdrawal_resolution_note',
-        'hq_approved_at',
         'hq_jrp_checklist',
         'negeri_draft_acknowledgements',
         'hq_draft_acknowledgements',
         'negeri_mati_setem_acknowledgements',
-        'superseded_at',
-        'superseded_by_contract_id',
         'admin_negeri_user_id',
     ];
 
+    public static function allowStateAssignment(): void
+    {
+        self::$allowStateAssignment = true;
+    }
+
+    public static function preventStateAssignment(): void
+    {
+        self::$allowStateAssignment = false;
+    }
+
+    public function isFillable($key): bool
+    {
+        if (in_array($key, self::STATE_ATTRIBUTES, true)) {
+            return self::$allowStateAssignment;
+        }
+
+        return parent::isFillable($key);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
+     */
+    protected function fillableFromArray(array $attributes)
+    {
+        if (! self::$allowStateAssignment) {
+            foreach (self::STATE_ATTRIBUTES as $attribute) {
+                unset($attributes[$attribute]);
+            }
+
+            return parent::fillableFromArray($attributes);
+        }
+
+        if (count($this->getFillable()) > 0 && ! static::isUnguarded()) {
+            return array_intersect_key(
+                $attributes,
+                array_flip([...$this->getFillable(), ...self::STATE_ATTRIBUTES]),
+            );
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function commit(array $attributes): bool
+    {
+        $state = [];
+
+        foreach (self::STATE_ATTRIBUTES as $attribute) {
+            if (array_key_exists($attribute, $attributes)) {
+                $state[$attribute] = $attributes[$attribute];
+                unset($attributes[$attribute]);
+            }
+        }
+
+        if ($attributes !== []) {
+            $this->fill($attributes);
+        }
+
+        foreach ($state as $attribute => $value) {
+            $this->setAttribute($attribute, $value);
+        }
+
+        return $this->save();
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public static function createCommitted(array $attributes): static
+    {
+        $contract = new static;
+        $contract->commit($attributes);
+
+        return $contract;
+    }
+
     public const PLACEHOLDER_CONTRACT_DATE = '1000-01-01';
+
+    public const REMINDER_EIGHT_MONTH_DAYS = 240;
+
+    public const REMINDER_FIVE_MONTH_DAYS = 150;
+
+    public const REMINDER_THREE_MONTH_DAYS = 90;
 
     public const RENT_DIFFERENCE_THRESHOLD = 500;
 
@@ -144,6 +239,25 @@ class RentalContract extends Model
     public static function hqApprovedWorkflows(): array
     {
         return [
+            self::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
+        ];
+    }
+
+    /**
+     * Stages reached after Negeri confirms "Ya, Hantar" on "Hantar ke Ibu Pejabat".
+     *
+     * @return list<string>
+     */
+    public static function workflowsSentToHeadquarters(): array
+    {
+        return [
+            self::WORKFLOW_MENUNGGU_SEMAKAN_HQ,
+            self::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN,
+            self::WORKFLOW_SEMAKAN_PUU,
+            self::WORKFLOW_PINDAAN_BERDASARKAN_PUU,
+            self::WORKFLOW_DRAF_PERJANJIAN_LULUS,
+            self::WORKFLOW_DRAF_DIKEMBALIKAN_HQ,
+            self::WORKFLOW_MATI_SETEM,
             self::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
         ];
     }
@@ -271,6 +385,29 @@ class RentalContract extends Model
     public function followUpApplications(): HasMany
     {
         return $this->hasMany(self::class, 'parent_contract_id');
+    }
+
+    public function followUpHasBeenSentToHq(): bool
+    {
+        $submitted = self::workflowsSentToHeadquarters();
+
+        if ($this->relationLoaded('followUpApplications')) {
+            return $this->followUpApplications->contains(
+                fn (self $followUp): bool => in_array($followUp->workflow_tahap, $submitted, true)
+            );
+        }
+
+        return $this->followUpApplications()
+            ->whereIn('workflow_tahap', $submitted)
+            ->exists();
+    }
+
+    /**
+     * @return HasMany<ContractExpiryReminderSend, $this>
+     */
+    public function expiryReminderSends(): HasMany
+    {
+        return $this->hasMany(ContractExpiryReminderSend::class, 'rental_contract_id');
     }
 
     public function supersededByContract(): BelongsTo
@@ -1049,13 +1186,40 @@ class RentalContract extends Model
     {
         $days = $this->daysUntilContractEnd();
 
-        return $days !== null && $days < 90;
+        return $days !== null && $days < self::REMINDER_THREE_MONTH_DAYS;
     }
 
     public function isContractEndWithinEightMonths(): bool
     {
         $days = $this->daysUntilContractEnd();
 
-        return $days !== null && $days >= 0 && $days < 240;
+        return $days !== null && $days >= 0 && $days < self::REMINDER_EIGHT_MONTH_DAYS;
+    }
+
+    public function isDueForEightMonthReminder(): bool
+    {
+        $days = $this->daysUntilContractEnd();
+
+        return $days !== null
+            && $days > self::REMINDER_FIVE_MONTH_DAYS
+            && $days < self::REMINDER_EIGHT_MONTH_DAYS;
+    }
+
+    public function isDueForFiveMonthFirmReminder(): bool
+    {
+        $days = $this->daysUntilContractEnd();
+
+        return $days !== null
+            && $days > self::REMINDER_THREE_MONTH_DAYS
+            && $days <= self::REMINDER_FIVE_MONTH_DAYS;
+    }
+
+    public function isDueForThreeMonthWarning(): bool
+    {
+        $days = $this->daysUntilContractEnd();
+
+        return $days !== null
+            && $days >= 0
+            && $days <= self::REMINDER_THREE_MONTH_DAYS;
     }
 }

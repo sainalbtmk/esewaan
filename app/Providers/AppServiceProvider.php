@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,10 +28,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureRateLimiting();
+        $this->configurePasswordDefaults();
+        $this->configureTrustedProxies();
+        $this->configureProductionGuards();
 
         if ($this->app->environment('local')) {
-            TrustProxies::at('*');
-
             $this->app->booted(function (): void {
                 if ($this->app->runningInConsole() || ! $this->app->bound('request')) {
                     return;
@@ -59,6 +61,17 @@ class AppServiceProvider extends ServiceProvider
                     ? $service->inboxItems($user, 8)
                     : collect(),
             ]);
+        });
+    }
+
+    protected function configurePasswordDefaults(): void
+    {
+        Password::defaults(function () {
+            $rule = Password::min(8)->mixedCase()->numbers();
+
+            return $this->app->isProduction()
+                ? $rule->uncompromised()
+                : $rule;
         });
     }
 
@@ -91,5 +104,36 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('status-permohonan-sync', function (Request $request) {
             return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
         });
+
+        RateLimiter::for('two-factor', function (Request $request) {
+            $pendingUser = $request->session()->get('login.mfa_user_id');
+
+            return Limit::perMinute(5)->by($pendingUser ?: $request->user()?->id ?: $request->ip());
+        });
+    }
+
+    protected function configureTrustedProxies(): void
+    {
+        $trusted = config('app.trusted_proxies');
+
+        if (! is_string($trusted) || $trusted === '') {
+            return;
+        }
+
+        TrustProxies::at($trusted === '*'
+            ? '*'
+            : array_values(array_filter(array_map(trim(...), explode(',', $trusted)))));
+    }
+
+    protected function configureProductionGuards(): void
+    {
+        $mfa = config('auth.mfa.required');
+
+        config([
+            'auth.mfa.required' => $mfa === null
+                ? $this->app->environment('production')
+                : filter_var($mfa, FILTER_VALIDATE_BOOLEAN),
+            'mail.block_password_reset_log' => $this->app->environment('production') && config('mail.default') === 'log',
+        ]);
     }
 }

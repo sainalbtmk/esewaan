@@ -2,6 +2,459 @@
 
 @section('title', 'Log Masuk')
 
+@push('styles')
+<style>
+    body.corp-auth {
+        margin: 0;
+        min-height: 100vh;
+        background: #eef2f6;
+        color: #1c2834;
+        font-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    body.corp-auth .liquid-bg-mesh {
+        display: none;
+    }
+
+    body.corp-auth,
+    body.corp-auth *,
+    body.corp-auth *::before,
+    body.corp-auth *::after {
+        box-sizing: border-box;
+    }
+
+    .corp-login {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: #eef2f6;
+    }
+
+    .corp-login h1,
+    .corp-login h2,
+    .corp-login p,
+    .corp-login ul {
+        margin: 0;
+    }
+
+    .corp-login a {
+        color: inherit;
+    }
+
+    .corp-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        min-height: 76px;
+        padding: 0.85rem 1.5rem;
+        background: #0e2744;
+        color: #fff;
+    }
+
+    .corp-lockup {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-width: 0;
+    }
+
+    .corp-logo {
+        width: 52px;
+        height: 52px;
+        flex-shrink: 0;
+        object-fit: contain;
+        background: #fff;
+        border-radius: 4px;
+        padding: 3px;
+    }
+
+    .corp-logo-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 52px;
+        height: 52px;
+        flex-shrink: 0;
+        background: #fff;
+        color: #0e2744;
+        border-radius: 4px;
+        font-size: 1.15rem;
+        font-weight: 700;
+    }
+
+    .corp-system {
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        line-height: 1.2;
+    }
+
+    .corp-agency {
+        margin-top: 0.15rem;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 0.78rem;
+        line-height: 1.35;
+    }
+
+    .corp-header-meta {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-align: right;
+    }
+
+    .corp-rule {
+        height: 3px;
+        background: #c4a35a;
+    }
+
+    .corp-main {
+        flex: 1;
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+    }
+
+    .corp-aside {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 3.5rem 3.25rem;
+        background-color: #123056;
+        background-image:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 42%),
+            repeating-linear-gradient(-45deg, transparent, transparent 14px, rgba(255, 255, 255, 0.018) 14px, rgba(255, 255, 255, 0.018) 15px);
+        color: #fff;
+    }
+
+    .corp-kicker {
+        color: #c4a35a;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+    }
+
+    .corp-aside h1 {
+        max-width: 14ch;
+        margin-top: 0.85rem;
+        font-size: 2.35rem;
+        font-weight: 600;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+    }
+
+    .corp-aside-copy {
+        max-width: 36rem;
+        margin-top: 1rem;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 0.98rem;
+        line-height: 1.6;
+    }
+
+    .corp-points {
+        display: grid;
+        gap: 0.7rem;
+        margin-top: 1.75rem;
+        padding: 0;
+        list-style: none;
+    }
+
+    .corp-points li {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.92rem;
+    }
+
+    .corp-points li::before {
+        content: "";
+        width: 0.45rem;
+        height: 0.45rem;
+        flex-shrink: 0;
+        background: #c4a35a;
+    }
+
+    .corp-panel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2.5rem 1.5rem 2rem;
+    }
+
+    .corp-card {
+        width: 100%;
+        max-width: 420px;
+        padding: 1.85rem 1.75rem 1.5rem;
+        background: #fff;
+        border: 1px solid #d5dee8;
+        border-radius: 6px;
+        box-shadow: 0 14px 36px rgba(14, 39, 68, 0.07);
+    }
+
+    .corp-card h2 {
+        font-size: 1.45rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #0e2744;
+    }
+
+    .corp-card-copy {
+        margin-top: 0.4rem;
+        margin-bottom: 1.35rem;
+        color: #5c6b7a;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .corp-alert {
+        margin-bottom: 1rem;
+        padding: 0.75rem 0.85rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        line-height: 1.45;
+    }
+
+    .corp-alert ul {
+        margin: 0;
+        padding-left: 1.1rem;
+    }
+
+    .corp-alert-success {
+        background: #ecfdf3;
+        border: 1px solid #abefc6;
+        color: #085d3a;
+    }
+
+    .corp-alert-error {
+        background: #fef3f2;
+        border: 1px solid #fecdca;
+        color: #912018;
+    }
+
+    .corp-alert-warning {
+        background: #fffaeb;
+        border: 1px solid #fedf89;
+        color: #7a4b08;
+    }
+
+    .corp-login form {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .corp-login label {
+        display: block;
+        margin-bottom: 0.4rem;
+        color: #243140;
+        font-size: 0.8125rem;
+        font-weight: 600;
+    }
+
+    .corp-login input[type="email"],
+    .corp-login input[type="password"],
+    .corp-login input[type="text"] {
+        display: block;
+        width: 100%;
+        height: 44px;
+        padding: 0 0.85rem;
+        background: #fff;
+        border: 1px solid #c5d0dc;
+        border-radius: 4px;
+        box-shadow: none;
+        color: #1c2834;
+        font: inherit;
+        font-size: 0.9375rem;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    .corp-login input[type="password"],
+    .corp-login input[type="text"].auth-password-input {
+        padding-right: 2.75rem;
+    }
+
+    .corp-login input::placeholder {
+        color: #8b98a6;
+    }
+
+    .corp-login input[type="email"]:focus,
+    .corp-login input[type="password"]:focus,
+    .corp-login input[type="text"]:focus {
+        outline: none;
+        border-color: #0e2744;
+        box-shadow: 0 0 0 3px rgba(14, 39, 68, 0.14);
+        background: #fff;
+    }
+
+    .corp-login .relative {
+        position: relative;
+    }
+
+    .corp-login [data-password-toggle] {
+        position: absolute;
+        top: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 44px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #5c6b7a;
+        cursor: pointer;
+    }
+
+    .corp-login [data-password-toggle]:hover {
+        color: #0e2744;
+    }
+
+    .corp-login [data-password-toggle] svg {
+        width: 1.15rem;
+        height: 1.15rem;
+    }
+
+    .corp-login .hidden {
+        display: none !important;
+    }
+
+    .corp-forgot {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: -0.15rem;
+    }
+
+    .corp-forgot a {
+        color: #0e2744;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .corp-forgot a:hover {
+        text-decoration: underline;
+    }
+
+    .corp-submit {
+        height: 46px;
+        margin-top: 0.15rem;
+        border: 0;
+        border-radius: 4px;
+        background: #0e2744;
+        color: #fff;
+        font: inherit;
+        font-size: 0.92rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+    }
+
+    .corp-submit:hover {
+        background: #16365f;
+    }
+
+    .corp-submit:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(196, 163, 90, 0.55);
+    }
+
+    .corp-note {
+        margin-top: 1rem;
+        color: #6b7785;
+        font-size: 0.75rem;
+        line-height: 1.45;
+        text-align: center;
+    }
+
+    .corp-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem 1.5rem;
+        flex-wrap: wrap;
+        padding: 0.85rem 1.5rem;
+        background: #fff;
+        border-top: 1px solid #d5dee8;
+        color: #5c6b7a;
+        font-size: 0.75rem;
+    }
+
+    @media (max-width: 900px) {
+        .corp-header {
+            align-items: flex-start;
+        }
+
+        .corp-header-meta {
+            display: none;
+        }
+
+        .corp-main {
+            grid-template-columns: 1fr;
+        }
+
+        .corp-aside {
+            padding: 1.5rem 1.25rem 1.35rem;
+        }
+
+        .corp-aside h1 {
+            max-width: none;
+            font-size: 1.55rem;
+        }
+
+        .corp-aside-copy {
+            font-size: 0.9rem;
+        }
+
+        .corp-points {
+            margin-top: 1rem;
+        }
+
+        .corp-panel {
+            padding: 1.25rem 1rem 1.5rem;
+        }
+
+        .corp-card {
+            padding: 1.35rem 1.15rem 1.15rem;
+        }
+
+        .corp-footer {
+            flex-direction: column;
+        }
+    }
+
+    html[data-theme="dark"] body.corp-auth {
+        background: #eef2f6;
+        color: #1c2834;
+    }
+
+    html[data-theme="dark"] .corp-login input,
+    html[data-theme="dark"] .corp-login .glass-input {
+        background: #fff !important;
+        border-color: #c5d0dc !important;
+        color: #1c2834 !important;
+        box-shadow: none !important;
+    }
+
+    html[data-theme="dark"] .corp-login label,
+    html[data-theme="dark"] .corp-login .text-slate-700,
+    html[data-theme="dark"] .corp-card h2,
+    html[data-theme="dark"] .corp-card-copy,
+    html[data-theme="dark"] .corp-note,
+    html[data-theme="dark"] .corp-forgot a {
+        color: #243140 !important;
+    }
+
+    html[data-theme="dark"] .corp-card-copy,
+    html[data-theme="dark"] .corp-note {
+        color: #5c6b7a !important;
+    }
+</style>
+@endpush
+
 @section('content')
 @php
     $loginLogoPath = null;
@@ -18,64 +471,62 @@
     }
 @endphp
 
-<div class="grid min-h-screen lg:grid-cols-2">
-    {{-- Brand panel --}}
-    <aside class="relative flex min-h-[42vh] flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-8 py-10 text-white lg:min-h-screen lg:px-12 lg:py-14">
-        <div class="pointer-events-none absolute inset-0" aria-hidden="true">
-            <div class="absolute -left-16 -top-20 h-72 w-72 rounded-full bg-white/10 blur-3xl"></div>
-            <div class="absolute -bottom-24 right-0 h-80 w-80 rounded-full bg-slate-500/20 blur-3xl"></div>
-            <div class="absolute left-1/3 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-white/5 blur-2xl"></div>
-            <div class="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.06)_0%,transparent_45%,rgba(255,255,255,0.03)_100%)]"></div>
-        </div>
-
-        <div class="relative z-10">
-            <div class="inline-flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-3 py-2 shadow-lg backdrop-blur-xl">
-                @if($loginLogoPath)
-                    <img src="{{ asset($loginLogoPath) }}" alt="AADK" class="h-11 w-11 rounded-xl bg-white object-contain p-1">
-                @else
-                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-sm font-bold">E</div>
-                @endif
-                <div>
-                    <p class="text-sm font-semibold tracking-wide">E-SEWAAN</p>
-                    <p class="text-xs text-white/60">AADK</p>
-                </div>
+<div class="corp-login">
+    <header class="corp-header">
+        <div class="corp-lockup">
+            @if($loginLogoPath)
+                <img src="{{ asset($loginLogoPath) }}" alt="AADK" class="corp-logo">
+            @else
+                <div class="corp-logo-fallback" aria-hidden="true">E</div>
+            @endif
+            <div>
+                <p class="corp-system">E-SEWAAN</p>
+                <p class="corp-agency">Agensi Antidadah Kebangsaan</p>
             </div>
         </div>
+        <p class="corp-header-meta">Sistem Pengurusan Kontrak Sewaan Premis</p>
+    </header>
+    <div class="corp-rule" aria-hidden="true"></div>
 
-        <div class="relative z-10 mt-10 max-w-lg lg:mt-0">
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">Sistem Pengurusan</p>
-            <h1 class="mt-3 text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
-                Kontrak Sewaan Premis
-            </h1>
-            <p class="mt-4 text-sm leading-relaxed text-white/70 sm:text-base">
-                Pantau permohonan, tindakan dan status kontrak sewaan dalam satu platform.
+    <div class="corp-main">
+        <aside class="corp-aside">
+            <p class="corp-kicker">Sistem Dalaman</p>
+            <h1>Kontrak Sewaan Premis</h1>
+            <p class="corp-aside-copy">
+                Platform rasmi bagi permohonan, pemantauan dan pelaporan kontrak sewaan premis Agensi Antidadah Kebangsaan.
             </p>
-        </div>
+            <ul class="corp-points">
+                <li>Permohonan dan semakan sewaan</li>
+                <li>Pemantauan status kontrak</li>
+                <li>Laporan premis mengikut negeri</li>
+            </ul>
+        </aside>
 
-        <p class="relative z-10 mt-10 text-xs text-white/40 lg:mt-0">
-            © {{ date('Y') }} Agensi Antidadah Kebangsaan
-        </p>
-    </aside>
+        <section class="corp-panel">
+            <div class="corp-card">
+                <h2>Log Masuk</h2>
+                <p class="corp-card-copy">Sila masukkan emel dan kata laluan yang berdaftar.</p>
 
-    {{-- Form panel --}}
-    <section class="relative flex items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
-        <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-            <div class="absolute right-[-10%] top-[-8%] h-64 w-64 rounded-full bg-slate-300/30 blur-3xl"></div>
-            <div class="absolute bottom-[-12%] left-[-6%] h-72 w-72 rounded-full bg-slate-400/20 blur-3xl"></div>
-        </div>
+                @if(session('success'))
+                    <div class="corp-alert corp-alert-success" role="status">{{ session('success') }}</div>
+                @endif
+                @if(session('error'))
+                    <div class="corp-alert corp-alert-error" role="alert">{{ session('error') }}</div>
+                @endif
+                @if(isset($errors) && $errors->any())
+                    <div class="corp-alert corp-alert-warning" role="alert">
+                        <ul>
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
-        <div class="relative z-10 w-full max-w-md">
-            <div class="glass-card overflow-hidden p-7 sm:p-9">
-                <div class="mb-7">
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Selamat kembali</p>
-                    <h2 class="mt-2 text-2xl font-semibold text-slate-900">Log Masuk</h2>
-                    <p class="mt-1.5 text-sm text-slate-500">Masukkan maklumat akaun anda untuk meneruskan.</p>
-                </div>
-
-                <form method="POST" action="{{ route('login.store') }}" class="space-y-5" data-no-global-loader>
+                <form method="POST" action="{{ route('login.store') }}" data-no-global-loader>
                     @csrf
                     <div>
-                        <label for="email" class="mb-1.5 block text-sm font-medium text-slate-700">Emel</label>
+                        <label for="email">Emel</label>
                         <input
                             type="email"
                             name="email"
@@ -83,7 +534,6 @@
                             value="{{ old('email') }}"
                             required
                             autofocus
-                            class="glass-input w-full rounded-xl px-3.5 py-2.5 text-sm"
                             placeholder="nama@contoh.com"
                             autocomplete="email"
                         >
@@ -97,27 +547,22 @@
                         required
                     />
 
-                    <div class="flex items-center justify-between gap-3">
-                        <label class="inline-flex items-center gap-2 text-sm text-slate-600">
-                            <input type="checkbox" name="remember" id="remember" class="h-4 w-4 rounded border-slate-300 text-slate-800 focus:ring-slate-500">
-                            Ingat saya
-                        </label>
-                        <a href="{{ route('password.request') }}" class="text-sm font-medium text-slate-700 hover:text-slate-900">
-                            Lupa Katalaluan?
-                        </a>
+                    <div class="corp-forgot">
+                        <a href="{{ route('password.request') }}">Lupa Katalaluan?</a>
                     </div>
 
-                    <button type="submit" class="glass-btn-primary w-full rounded-xl px-4 py-2.5 text-sm font-medium">
-                        Log Masuk
-                    </button>
+                    <button type="submit" class="corp-submit">Log Masuk</button>
                 </form>
-            </div>
 
-            <p class="mt-6 text-center text-xs text-slate-500">
-                Akses terhad kepada pengguna berdaftar sistem E-Sewaan.
-            </p>
-        </div>
-    </section>
+                <p class="corp-note">Akses terhad kepada pengguna berdaftar sistem E-Sewaan.</p>
+            </div>
+        </section>
+    </div>
+
+    <footer class="corp-footer">
+        <span>© {{ date('Y') }} Agensi Antidadah Kebangsaan. Hak cipta terpelihara.</span>
+        <span>Sistem rasmi kegunaan dalaman</span>
+    </footer>
 </div>
 
 @include('partials.auth-password-toggle-script')
