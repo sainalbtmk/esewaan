@@ -148,7 +148,7 @@ class StatusPermohonanController extends Controller
 
     /**
      * Negeri uploads a draft agreement PDF. Each upload advances the application
-     * to PUU review and increments the semakan round (Semakan 1, 2, ...).
+     * to PUU review and increments the semakan round (Semakan PUU 1, Semakan PUU 2, ...).
      */
     public function uploadDraftAgreement(StoreDraftAgreementRequest $request, RentalContract $contract): RedirectResponse
     {
@@ -178,7 +178,7 @@ class StatusPermohonanController extends Controller
         ActivityLogger::log(
             $user,
             'draft_agreement_uploaded',
-            'Draf perjanjian premis '.($contract->premise?->nama_ptj ?? '–').' dimuat naik (Semakan '.$nextCount.').',
+            'Draf perjanjian premis '.($contract->premise?->nama_ptj ?? '–').' dimuat naik ('.$contract->semakanLabel().').',
             ['contract_id' => $contract->id, 'semakan_count' => $nextCount],
         );
 
@@ -186,7 +186,7 @@ class StatusPermohonanController extends Controller
 
         return $this->redirectWithWorkflowNotice(
             'status-permohonan.review',
-            'Draf perjanjian berjaya dimuat naik dan dihantar untuk Semakan '.$nextCount.'.',
+            'Draf perjanjian berjaya dimuat naik dan dihantar untuk '.$contract->semakanLabel().'.',
             $contract,
         );
     }
@@ -216,7 +216,7 @@ class StatusPermohonanController extends Controller
 
         return $this->redirectWithWorkflowNotice(
             'status-permohonan.index',
-            'Semakan PUU diluluskan. Status permohonan dikemaskini kepada Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan AADK.',
+            'Semakan PUU diluluskan. Status permohonan dikemaskini kepada '.RentalContract::DRAF_LULUS_STATUS_LABEL.'.',
         );
     }
 
@@ -229,6 +229,19 @@ class StatusPermohonanController extends Controller
         $contract->loadMissing(['premise', 'submittedBy', 'adminNegeriUser']);
         $hqUser = $request->user();
 
+        $file = $request->file('document');
+        $path = ContractDocumentStorage::store('contract-documents/'.$contract->id, $file);
+        $safeName = $this->sanitizeFilename($file->getClientOriginalName());
+
+        ContractDocument::query()->create([
+            'contract_id' => $contract->id,
+            'nama_fail' => $safeName,
+            'path' => $path,
+            'jenis' => ContractDocument::JENIS_PINDAAN_PUU,
+            'semakan_round' => $contract->semakan_count,
+            'user_id' => $hqUser->id,
+        ]);
+
         ContractDocument::markSemakanOutcome($contract, ContractDocument::SEMAKAN_DIBATALKAN);
 
         $contract->commit([
@@ -238,7 +251,7 @@ class StatusPermohonanController extends Controller
         ActivityLogger::log(
             $hqUser,
             'puu_review_rejected',
-            'Semakan PUU premis '.($contract->premise?->nama_ptj ?? '–').' dibatalkan ('.$contract->semakanLabel().'). Draf dikembalikan kepada Negeri.',
+            'Semakan PUU premis '.($contract->premise?->nama_ptj ?? '–').' dibatalkan ('.$contract->semakanLabel().'). Dokumen pindaan PUU '.$safeName.' dikembalikan kepada Negeri.',
             ['contract_id' => $contract->id, 'semakan_count' => $contract->semakan_count],
         );
 
@@ -246,7 +259,7 @@ class StatusPermohonanController extends Controller
 
         return $this->redirectWithWorkflowNotice(
             'status-permohonan.index',
-            'Semakan PUU dibatalkan. Negeri perlu muat naik draf semula.',
+            'Draf Perjanjian dikembalikan oleh PUU untuk pindaan lanjut.',
         );
     }
 

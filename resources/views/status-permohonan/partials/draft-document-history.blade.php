@@ -2,6 +2,9 @@
     $draftDocuments = $contract->documents
         ->where('jenis', \App\Models\ContractDocument::JENIS_DRAF_PERJANJIAN)
         ->sortByDesc('semakan_round');
+    $puuAmendments = $contract->documents
+        ->where('jenis', \App\Models\ContractDocument::JENIS_PINDAAN_PUU)
+        ->keyBy(fn ($document) => (int) $document->semakan_round);
 @endphp
 
 @if($draftDocuments->isNotEmpty())
@@ -16,14 +19,26 @@
                             {{ $document->semakanStatusLabel() }}
                         </span>
                     </div>
-                    <a
-                        href="{{ $document->downloadUrl() }}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="truncate text-slate-600 underline-offset-2 hover:text-indigo-600 hover:underline"
-                    >
-                        {{ $document->nama_fail }}
-                    </a>
+                    <div class="flex min-w-0 flex-col gap-1 sm:items-end">
+                        <a
+                            href="{{ $document->downloadUrl() }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="truncate text-slate-600 underline-offset-2 hover:text-indigo-600 hover:underline"
+                        >
+                            {{ $document->nama_fail }}
+                        </a>
+                        @if($amendment = $puuAmendments->get((int) $document->semakan_round))
+                            <a
+                                href="{{ $amendment->downloadUrl() }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="truncate text-xs text-amber-800 underline-offset-2 hover:underline"
+                            >
+                                Dokumen pindaan PUU: {{ $amendment->nama_fail }}
+                            </a>
+                        @endif
+                    </div>
                 </li>
             @endforeach
         </ul>

@@ -570,6 +570,6 @@ test('kontrak sewaan follow-up link opens review after submission to hq', functi
     $this->actingAs($admin)
         ->get(route('status-permohonan.review', $child))
         ->assertSuccessful()
-        ->assertSee('Menunggu semakan Ibu Pejabat')
+        ->assertSee('Permohonan kepada MOF')
         ->assertDontSee('Teruskan Dengan Draf Perjanjian');
 });

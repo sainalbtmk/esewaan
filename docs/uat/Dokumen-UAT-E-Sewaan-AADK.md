@@ -80,7 +80,7 @@ Setiap permohonan melalui lapan peringkat pada skrin semakan:
 1. **Permohonan Baru** — butiran premis dan langkah tindakan negeri.
 2. **Semakan Ibu Pejabat** — senarai semak kelulusan, kemudian permohonan diteruskan ke penyediaan draf.
 3. **Penyediaan Draf** — Negeri memuat naik draf perjanjian dalam format PDF.
-4. **Dalam tindakan PUU** — Ibu Pejabat meluluskan semakan, atau membatalkan semakan supaya Negeri memuat naik draf baharu. Setiap muat naik menambah pusingan Semakan 1, Semakan 2, dan seterusnya.
+4. **Dalam tindakan PUU** — Ibu Pejabat meluluskan semakan, atau membatalkan semakan supaya Negeri memuat naik draf baharu. Setiap muat naik menambah pusingan Semakan PUU 1, Semakan PUU 2, dan seterusnya.
 5. **Draf Lulus** — Negeri mengesahkan empat perkara, kemudian mengembalikan dokumen kepada Cawangan Pembangunan.
 6. **Pengesahan dan Tandatangan** — Ibu Pejabat mengesahkan tiga perkara dan menghantar dokumen untuk mati setem.
 7. **Mati Setem** — Negeri mengesahkan dua perkara.
@@ -103,10 +103,10 @@ Permohonan pindah atau lanjutan memerlukan catatan sebelum boleh dihantar ke Ibu
 Item berikut direkod bersama tarikh apabila ditanda:
 
 - Kelulusan Pengurusan Tertinggi.
-- Baru, pindah atau pelanjutan dengan kenaikan sewa lebih 10% atau minimum RM500.
-- Permohonan kepada Kementerian Ekonomi jika keluasan melebihi 465 meter persegi, bagi pejabat baharu atau pindah.
+- Permohonan kepada Kementerian Kewangan (MOF) untuk permohonan baru, pindah atau pelanjutan dengan kenaikan sewa lebih 10% atau minimum RM500. Ruang catatan dipaparkan selepas item ditanda.
+- Permohonan kepada Kementerian Ekonomi jika keluasan melebihi 465 meter persegi, bagi pejabat baharu atau pindah. Ruang catatan dipaparkan selepas item ditanda.
 - Ulasan KE diterima.
-- Ulasan MOF melalui KDN diterima.
+- Kelulusan MOF melalui KDN diterima.
 - Permohonan dikemukakan kepada BPH.
 - Surat kelulusan BPH diterima.
 
@@ -117,7 +117,7 @@ Negeri, sebelum mengembalikan dokumen:
 - Draf akhir diterima untuk penyediaan dokumen perjanjian.
 - 3 salinan dokumen perjanjian telah disediakan.
 - Dokumen perjanjian telah ditandatangani oleh pemilik premis.
-- Dokumen asal telah dihantar melalui kurier atau serahan tangan kepada Cawangan Pembangunan.
+- Dokumen perjanjian telah dihantar melalui kurier / Serahan tangan kepada Cawangan Pembangunan. Setiap pengakuan merekod tarikh di sebelah kanan. Tarikh diisi secara automatik apabila ditanda dan boleh ditukar.
 
 Ibu Pejabat, sebelum mati setem:
 
@@ -188,7 +188,7 @@ Data permohonan ujian menggunakan premis fiksyen. Kadar sewa, keluasan dan tarik
 - Jika gagal, cipta satu rekod dalam log kecacatan dan tulis nombor kecacatan pada kes ujian.
 - Jangan guna data premis sebenar yang sulit dalam tangkapan skrin yang akan diedarkan di luar pasukan UAT.
 - Kata laluan baharu mestilah sekurang-kurangnya 8 aksara, mengandungi huruf besar, huruf kecil dan nombor. Dalam pengeluaran, kata laluan yang diketahui tercemar juga ditolak.
-- Dokumen sokongan: PDF, JPG atau PNG, tidak melebihi 10 MB atau had pelayan yang lebih rendah. Draf perjanjian: PDF sahaja, had saiz yang sama.
+- Dokumen sokongan: PDF, JPG atau PNG, tidak melebihi 10 MB atau had pelayan yang lebih rendah. Draf perjanjian: PDF sahaja, maksimum 40 MB atau had pelayan yang lebih rendah.
 - Alasan padam dan alasan tarik semula: sekurang-kurangnya 10 aksara dan tidak melebihi 2,000 aksara.
 
 ### Klasifikasi kecacatan
@@ -298,11 +298,11 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan p
 
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| PROC-01 | Kritikal | Negeri | 1. Buka permohonan kategori Baru. 2. Lengkapkan Surat niat, Borang JRP dan Surat kepada agensi. | Hanya langkah 2, 3 dan 5 dipaparkan. Notis kepada pemilik tidak diwajibkan. Butang Hantar ke Ibu Pejabat boleh digunakan selepas ketiga-tiga langkah selesai. | | | | |
+| PROC-01 | Kritikal | Negeri | 1. Buka permohonan kategori Baru. 2. Pada langkah awal, tekan Simpan dan pastikan langkah tidak beralih. 3. Tekan Seterusnya untuk ke langkah berikut. 4. Pada Surat kepada agensi, pastikan hanya Simpan dipaparkan. 5. Lengkapkan Surat niat, Borang JRP dan Surat kepada agensi. | Hanya langkah 2, 3 dan 5 dipaparkan. Notis kepada pemilik tidak diwajibkan. Simpan ada pada setiap langkah. Seterusnya disembunyikan pada langkah terakhir. Butang Hantar ke Ibu Pejabat boleh digunakan selepas ketiga-tiga langkah selesai. | | | | |
 | PROC-02 | Kritikal | Negeri | 1. Buka permohonan kategori Lanjutan. 2. Semak langkah yang dipaparkan. | Hanya Notis kepada pemilik, Borang JRP dan Surat kepada agensi dipaparkan. Surat niat tidak diwajibkan. | | | | |
 | PROC-03 | Kritikal | Negeri | 1. Pada permohonan yang langkahnya belum lengkap, tekan Hantar ke Ibu Pejabat dan sahkan Ya, Hantar. | Penghantaran ditolak. Status kekal menunggu langkah tindakan. | | | | |
 | PROC-04 | Tinggi | Negeri | 1. Pada langkah Surat kepada agensi, tanda surat JPPH tanpa tarikh. 2. Tanda Pelan Lantai dan Gambar Bangunan tanpa tarikh. 3. Lengkapkan tarikh bagi item yang memerlukannya. | Item bertarikh tidak boleh disimpan sebagai lengkap tanpa tarikh. Pelan lantai dan gambar bangunan tidak memerlukan tarikh. | | | | |
-| PROC-05 | Kritikal | Negeri | 1. Pada permohonan pindah atau lanjutan yang langkahnya sudah lengkap, kosongkan catatan. 2. Cuba hantar ke Ibu Pejabat. 3. Isi catatan dan hantar semula. | Penghantaran ditolak selagi catatan kosong. Selepas catatan diisi, status menjadi Menunggu semakan Ibu Pejabat. Pengesahan Ya, Hantar dipaparkan sebelum penghantaran. | | | | |
+| PROC-05 | Kritikal | Negeri | 1. Pada permohonan pindah atau lanjutan yang langkahnya sudah lengkap, kosongkan catatan. 2. Cuba hantar ke Ibu Pejabat. 3. Isi catatan dan hantar semula. | Penghantaran ditolak selagi catatan kosong. Selepas catatan diisi, status pada senarai menjadi Permohonan kepada MOF. Pengesahan Ya, Hantar dipaparkan sebelum penghantaran. | | | | |
 
 ### 9.8 Dokumen sokongan
 
@@ -317,7 +317,7 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan p
 
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| HQ-01 | Kritikal | Ibu Pejabat | 1. Buka permohonan berstatus Menunggu semakan Ibu Pejabat. 2. Semak butiran, langkah tindakan dan dokumen. 3. Tanda senarai semak bersama tarikh. 4. Sahkan permohonan. | Butiran negeri dipaparkan sebagai baca sahaja. Selepas sah, status menjadi penyediaan draf perjanjian. Pemakluman kepada negeri dihantar atau direkod. | | | | |
+| HQ-01 | Kritikal | Ibu Pejabat | 1. Buka permohonan yang menunggu semakan Ibu Pejabat. 2. Semak status senarai: Permohonan kepada MOF, kemudian Permohonan kepada KE, kemudian Pertimbangan BPH, mengikut item yang belum ditanda. 3. Semak butiran, langkah tindakan dan dokumen. 4. Tanda senarai semak bersama tarikh. 5. Sahkan permohonan. | Butiran negeri dipaparkan sebagai baca sahaja. Status senarai bertukar selepas item MOF, KE atau BPH ditanda. Selepas sah, status menjadi penyediaan draf perjanjian. Pemakluman kepada negeri dihantar atau direkod. | | | | |
 | HQ-02 | Tinggi | Ibu Pejabat | 1. Bandingkan permohonan berkeluasan 465 meter persegi atau kurang dengan permohonan melebihi 465 meter persegi bagi kategori Baru atau Pindah. | Item Kementerian Ekonomi dipaparkan apabila keluasan melebihi 465 meter persegi untuk pejabat baharu atau pindah. | | | | |
 | HQ-03 | Tinggi | Negeri | 1. Semasa status masih menunggu semakan Ibu Pejabat, cuba sahkan permohonan. | Tindakan kelulusan Ibu Pejabat tidak tersedia kepada Negeri. | | | | |
 | HQ-04 | Sederhana | Ibu Pejabat | 1. Tanda sebahagian senarai semak. 2. Tunggu autosimpan. 3. Keluar dan buka semula. | Tanda dan tarikh yang telah disimpan kekal. | | | | |
@@ -326,17 +326,17 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan p
 
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DRAF-01 | Kritikal | Negeri | 1. Pada peringkat Penyediaan Draf, muat naik PDF draf perjanjian. | Muat naik berjaya. Status menjadi Semakan 1. Fail boleh dibuka. Pemakluman dihantar atau direkod. | | | | |
-| DRAF-02 | Kritikal | Ibu Pejabat | 1. Buka permohonan Semakan 1. 2. Pilih Luluskan dan sahkan. | Status menjadi Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan AADK. Hasil semakan pada dokumen ialah diluluskan. | | | | |
-| DRAF-03 | Kritikal | Ibu Pejabat, kemudian Negeri | 1. Pada pusingan semakan yang lain, Ibu Pejabat membatalkan semakan PUU. 2. Negeri memuat naik PDF baharu. | Status kembali ke penyediaan draf. Mesej meminta Negeri muat naik draf semula. Muat naik baharu menjadi Semakan seterusnya, bukan Semakan 1 semula. | | | | |
+| DRAF-01 | Kritikal | Negeri | 1. Pada peringkat Penyediaan Draf, muat naik PDF draf perjanjian sehingga 40 MB. 2. Cuba fail lebih 40 MB dan fail bukan PDF. | Muat naik PDF yang sah berjaya. Status menjadi Semakan PUU. Fail boleh dibuka. Fail melebihi 40 MB atau bukan PDF ditolak. Pemakluman dihantar atau direkod. | | | | |
+| DRAF-02 | Kritikal | Ibu Pejabat | 1. Buka permohonan berstatus Semakan PUU. 2. Pilih Luluskan dan sahkan. | Status menjadi Draf Perjanjian dikembalikan ke Pentadbir Negeri untuk dapatkan Tandatangan Pemilik Premis. Hasil semakan pada dokumen ialah diluluskan. | | | | |
+| DRAF-03 | Kritikal | Ibu Pejabat, kemudian Negeri | 1. Pada pusingan semakan yang lain, Ibu Pejabat menekan Semak Semula. 2. Muat naik dokumen pindaan PUU dalam PDF sehingga 40 MB dan sahkan. 3. Cuba tanpa fail, fail bukan PDF, atau fail melebihi 40 MB. 4. Negeri memuat turun dokumen pindaan, kemudian muat naik PDF baharu. | Semak Semula tanpa PDF yang sah ditolak. Selepas berjaya, mesej menyatakan draf perjanjian dikembalikan oleh PUU untuk pindaan lanjut. Status menjadi Kuiri PUU. Sejarah memaparkan dokumen pindaan PUU. Muat naik baharu menjadi Semakan PUU seterusnya, bukan Semakan PUU 1 semula. | | | | |
 | DRAF-04 | Tinggi | Negeri | 1. Pada penyediaan draf, cuba muat naik JPG atau DOCX. | Hanya PDF diterima untuk draf perjanjian. | | | | |
 
 ### 9.11 Pengesahan negeri selepas draf lulus
 
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ACK-01 | Kritikal | Negeri | 1. Pada Draf Lulus, tanda kurang daripada empat pengakuan. 2. Cuba kembalikan kepada Ibu Pejabat. 3. Tanda keempat-empat pengakuan. | Penghantaran disekat selagi ada pengakuan yang belum ditanda. Empat label pengakuan sepadan dengan Seksyen 5. | | | | |
-| ACK-02 | Kritikal | Negeri | 1. Selepas empat pengakuan lengkap, kembalikan dokumen. | Status menjadi dokumen dikembalikan kepada Cawangan Pembangunan. Tindakan ini tidak tersedia kepada Ibu Pejabat. | | | | |
+| ACK-01 | Kritikal | Negeri | 1. Pada Draf Lulus, tanda kurang daripada empat pengakuan. 2. Cuba kembalikan kepada Ibu Pejabat. 3. Tanda keempat-empat pengakuan dan tukar salah satu tarikh. | Penghantaran disekat selagi ada pengakuan yang belum ditanda. Empat label pengakuan sepadan dengan Seksyen 5. Tarikh diisi secara automatik apabila ditanda dan tarikh yang ditukar kekal. | | | | |
+| ACK-02 | Kritikal | Negeri | 1. Selepas empat pengakuan lengkap, kembalikan dokumen. | Status menjadi Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan untuk tindakan Tandatangan Penyewa. Tindakan ini tidak tersedia kepada Ibu Pejabat. | | | | |
 
 ### 9.12 Tandatangan Ibu Pejabat
 
@@ -383,7 +383,7 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan p
 
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| LAP-01 | Tinggi | Ibu Pejabat | 1. Buka Jana Laporan. 2. Jana setiap jenis: Ringkasan Keseluruhan, Senarai Permohonan, Senarai Kontrak Aktif, Laporan Kontrak mengikut Negeri, dan Laporan Status Sewaan. | Kelima-lima jenis dipaparkan. Laporan status sewaan menggunakan tarikh semasa pada tajuk dan mengumpul rekod mengikut bahagian BPH, PUU, MOF, KE, Ibu Pejabat dan PTJ apabila data wujud. | | | | |
+| LAP-01 | Tinggi | Ibu Pejabat | 1. Buka Jana Laporan. 2. Jana setiap jenis: Ringkasan Keseluruhan, Senarai Permohonan, Senarai Kontrak Aktif, Laporan Kontrak mengikut Negeri, dan Laporan Status Sewaan. | Kelima-lima jenis dipaparkan. Laporan status sewaan menggunakan tarikh semasa pada tajuk dan mengumpul rekod mengikut bahagian BPH, PUU, MOF, KE, Ibu Pejabat dan PTJ apabila data wujud. Dalam Tindakan PTJ, baki bulan paling rendah berada di atas. | | | | |
 | LAP-02 | Tinggi | Ibu Pejabat | 1. Jana laporan yang sama tanpa negeri, kemudian dengan satu negeri. | Penapis negeri mengecilkan hasil kepada negeri itu sahaja. Tanpa penapis, semua negeri termasuk. | | | | |
 | LAP-03 | Tinggi | Ibu Pejabat | 1. Muat turun PDF bagi laporan ringkasan dan laporan kontrak mengikut negeri. 2. Buka fail. | Fail PDF dimuat turun. Laporan lebar menggunakan halaman landskap. Kandungan sepadan dengan skrin. | | | | |
 | LAP-04 | Kritikal | Negeri | 1. Semak menu sisi. 2. Cuba buka URL laporan secara terus. | Menu Jana Laporan tidak dipaparkan. Akses terus ditolak. | | | | |
@@ -410,9 +410,9 @@ Kes ini ialah bukti penerimaan aliran bisnes. Gunakan premis fiksyen yang baharu
 
 | ID | Keutamaan | Senario | Langkah ringkas | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| E2E-01 | Kritikal | Permohonan baharu hingga kontrak aktif | 1. Negeri mencipta permohonan Baru dan memuat naik dokumen sokongan. 2. Negeri melengkapkan surat niat, JRP dan surat agensi. 3. Negeri menekan Hantar ke Ibu Pejabat dan mengesahkan Ya, Hantar. 4. Ibu Pejabat menyemak senarai semak dan meneruskan ke draf. 5. Negeri memuat naik PDF draf. 6. Ibu Pejabat meluluskan Semakan 1. 7. Negeri mengesahkan empat pengakuan dan mengembalikan dokumen. 8. Ibu Pejabat mengesahkan tiga pengakuan tandatangan. 9. Negeri mengesahkan dua pengakuan mati setem. | Satu kontrak baharu muncul dalam Senarai Kontrak Sewaan negeri tersebut dan dalam laporan Ibu Pejabat. Papan pemuka kedua-dua peranan berubah dengan betul. Pemakluman setiap peringkat diterima pihak yang berkenaan. | | | | |
+| E2E-01 | Kritikal | Permohonan baharu hingga kontrak aktif | 1. Negeri mencipta permohonan Baru dan memuat naik dokumen sokongan. 2. Negeri melengkapkan surat niat, JRP dan surat agensi. 3. Negeri menekan Hantar ke Ibu Pejabat dan mengesahkan Ya, Hantar. 4. Ibu Pejabat menyemak senarai semak dan meneruskan ke draf. 5. Negeri memuat naik PDF draf. 6. Ibu Pejabat meluluskan Semakan PUU 1. 7. Negeri mengesahkan empat pengakuan dan mengembalikan dokumen. 8. Ibu Pejabat mengesahkan tiga pengakuan tandatangan. 9. Negeri mengesahkan dua pengakuan mati setem. | Satu kontrak baharu muncul dalam Senarai Kontrak Sewaan negeri tersebut dan dalam laporan Ibu Pejabat. Papan pemuka kedua-dua peranan berubah dengan betul. Pemakluman setiap peringkat diterima pihak yang berkenaan. | | | | |
 | E2E-02 | Kritikal | Lanjutan kontrak | 1. Negeri mencipta Lanjutan daripada kontrak aktif. 2. Negeri mengisi catatan, notis pemilik, JRP dan surat agensi. 3. Ulang langkah semakan hingga mati setem seperti E2E-01, dengan langkah lanjutan dan bukan surat niat. | Kontrak asal diganti selepas kelulusan Ibu Pejabat. Kontrak lanjutan yang selesai menjadi kontrak aktif. | | | | |
-| E2E-03 | Kritikal | Pindah premis, termasuk satu pembatalan semakan PUU | 1. Negeri mencipta Pindah dan mengisi butiran premis baharu. 2. Lengkapkan surat niat, JRP, surat agensi dan catatan, kemudian hantar. 3. Ibu Pejabat meneruskan ke draf. 4. Negeri memuat naik draf pertama. 5. Ibu Pejabat membatalkan semakan. 6. Negeri memuat naik draf kedua. 7. Ibu Pejabat meluluskan Semakan 2. 8. Siapkan pengesahan negeri, tandatangan Ibu Pejabat dan mati setem. | Pusingan kedua direkod sebagai Semakan 2. Kontrak pindah yang selesai aktif. Kontrak premis lama tidak lagi aktif. | | | | |
+| E2E-03 | Kritikal | Pindah premis, termasuk satu pembatalan semakan PUU | 1. Negeri mencipta Pindah dan mengisi butiran premis baharu. 2. Lengkapkan surat niat, JRP, surat agensi dan catatan, kemudian hantar. 3. Ibu Pejabat meneruskan ke draf. 4. Negeri memuat naik draf pertama. 5. Ibu Pejabat membatalkan semakan. 6. Negeri memuat naik draf kedua. 7. Ibu Pejabat meluluskan Semakan PUU 2. 8. Siapkan pengesahan negeri, tandatangan Ibu Pejabat dan mati setem. | Pusingan kedua direkod sebagai Semakan PUU 2. Kontrak pindah yang selesai aktif. Kontrak premis lama tidak lagi aktif. | | | | |
 
 ## 11. Semakan rentas pelayar dan telefon
 

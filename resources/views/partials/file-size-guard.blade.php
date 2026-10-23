@@ -3,9 +3,9 @@
     Usage: @include('partials.file-size-guard', ['inputId' => 'draft-document', 'errorId' => 'draft-document-size-error'])
 --}}
 @php
-    $maxKilobytes = \App\Support\UploadLimits::effectiveMaxKilobytes();
+    $maxKilobytes = $maxKilobytes ?? \App\Support\UploadLimits::effectiveMaxKilobytes();
     $maxBytes = $maxKilobytes * 1024;
-    $humanLimit = \App\Support\UploadLimits::humanEffectiveLimit();
+    $humanLimit = $humanLimit ?? \App\Support\UploadLimits::humanEffectiveLimit();
     $inputId = $inputId ?? 'document';
     $errorId = $errorId ?? $inputId.'-size-error';
     $formId = $formId ?? null;

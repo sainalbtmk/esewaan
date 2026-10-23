@@ -11,6 +11,8 @@ class ContractDocument extends Model
 
     public const JENIS_DRAF_PERJANJIAN = 'draf_perjanjian';
 
+    public const JENIS_PINDAAN_PUU = 'pindaan_puu';
+
     public const SEMAKAN_MENUNGGU = 'menunggu';
 
     public const SEMAKAN_DILULUSKAN = 'diluluskan';
@@ -33,7 +35,7 @@ class ContractDocument extends Model
             return null;
         }
 
-        return 'Semakan '.$this->semakan_round;
+        return 'Semakan PUU '.$this->semakan_round;
     }
 
     public function semakanStatusLabel(): string

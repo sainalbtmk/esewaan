@@ -211,7 +211,7 @@ class StatusTindakan
 
     /**
      * Sedia Draf and Semakan Cawangan Pembangunan Sebelum ke PUU drop once
-     * Status Semasa has reached Semakan 1, including later rounds.
+     * Status Semasa has reached Semakan PUU 1, including later rounds.
      */
     private static function hasReachedSemakanOne(RentalContract $contract): bool
     {

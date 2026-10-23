@@ -15,6 +15,7 @@
         ? $oldChecklist
         : ($hasSavedChecklist ? $savedChecklist : null);
     $sourceDates = is_array($sourceChecklist['dates'] ?? null) ? $sourceChecklist['dates'] : [];
+    $sourceNotes = is_array($sourceChecklist['notes'] ?? null) ? $sourceChecklist['notes'] : [];
 
     $epuChecked = $sourceChecklist !== null
         ? filter_var(($sourceChecklist[HqJrpChecklist::EPU] ?? false), FILTER_VALIDATE_BOOLEAN)
@@ -30,14 +31,9 @@
     id="hq-jrp-checklist"
     data-autosave-url="{{ route('status-permohonan.checklist-autosave', $contract) }}"
 >
-    <div class="flex flex-wrap items-start justify-between gap-2">
-        <h3 class="text-sm font-semibold leading-snug text-slate-900">
-            Mengemukakan Borang JRP kepada KDN untuk mendapatkan ulasan/kelulusan daripada agensi berikut
-        </h3>
-        <p id="hq-jrp-autosave-status" class="hidden text-xs text-slate-500" aria-live="polite"></p>
-    </div>
+    <p id="hq-jrp-autosave-status" class="mb-2 hidden text-right text-xs text-slate-500" aria-live="polite"></p>
 
-    <div class="mt-3 space-y-2">
+    <div class="space-y-2">
         @foreach($applicableKeys as $key)
             @php
                 $isChecked = match ($key) {
@@ -46,36 +42,57 @@
                     default => filter_var(($sourceChecklist[$key] ?? false), FILTER_VALIDATE_BOOLEAN),
                 };
                 $requiresDate = HqJrpChecklist::requiresDate($key);
+                $requiresNote = HqJrpChecklist::requiresNote($key);
                 $itemDate = $sourceDates[$key] ?? null;
+                $itemNote = $sourceNotes[$key] ?? null;
             @endphp
-            <div class="flex flex-col gap-2 rounded-lg border border-slate-300 bg-white/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                <label class="flex min-w-0 cursor-pointer items-start gap-2.5">
-                    <input
-                        type="checkbox"
-                        name="jrp_checklist[{{ $key }}]"
-                        value="1"
-                        data-jrp-key="{{ $key }}"
-                        @checked($isChecked)
-                        @if($requiresDate) data-requires-date="1" @endif
-                        class="jrp-checklist-item mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-slate-800 focus:ring-slate-500"
-                    >
-                    <span class="text-xs leading-relaxed text-slate-700">{{ $definitions[$key] }}</span>
-                </label>
-                @if($requiresDate)
-                    <div
-                        class="jrp-checklist-date-wrap ml-6 sm:ml-0 {{ $isChecked ? '' : 'hidden' }}"
-                        data-jrp-date-for="{{ $key }}"
-                    >
-                        <label class="sr-only" for="jrp_checklist_date_{{ $key }}">Tarikh {{ $definitions[$key] }}</label>
+            <div class="flex flex-col gap-2 rounded-lg border border-slate-300 bg-white/50 px-3 py-2">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <label class="flex min-w-0 cursor-pointer items-start gap-2.5">
                         <input
-                            type="date"
-                            id="jrp_checklist_date_{{ $key }}"
-                            name="jrp_checklist[dates][{{ $key }}]"
-                            value="{{ $itemDate }}"
+                            type="checkbox"
+                            name="jrp_checklist[{{ $key }}]"
+                            value="1"
                             data-jrp-key="{{ $key }}"
-                            class="jrp-checklist-date glass-input w-full rounded-lg px-2.5 py-1.5 text-sm sm:w-40"
-                            @disabled(! $isChecked)
+                            @checked($isChecked)
+                            @if($requiresDate) data-requires-date="1" @endif
+                            class="jrp-checklist-item mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-slate-800 focus:ring-slate-500"
                         >
+                        <span class="text-xs leading-relaxed text-slate-700">{{ $definitions[$key] }}</span>
+                    </label>
+                    @if($requiresDate)
+                        <div
+                            class="jrp-checklist-date-wrap ml-6 sm:ml-0 {{ $isChecked ? '' : 'hidden' }}"
+                            data-jrp-date-for="{{ $key }}"
+                        >
+                            <label class="sr-only" for="jrp_checklist_date_{{ $key }}">Tarikh {{ $definitions[$key] }}</label>
+                            <input
+                                type="date"
+                                id="jrp_checklist_date_{{ $key }}"
+                                name="jrp_checklist[dates][{{ $key }}]"
+                                value="{{ $itemDate }}"
+                                data-jrp-key="{{ $key }}"
+                                class="jrp-checklist-date glass-input w-full rounded-lg px-2.5 py-1.5 text-sm sm:w-40"
+                                @disabled(! $isChecked)
+                            >
+                        </div>
+                    @endif
+                </div>
+                @if($requiresNote)
+                    <div
+                        class="jrp-checklist-note-wrap ml-6 {{ $isChecked ? '' : 'hidden' }}"
+                        data-jrp-note-for="{{ $key }}"
+                    >
+                        <label class="mb-1 block text-xs font-medium text-slate-700" for="jrp_checklist_note_{{ $key }}">Catatan</label>
+                        <textarea
+                            id="jrp_checklist_note_{{ $key }}"
+                            name="jrp_checklist[notes][{{ $key }}]"
+                            rows="2"
+                            data-jrp-key="{{ $key }}"
+                            class="jrp-checklist-note glass-input w-full rounded-lg px-2.5 py-1.5 text-xs"
+                            placeholder="Masukkan catatan (pilihan)..."
+                            @disabled(! $isChecked)
+                        >{{ $itemNote }}</textarea>
                     </div>
                 @endif
             </div>
@@ -90,6 +107,9 @@
             <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
         @enderror
         @error("jrp_checklist.dates.{$key}")
+            <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+        @enderror
+        @error("jrp_checklist.notes.{$key}")
             <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
         @enderror
     @endforeach
@@ -154,6 +174,22 @@
         }
     }
 
+    function syncJrpNoteVisibility(checkbox) {
+        const wrap = root.querySelector(`.jrp-checklist-note-wrap[data-jrp-note-for="${checkbox.dataset.jrpKey}"]`);
+        const noteInput = wrap?.querySelector('.jrp-checklist-note');
+
+        if (!wrap || !noteInput) {
+            return;
+        }
+
+        wrap.classList.toggle('hidden', !checkbox.checked);
+        noteInput.disabled = !checkbox.checked;
+
+        if (!checkbox.checked) {
+            noteInput.value = '';
+        }
+    }
+
     function collectChecklistFormData() {
         const formData = new FormData();
         formData.append('_method', 'PATCH');
@@ -169,6 +205,14 @@
             }
 
             formData.append(`jrp_checklist[dates][${dateInput.dataset.jrpKey}]`, dateInput.value || '');
+        });
+
+        root.querySelectorAll('.jrp-checklist-note').forEach((noteInput) => {
+            if (noteInput.disabled) {
+                return;
+            }
+
+            formData.append(`jrp_checklist[notes][${noteInput.dataset.jrpKey}]`, noteInput.value || '');
         });
 
         return formData;
@@ -231,8 +275,10 @@
 
     root.querySelectorAll('.jrp-checklist-item').forEach((checkbox) => {
         syncJrpDateVisibility(checkbox);
+        syncJrpNoteVisibility(checkbox);
         checkbox.addEventListener('change', () => {
             syncJrpDateVisibility(checkbox, checkbox.checked);
+            syncJrpNoteVisibility(checkbox);
             scheduleAutosave();
         });
     });
@@ -240,6 +286,10 @@
     root.querySelectorAll('.jrp-checklist-date').forEach((dateInput) => {
         dateInput.addEventListener('change', scheduleAutosave);
         dateInput.addEventListener('input', scheduleAutosave);
+    });
+
+    root.querySelectorAll('.jrp-checklist-note').forEach((noteInput) => {
+        noteInput.addEventListener('input', scheduleAutosave);
     });
 })();
 </script>

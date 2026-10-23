@@ -335,8 +335,8 @@ test('kontrak sewaan show displays hq jrp checklist with dates for admin negeri'
     $contract->update([
         'hq_jrp_checklist' => [
             \App\Support\HqJrpChecklist::KP => true,
-            \App\Support\HqJrpChecklist::MOF => false,
-            \App\Support\HqJrpChecklist::EPU => false,
+            \App\Support\HqJrpChecklist::MOF => true,
+            \App\Support\HqJrpChecklist::EPU => true,
             \App\Support\HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS => true,
             \App\Support\HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS => true,
             \App\Support\HqJrpChecklist::AADK_SUBMIT_BPH => true,
@@ -346,6 +346,10 @@ test('kontrak sewaan show displays hq jrp checklist with dates for admin negeri'
                 \App\Support\HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS => '2026-07-16',
                 \App\Support\HqJrpChecklist::AADK_SUBMIT_BPH => '2026-07-16',
                 \App\Support\HqJrpChecklist::AADK_RECEIVE_BPH_APPROVAL => '2026-07-16',
+            ],
+            'notes' => [
+                \App\Support\HqJrpChecklist::MOF => 'Catatan permohonan MOF',
+                \App\Support\HqJrpChecklist::EPU => 'Catatan permohonan KE',
             ],
         ],
         'remark' => 'Catatan ujian kontrak',
@@ -373,10 +377,13 @@ test('kontrak sewaan show displays hq jrp checklist with dates for admin negeri'
         ->assertSee('Pengesahan Ibu Pejabat')
         ->assertSee('Kelulusan Pengurusan Tertinggi')
         ->assertSee('Cawangan Pembangunan AADK menerima ulasan daripada Kementerian Ekonomi (KE)')
-        ->assertSee('Cawangan Pembangunan AADK menerima ulasan daripada MOF melalui KDN')
+        ->assertSee('Cawangan Pembangunan AADK menerima Kelulusan daripada MOF melalui KDN')
+        ->assertSee('Catatan permohonan MOF')
+        ->assertSee('Catatan permohonan KE')
+        ->assertDontSee('Mengemukakan Borang JRP kepada KDN untuk mendapatkan ulasan/kelulusan daripada agensi berikut')
         ->assertSee('16/07/2026')
         ->assertSee('Status Draf Perjanjian')
-        ->assertSee('Semakan 2')
+        ->assertSee('Semakan PUU 2')
         ->assertSee('Pengesahan & Tandatangan', false)
         ->assertSee('Permohonan telah selesai dan dimasukkan ke dalam Senarai Kontrak Sewaan')
         ->assertSee('data-progress-steps="0"', false)

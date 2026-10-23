@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\AdminProceedSteps;
 use App\Support\ApplicationCategories;
+use App\Support\HqJrpChecklist;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -186,7 +187,11 @@ class RentalContract extends Model
 
     public const WORKFLOW_DRAF_PERJANJIAN_LULUS = 'draf_perjanjian_lulus';
 
+    public const DRAF_LULUS_STATUS_LABEL = 'Draf Perjanjian dikembalikan ke Pentadbir Negeri untuk dapatkan Tandatangan Pemilik Premis';
+
     public const WORKFLOW_DRAF_DIKEMBALIKAN_HQ = 'draf_dikembalikan_hq';
+
+    public const DRAF_DIKEMBALIKAN_HQ_STATUS_LABEL = 'Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan untuk tindakan Tandatangan Penyewa';
 
     public const WORKFLOW_MATI_SETEM = 'mati_setem';
 
@@ -658,7 +663,14 @@ class RentalContract extends Model
 
     public function semakanLabel(): string
     {
-        return 'Semakan '.max(1, (int) $this->semakan_count);
+        return 'Semakan PUU '.max(1, (int) $this->semakan_count);
+    }
+
+    public function penyediaanDrafStatusLabel(): string
+    {
+        return (int) $this->semakan_count > 0
+            ? 'Kuiri PUU'
+            : 'Penyediaan Draf Perjanjian';
     }
 
     /**
@@ -689,7 +701,7 @@ class RentalContract extends Model
 
         $puuDescription = match (true) {
             $this->isPindaanBerdasarkanPuu() => 'Pindaan mengikut ulasan PUU',
-            $this->isSemakanPuu() => $this->semakanLabel(),
+            $this->isSemakanPuu() => 'Semakan PUU',
             default => 'Semakan oleh PUU',
         };
 
@@ -990,15 +1002,13 @@ class RentalContract extends Model
 
         return match ($this->workflow_tahap) {
             self::WORKFLOW_MENUNGGU_PROCEED_NEGERI => 'Menunggu langkah tindakan',
-            self::WORKFLOW_MENUNGGU_SEMAKAN_HQ => 'Menunggu semakan Ibu Pejabat',
+            self::WORKFLOW_MENUNGGU_SEMAKAN_HQ => HqJrpChecklist::pendingHqReviewStatusLabel($this),
             self::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI => 'Menunggu semakan pentadbir negeri',
-            self::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN => (int) $this->semakan_count > 0
-                ? 'Draf perjanjian dibatalkan PUU'
-                : 'Penyediaan Draf Perjanjian',
-            self::WORKFLOW_SEMAKAN_PUU => $this->semakanLabel(),
+            self::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN => $this->penyediaanDrafStatusLabel(),
+            self::WORKFLOW_SEMAKAN_PUU => 'Semakan PUU',
             self::WORKFLOW_PINDAAN_BERDASARKAN_PUU => 'Pindaan Berdasarkan PUU',
-            self::WORKFLOW_DRAF_PERJANJIAN_LULUS => 'Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan AADK',
-            self::WORKFLOW_DRAF_DIKEMBALIKAN_HQ => 'Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan',
+            self::WORKFLOW_DRAF_PERJANJIAN_LULUS => self::DRAF_LULUS_STATUS_LABEL,
+            self::WORKFLOW_DRAF_DIKEMBALIKAN_HQ => self::DRAF_DIKEMBALIKAN_HQ_STATUS_LABEL,
             self::WORKFLOW_MATI_SETEM => 'Menunggu Mati Setem',
             default => match ($this->status_aktif) {
                 'aktif' => 'Aktif',
@@ -1061,13 +1071,11 @@ class RentalContract extends Model
                 : 'Menunggu langkah tindakan pentadbir negeri',
             self::WORKFLOW_MENUNGGU_SEMAKAN_HQ => 'Menunggu semakan Ibu Pejabat',
             self::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI => 'Menunggu semakan pentadbir negeri',
-            self::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN => (int) $this->semakan_count > 0
-                ? 'Draf perjanjian dibatalkan PUU'
-                : 'Penyediaan Draf Perjanjian',
-            self::WORKFLOW_SEMAKAN_PUU => $this->semakanLabel(),
+            self::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN => $this->penyediaanDrafStatusLabel(),
+            self::WORKFLOW_SEMAKAN_PUU => 'Semakan PUU',
             self::WORKFLOW_PINDAAN_BERDASARKAN_PUU => 'Pindaan Berdasarkan PUU',
-            self::WORKFLOW_DRAF_PERJANJIAN_LULUS => 'Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan AADK',
-            self::WORKFLOW_DRAF_DIKEMBALIKAN_HQ => 'Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan',
+            self::WORKFLOW_DRAF_PERJANJIAN_LULUS => self::DRAF_LULUS_STATUS_LABEL,
+            self::WORKFLOW_DRAF_DIKEMBALIKAN_HQ => self::DRAF_DIKEMBALIKAN_HQ_STATUS_LABEL,
             self::WORKFLOW_MATI_SETEM => 'Menunggu Mati Setem',
             default => $this->workflow_tahap ?? '–',
         };

@@ -67,13 +67,16 @@ test('uploading draft agreement emails hq and negeri for puu stage', function ()
 
 test('rejecting puu review emails hq and negeri for pindaan stage', function () {
     Mail::fake();
+    Storage::fake('local');
 
     $negeri = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $hq = User::factory()->create(['role' => 'admin_hq']);
     $contract = createWorkflowMailContract($negeri, RentalContract::WORKFLOW_SEMAKAN_PUU);
 
     $this->actingAs($hq)
-        ->post(route('status-permohonan.reject-puu', $contract))
+        ->post(route('status-permohonan.reject-puu', $contract), [
+            'document' => UploadedFile::fake()->create('pindaan-puu.pdf', 100, 'application/pdf'),
+        ])
         ->assertRedirect();
 
     assertStageMailSentToHqAndNegeri($hq, $negeri, 'Pindaan');

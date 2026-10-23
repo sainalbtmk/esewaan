@@ -309,6 +309,44 @@ test('admin hq can generate laporan status sewaan grouped by current stage', fun
         ->not->toContain($parent->id);
 });
 
+test('laporan status sewaan sorts tindakan ptj by remaining months from lowest', function () {
+    $later = createReportContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
+        'Johor',
+        now()->addMonths(6)->toDateString(),
+    );
+    $later->premise->update(['nama_ptj' => 'AADK Johor Lewat']);
+
+    $sooner = createReportContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
+        'Kedah',
+        now()->addMonth()->toDateString(),
+    );
+    $sooner->premise->update(['nama_ptj' => 'AADK Kedah Segera']);
+
+    $alsoSoon = createReportContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
+        'Kedah',
+        now()->addMonth()->toDateString(),
+    );
+    $alsoSoon->premise->update(['nama_ptj' => 'AADK Alor Setar Segera']);
+
+    $contracts = RentalContract::query()
+        ->with('premise')
+        ->whereIn('id', [$later->id, $sooner->id, $alsoSoon->id])
+        ->get();
+
+    $ptj = collect(RentalStatusReport::groups($contracts))
+        ->firstWhere('key', RentalStatusReport::SECTION_PTJ);
+
+    expect(RentalStatusReport::bakiBulan($sooner->fresh()))->toBeLessThan(RentalStatusReport::bakiBulan($later->fresh()))
+        ->and($ptj['rows']->pluck('id')->all())->toBe([
+            $alsoSoon->id,
+            $sooner->id,
+            $later->id,
+        ]);
+});
+
 test('laporan status sewaan places large premises under pertimbangan ke', function () {
     $admin = User::factory()->create(['role' => 'admin_hq']);
 

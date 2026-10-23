@@ -117,7 +117,7 @@ class ContractNegeriReport
         return match ($contract->workflow_tahap) {
             RentalContract::WORKFLOW_SEMAKAN_PUU => 'Semakan PUU',
             RentalContract::WORKFLOW_PINDAAN_BERDASARKAN_PUU => 'Pindaan Berdasarkan PUU',
-            RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN => 'Penyediaan Draf Perjanjian',
+            RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN => $contract->penyediaanDrafStatusLabel(),
             RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS => 'Draf Perjanjian Lulus',
             RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ => 'Dokumen dikembalikan ke Cawangan Pembangunan',
             RentalContract::WORKFLOW_MATI_SETEM => 'Mati Setem',

@@ -372,9 +372,7 @@
 
                 <p id="form-save-status" class="mr-auto hidden text-xs text-slate-500" aria-live="polite"></p>
 
-                <button type="button" id="form-save-button" class="glass-btn-secondary rounded-xl px-5 py-2 text-sm font-medium disabled:opacity-60">
-                    Seterusnya
-                </button>
+                @include('application.partials.proceed-save-buttons')
 
                 <div id="submit-hq-wrap" @class(['contents' => $contract->isReadyToSendToHq(), 'hidden' => ! $contract->isReadyToSendToHq()])>
                     <button

@@ -36,7 +36,7 @@ class StoreDraftAgreementRequest extends FormRequest
             'document' => [
                 'required',
                 File::types(['pdf'])
-                    ->max(UploadLimits::effectiveMaxKilobytes()),
+                    ->max(UploadLimits::effectiveDraftMaxKilobytes()),
             ],
         ];
     }
@@ -55,7 +55,7 @@ class StoreDraftAgreementRequest extends FormRequest
 
             $validator->errors()->add(
                 'document',
-                UploadLimits::uploadFailureMessage($file->getError()),
+                UploadLimits::uploadFailureMessage($file->getError(), UploadLimits::DRAFT_MAX_KILOBYTES),
             );
         });
     }
@@ -65,7 +65,7 @@ class StoreDraftAgreementRequest extends FormRequest
      */
     public function messages(): array
     {
-        $limit = UploadLimits::humanEffectiveLimit();
+        $limit = UploadLimits::humanDraftLimit();
 
         return [
             'document.required' => 'Sila pilih fail PDF untuk dimuat naik.',

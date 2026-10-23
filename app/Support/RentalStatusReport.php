@@ -72,11 +72,7 @@ class RentalStatusReport
 
         foreach (self::sectionTitles() as $key => $title) {
             $rows = collect($grouped[$key] ?? [])
-                ->sortBy(fn (RentalContract $contract): array => [
-                    $contract->premise?->negeri ?? '',
-                    $contract->premise?->nama_ptj ?? '',
-                    $contract->id,
-                ])
+                ->sortBy(fn (RentalContract $contract): array => self::sectionSort($key, $contract))
                 ->values();
 
             if ($rows->isEmpty()) {
@@ -91,6 +87,29 @@ class RentalStatusReport
         }
 
         return $groups;
+    }
+
+    /**
+     * Tindakan PTJ lists the most urgent remaining term first. Other sections stay in negeri and premise order.
+     *
+     * @return list<int|string>
+     */
+    private static function sectionSort(string $section, RentalContract $contract): array
+    {
+        $identity = [
+            $contract->premise?->negeri ?? '',
+            $contract->premise?->nama_ptj ?? '',
+            $contract->id,
+        ];
+
+        if ($section !== self::SECTION_PTJ) {
+            return $identity;
+        }
+
+        return [
+            self::bakiBulan($contract) ?? PHP_INT_MAX,
+            ...$identity,
+        ];
     }
 
     /**

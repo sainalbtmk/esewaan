@@ -12,6 +12,11 @@ test('app upload limit is ten megabytes', function () {
         ->and(UploadLimits::humanAppLimit())->toBe('10MB');
 });
 
+test('draft agreement upload limit is forty megabytes before the php ceiling', function () {
+    expect(UploadLimits::DRAFT_MAX_KILOBYTES)->toBe(40960)
+        ->and(UploadLimits::effectiveDraftMaxKilobytes())->toBeLessThanOrEqual(UploadLimits::DRAFT_MAX_KILOBYTES);
+});
+
 test('upload failure message for ini size mentions php limit when server limit is lower', function () {
     $message = UploadLimits::uploadFailureMessage(UPLOAD_ERR_INI_SIZE);
 

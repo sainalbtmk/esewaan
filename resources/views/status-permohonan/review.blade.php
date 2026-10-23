@@ -299,12 +299,7 @@
                                         Muat Naik Draf Perjanjian (PDF) *
                                     </label>
                                     <p class="mb-2 text-xs text-slate-500">
-                                        @if((int) $contract->semakan_count === 0)
-                                            Muat naik pertama akan dihantar sebagai Semakan 1.
-                                        @else
-                                            Muat naik seterusnya akan dihantar sebagai Semakan {{ (int) $contract->semakan_count + 1 }}.
-                                        @endif
-                                        Hanya PDF, maksimum {{ \App\Support\UploadLimits::humanEffectiveLimit() }}.
+                                        Hanya PDF, maksimum {{ \App\Support\UploadLimits::humanDraftLimit() }}. Muat naik dihantar untuk Semakan PUU.
                                     </p>
                                     <input
                                         type="file"
@@ -318,6 +313,8 @@
                                         'inputId' => 'draft-document',
                                         'errorId' => 'draft-document-size-error',
                                         'formId' => 'draft-upload-form',
+                                        'maxKilobytes' => \App\Support\UploadLimits::effectiveDraftMaxKilobytes(),
+                                        'humanLimit' => \App\Support\UploadLimits::humanDraftLimit(),
                                     ])
                                     @error('document')
                                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -363,6 +360,7 @@
                                     id="reject-puu-form"
                                     method="POST"
                                     action="{{ route('status-permohonan.reject-puu', $contract) }}"
+                                    enctype="multipart/form-data"
                                     class="inline"
                                 >
                                     @csrf
@@ -370,10 +368,11 @@
                                         type="button"
                                         class="status-confirm-trigger glass-btn-secondary rounded-lg px-4 py-2 text-sm font-medium"
                                         data-confirm-title="Semak Semula Semakan PUU"
-                                        data-confirm-message="Draf akan dikembalikan kepada Negeri untuk muat naik semula. Teruskan?"
+                                        data-confirm-message="Draf akan dikembalikan kepada Negeri bersama dokumen pindaan PUU. Teruskan?"
                                         data-confirm-form="reject-puu-form"
                                         data-confirm-button="Ya, Semak Semula"
                                         data-confirm-tone="danger"
+                                        data-confirm-upload="true"
                                     >
                                         Semak Semula
                                     </button>
@@ -397,6 +396,9 @@
                                         Luluskan
                                     </button>
                                 </form>
+                                @error('document')
+                                    <p class="basis-full text-right text-xs text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
                         @elseif(auth()->user()->isAdminHq() && $contract->isPindaanBerdasarkanPuu())
                             <p class="text-sm text-slate-600">Pindaan draf perjanjian mengikut ulasan dan keputusan PUU.</p>
@@ -451,20 +453,41 @@
                             $savedAcknowledgements = is_array($contract->negeri_draft_acknowledgements)
                                 ? $contract->negeri_draft_acknowledgements
                                 : [];
+                            $savedAcknowledgementDates = is_array($savedAcknowledgements['dates'] ?? null)
+                                ? $savedAcknowledgements['dates']
+                                : [];
                         @endphp
                         <div class="space-y-3">
                             @foreach(\App\Support\NegeriDraftAcknowledgements::labels() as $acknowledgementKey => $acknowledgementLabel)
-                                <label class="flex items-start gap-3 text-sm text-slate-700">
-                                    <input
-                                        type="checkbox"
-                                        name="{{ $acknowledgementKey }}"
-                                        value="1"
-                                        class="negeri-draft-ack mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                        data-ack-key="{{ $acknowledgementKey }}"
-                                        @checked(filter_var(old($acknowledgementKey, $savedAcknowledgements[$acknowledgementKey] ?? false), FILTER_VALIDATE_BOOLEAN))
-                                    >
-                                    <span>{{ $acknowledgementLabel }}</span>
-                                </label>
+                                @php
+                                    $acknowledgementChecked = filter_var(old($acknowledgementKey, $savedAcknowledgements[$acknowledgementKey] ?? false), FILTER_VALIDATE_BOOLEAN);
+                                    $acknowledgementDate = old('dates.'.$acknowledgementKey, $savedAcknowledgementDates[$acknowledgementKey] ?? '');
+                                @endphp
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <label class="flex min-w-0 items-start gap-3 text-sm text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            name="{{ $acknowledgementKey }}"
+                                            value="1"
+                                            class="negeri-draft-ack mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                            data-ack-key="{{ $acknowledgementKey }}"
+                                            @checked($acknowledgementChecked)
+                                        >
+                                        <span>{{ $acknowledgementLabel }}</span>
+                                    </label>
+                                    <div class="negeri-draft-date-wrap ml-7 sm:ml-0 {{ $acknowledgementChecked ? '' : 'hidden' }}">
+                                        <label class="sr-only" for="negeri-draft-date-{{ $acknowledgementKey }}">Tarikh {{ $acknowledgementLabel }}</label>
+                                        <input
+                                            type="date"
+                                            id="negeri-draft-date-{{ $acknowledgementKey }}"
+                                            name="dates[{{ $acknowledgementKey }}]"
+                                            value="{{ $acknowledgementDate }}"
+                                            data-ack-date-for="{{ $acknowledgementKey }}"
+                                            class="negeri-draft-date glass-input w-full rounded-lg px-2.5 py-1.5 text-sm sm:w-40"
+                                            @disabled(! $acknowledgementChecked)
+                                        >
+                                    </div>
+                                </div>
                             @endforeach
                         </div>
 
@@ -480,6 +503,11 @@
                         @error('dokumen_asal_dihantar_acknowledged')
                             <p class="text-xs text-red-600">{{ $message }}</p>
                         @enderror
+                        @foreach(\App\Support\NegeriDraftAcknowledgements::keys() as $acknowledgementKey)
+                            @error('dates.'.$acknowledgementKey)
+                                <p class="text-xs text-red-600">{{ $message }}</p>
+                            @enderror
+                        @endforeach
 
                         <div class="flex flex-wrap items-center justify-end gap-3">
                             <p id="negeri-draft-save-status" class="mr-auto hidden text-xs text-slate-500" aria-live="polite"></p>
@@ -503,7 +531,7 @@
                 <section class="glass-card overflow-hidden">
                     <div class="glass-divider-soft border-b px-4 py-3">
                         <h2 class="text-base font-semibold text-slate-900">Draf Lulus</h2>
-                        <p class="mt-0.5 text-xs text-slate-500">Semakan PUU diluluskan — status permohonan Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan AADK.</p>
+                        <p class="mt-0.5 text-xs text-slate-500">Semakan PUU diluluskan — status permohonan {{ \App\Models\RentalContract::DRAF_LULUS_STATUS_LABEL }}.</p>
                     </div>
                     <div class="space-y-4 px-4 py-3">
                         <p class="text-sm text-slate-600">
@@ -743,17 +771,75 @@
     const modalConfirm = document.getElementById('confirm-action-confirm');
     const modalCancel = document.getElementById('confirm-action-cancel');
     const modalIcon = document.getElementById('confirm-action-icon');
+    const modalUploadWrap = document.getElementById('confirm-action-upload-wrap');
+    const modalUpload = document.getElementById('confirm-action-upload');
+    const modalUploadError = document.getElementById('confirm-action-upload-error');
+    const uploadMaxBytes = {{ (int) (\App\Support\UploadLimits::effectiveDraftMaxKilobytes() * 1024) }};
+    const uploadHumanLimit = @json(\App\Support\UploadLimits::humanDraftLimit());
     let pendingForm = null;
+    let pendingUpload = false;
 
     const iconTemplates = {
         success: '<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>',
         danger: '<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>',
     };
 
+    function resetConfirmUpload() {
+        pendingUpload = false;
+        modalUploadWrap?.classList.add('hidden');
+        if (modalUpload) {
+            modalUpload.value = '';
+            modalUpload.removeAttribute('form');
+        }
+        if (modalUploadError) {
+            modalUploadError.textContent = '';
+            modalUploadError.classList.add('hidden');
+        }
+    }
+
+    function showUploadError(message) {
+        if (!modalUploadError) {
+            return;
+        }
+        modalUploadError.textContent = message;
+        modalUploadError.classList.remove('hidden');
+    }
+
+    function selectedUploadIsValid() {
+        if (!pendingUpload) {
+            return true;
+        }
+
+        const file = modalUpload?.files?.[0];
+        if (!file) {
+            showUploadError('Sila muat naik dokumen pindaan PUU dalam format PDF.');
+            modalUpload?.focus();
+            return false;
+        }
+
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        if (!isPdf) {
+            showUploadError('Hanya fail PDF dibenarkan.');
+            modalUpload?.focus();
+            return false;
+        }
+
+        if (file.size > uploadMaxBytes) {
+            const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+            showUploadError('Fail terlalu besar (' + sizeMb + 'MB). Had maksimum ialah ' + uploadHumanLimit + '.');
+            modalUpload.value = '';
+            modalUpload?.focus();
+            return false;
+        }
+
+        return true;
+    }
+
     function closeConfirmModal() {
         if (!modal) return;
         modal.classList.add('hidden');
         pendingForm = null;
+        resetConfirmUpload();
         document.body.classList.remove('overflow-hidden');
     }
 
@@ -804,16 +890,31 @@
             }
 
             pendingForm = form;
+            resetConfirmUpload();
+            pendingUpload = trigger.dataset.confirmUpload === 'true';
+            if (pendingUpload && modalUploadWrap && modalUpload) {
+                modalUploadWrap.classList.remove('hidden');
+                modalUpload.setAttribute('form', form.id);
+            }
             modal.classList.remove('hidden');
             document.body.classList.add('overflow-hidden');
-            modalConfirm.focus();
+            if (pendingUpload && modalUpload) {
+                modalUpload.focus();
+            } else {
+                modalConfirm.focus();
+            }
         });
     });
 
     modalCancel?.addEventListener('click', closeConfirmModal);
     modalConfirm?.addEventListener('click', () => {
-        pendingForm?.submit();
-        closeConfirmModal();
+        if (!selectedUploadIsValid()) {
+            return;
+        }
+
+        const form = pendingForm;
+        pendingForm = null;
+        form?.submit();
     });
     modal?.querySelectorAll('[data-confirm-dismiss]').forEach((el) => el.addEventListener('click', closeConfirmModal));
 })();
@@ -878,6 +979,40 @@
         status.classList.remove('hidden');
     }
 
+    function todayDateValue() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    }
+
+    function dateInputFor(key) {
+        return form.querySelector(`.negeri-draft-date[data-ack-date-for="${key}"]`);
+    }
+
+    function syncAcknowledgementDate(checkbox, autoSetToday = false) {
+        const dateInput = dateInputFor(checkbox.dataset.ackKey);
+        const dateWrap = dateInput?.closest('.negeri-draft-date-wrap');
+
+        if (!dateInput || !dateWrap) {
+            return;
+        }
+
+        dateWrap.classList.toggle('hidden', !checkbox.checked);
+        dateInput.disabled = !checkbox.checked;
+
+        if (!checkbox.checked) {
+            dateInput.value = '';
+            return;
+        }
+
+        if (autoSetToday || !dateInput.value) {
+            dateInput.value = todayDateValue();
+        }
+    }
+
     function collectFormData() {
         const formData = new FormData();
         formData.append('_method', 'PATCH');
@@ -885,6 +1020,11 @@
 
         form.querySelectorAll('.negeri-draft-ack').forEach((checkbox) => {
             formData.append(`acknowledgements[${checkbox.dataset.ackKey}]`, checkbox.checked ? '1' : '0');
+
+            const dateInput = dateInputFor(checkbox.dataset.ackKey);
+            if (checkbox.checked && dateInput?.value) {
+                formData.append(`acknowledgements[dates][${checkbox.dataset.ackKey}]`, dateInput.value);
+            }
         });
 
         return formData;
@@ -945,13 +1085,22 @@
         return autosaveInFlight;
     }
 
+    function queueAutosave() {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = window.setTimeout(() => {
+            saveProgress();
+        }, AUTOSAVE_DEBOUNCE_MS);
+    }
+
     form.querySelectorAll('.negeri-draft-ack').forEach((checkbox) => {
         checkbox.addEventListener('change', () => {
-            clearTimeout(autosaveTimer);
-            autosaveTimer = window.setTimeout(() => {
-                saveProgress();
-            }, AUTOSAVE_DEBOUNCE_MS);
+            syncAcknowledgementDate(checkbox, true);
+            queueAutosave();
         });
+    });
+
+    form.querySelectorAll('.negeri-draft-date').forEach((dateInput) => {
+        dateInput.addEventListener('change', queueAutosave);
     });
 
     saveButton?.addEventListener('click', () => {

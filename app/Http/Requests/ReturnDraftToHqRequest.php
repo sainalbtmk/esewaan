@@ -33,6 +33,8 @@ class ReturnDraftToHqRequest extends FormRequest
             'dokumen_perjanjian_disediakan_acknowledged' => ['accepted'],
             'dokumen_perjanjian_ditandatangani_acknowledged' => ['accepted'],
             'dokumen_asal_dihantar_acknowledged' => ['accepted'],
+            'dates' => ['sometimes', 'array'],
+            'dates.*' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
 
@@ -48,6 +50,7 @@ class ReturnDraftToHqRequest extends FormRequest
             'dokumen_perjanjian_disediakan_acknowledged.accepted' => $message,
             'dokumen_perjanjian_ditandatangani_acknowledged.accepted' => $message,
             'dokumen_asal_dihantar_acknowledged.accepted' => $message,
+            'dates.*.date_format' => 'Tarikh tidak sah.',
         ];
     }
 }

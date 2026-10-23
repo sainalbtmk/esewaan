@@ -9,6 +9,15 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
+function proceedSaveButtonClass(string $html, string $buttonId): string
+{
+    preg_match('/id="'.preg_quote($buttonId, '/').'"[^>]*class="([^"]*)"/', $html, $match);
+
+    expect($match[1] ?? null)->not->toBeNull();
+
+    return $match[1];
+}
+
 function createPendingProceedContract(string $negeri = 'Johor', string $kategori = ApplicationCategories::BARU): RentalContract
 {
     $premise = Premise::query()->create([
@@ -86,6 +95,56 @@ test('admin negeri can view dedicated tindakan page', function () {
         ->assertDontSee('Surat kepada Jabatan Penilaian dan Perkhidmatan Harta')
         ->assertDontSee('Keluarkan surat kepada agensi berikut dengan dikepilkan Borang JRP')
         ->assertSee('Langkah 3 / 3', false);
+});
+
+test('langkah tindakan shows simpan on every step and hides seterusnya on the last step', function () {
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
+    $contract = createPendingProceedContract('Johor');
+    $activeSteps = AdminProceedSteps::activeStepsFor($contract);
+    $lastStep = $activeSteps[array_key_last($activeSteps)];
+
+    $firstPage = $this->actingAs($admin)
+        ->get(route('admin-proceed.show', $contract))
+        ->assertSuccessful()
+        ->assertSee('id="form-simpan-button"', false)
+        ->assertSee('saveCurrentStep(false)', false)
+        ->assertSee('validateVisibleRequiredFields', false)
+        ->getContent();
+
+    expect(proceedSaveButtonClass($firstPage, 'form-save-button'))->not->toContain('hidden');
+
+    $editPage = $this->actingAs($admin)
+        ->get(route('application.edit', $contract))
+        ->assertSuccessful()
+        ->assertSee('id="form-simpan-button"', false)
+        ->getContent();
+
+    expect(proceedSaveButtonClass($editPage, 'form-save-button'))->not->toContain('hidden');
+
+    foreach ($activeSteps as $step) {
+        if ($step === $lastStep) {
+            break;
+        }
+
+        $this->actingAs($admin)
+            ->put(route('admin-proceed.update', $contract), proceedStepSavePayload($contract, $step));
+        $contract->refresh();
+    }
+
+    $lastPage = $this->actingAs($admin)
+        ->get(route('admin-proceed.show', ['contract' => $contract, 'step' => $lastStep]))
+        ->assertSuccessful()
+        ->assertSee('id="form-simpan-button"', false)
+        ->getContent();
+
+    expect(proceedSaveButtonClass($lastPage, 'form-save-button'))->toContain('hidden');
+
+    $lastEditPage = $this->actingAs($admin)
+        ->get(route('application.edit', ['contract' => $contract, 'step' => $lastStep]))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect(proceedSaveButtonClass($lastEditPage, 'form-save-button'))->toContain('hidden');
 });
 
 test('later tindakan steps can complete without no rujukan and tarikh surat', function () {

@@ -372,7 +372,7 @@ Tekan **Teruskan ke Tindakan**. Sistem mencipta rekod dan membuka borang yang sa
 
 Jika borang kosong, tarikh akhir lebih awal daripada tarikh mula, atau kadar sewa tidak sah, mesej pengesahan dipaparkan dan rekod tidak rosak.
 
-Pada kemaskini kemudian, perubahan yang sah disimpan secara automatik. Butang **Seterusnya** menyimpan dan bergerak ke langkah tindakan berikutnya.
+Pada kemaskini kemudian, perubahan yang sah disimpan secara automatik. Butang **Simpan** menyimpan langkah semasa. Butang **Seterusnya** menyimpan dan bergerak ke langkah tindakan berikutnya, dan hanya dipaparkan sebelum langkah terakhir.
 
 ---
 
@@ -469,7 +469,7 @@ Jika remark kosong, skrin memaparkan **Sila isi Remark sebelum menghantar ke Ibu
 2. Baca tetingkap **Hantar Permohonan ke Ibu Pejabat**.
 3. Tekan **Ya, Hantar**.
 
-Status menjadi **Menunggu semakan Ibu Pejabat**. Ibu Pejabat menerima pemakluman. Negeri tidak lagi boleh memadam permohonan ini. Jika negeri perlu menarik balik permohonan pada peringkat ini, gunakan **Mohon Tarik Semula**.
+Status pada senarai menjadi **Permohonan kepada MOF**. Ibu Pejabat menerima pemakluman. Negeri tidak lagi boleh memadam permohonan ini. Jika negeri perlu menarik balik permohonan pada peringkat ini, gunakan **Mohon Tarik Semula**.
 
 Butang yang sama juga ada pada baris senarai **Status Permohonan** apabila permohonan sudah sedia.
 
@@ -481,7 +481,15 @@ Menu: **Pengurusan Permohonan**, kemudian **Status Permohonan** bagi Negeri, ata
 
 ### Senarai
 
-Kotak carian menerima nama premis, kategori dan negeri. Carian kosong memulihkan senarai penuh. Senarai dikemas kini secara berkala.
+Kotak carian menerima nama premis, kategori, negeri dan status yang dipaparkan. Carian kosong memulihkan senarai penuh. Senarai dikemas kini secara berkala.
+
+Semasa permohonan menunggu semakan Ibu Pejabat, lajur **Status** mengikut item senarai semak yang belum ditanda. Hanya satu status dipaparkan:
+
+1. **Permohonan kepada MOF**
+2. **Permohonan kepada KE**
+3. **Pertimbangan BPH**
+
+Selepas ketiga-tiga item ditanda, status kembali kepada **Menunggu semakan Ibu Pejabat** sehingga permohonan diteruskan ke draf perjanjian.
 
 Ibu Pejabat mempunyai dua tab:
 
@@ -517,9 +525,9 @@ Bahagian **Langkah Tindakan Pegawai Negeri** memaparkan langkah yang telah dilen
 
 ## 15. Semakan Ibu Pejabat
 
-Apabila status ialah **Menunggu semakan Ibu Pejabat**, Ibu Pejabat membuka permohonan dan mengisi senarai semak pada **Pengesahan Ibu Pejabat**.
+Apabila permohonan menunggu semakan Ibu Pejabat, Ibu Pejabat membuka permohonan dan mengisi senarai semak pada **Pengesahan Ibu Pejabat**. Lajur status pada senarai bertukar mengikut item MOF, KE dan BPH yang belum ditanda.
 
-Tanda dan tarikh disimpan secara automatik. Keluar dan buka semula: nilai yang telah disimpan kekal.
+Tanda, tarikh dan catatan disimpan secara automatik. Keluar dan buka semula: nilai yang telah disimpan kekal.
 
 ### Item senarai semak
 
@@ -528,10 +536,10 @@ Setiap item yang ditanda direkod bersama tarikh.
 | Item pada skrin | Bila ia relevan |
 | --- | --- |
 | Kelulusan Pengurusan Tertinggi | Direkod apabila kelulusan diperoleh |
-| Baru / Pindah / Pelanjutan dengan Kenaikan Sewa Lebih 10% @ minimum RM500 | Kenaikan sewa melepasi ambang itu |
-| Permohonan kepada Kementerian Ekonomi (KE) (jika keluasan melebihi 465 mps) — untuk permohonan perpindahan ruang pejabat / ruang pejabat baharu | Keluasan melebihi 465 meter persegi bagi pejabat baharu atau pindah |
+| Permohonan kepada Kementerian Kewangan (MOF) untuk permohonan Baru / Pindah / Pelanjutan dengan Kenaikan Sewa Lebih 10% @ minimum RM500 | Kenaikan sewa melepasi ambang itu. Ruang catatan dipaparkan selepas item ditanda. |
+| Permohonan kepada Kementerian Ekonomi (KE) (jika keluasan melebihi 465 mps) — untuk permohonan perpindahan ruang pejabat / ruang pejabat baharu | Keluasan melebihi 465 meter persegi bagi pejabat baharu atau pindah. Ruang catatan dipaparkan selepas item ditanda. |
 | Cawangan Pembangunan AADK menerima ulasan daripada Kementerian Ekonomi (KE) | Selepas ulasan KE diterima |
-| Cawangan Pembangunan AADK menerima ulasan daripada MOF melalui KDN | Selepas ulasan MOF diterima |
+| Cawangan Pembangunan AADK menerima Kelulusan daripada MOF melalui KDN | Selepas kelulusan MOF diterima |
 | Cawangan Pembangunan AADK mengemukakan permohonan Bahagian Hartanah (BPH) Jabatan Perdana Menteri untuk mendapatkan kelulusan | Selepas permohonan dikemukakan kepada BPH |
 | Cawangan Pembangunan AADK terima surat kelulusan daripada BPH | Selepas surat kelulusan BPH diterima |
 
@@ -553,9 +561,9 @@ Pada peringkat **Penyediaan Draf Perjanjian**:
 2. Pilih fail pada **Muat Naik Draf Perjanjian (PDF)**.
 3. Tekan **Hantar untuk Semakan PUU**.
 
-Hanya PDF diterima. JPG, PNG dan DOCX ditolak. Had saiz sama seperti dokumen lain, iaitu 10 MB atau had pelayan yang lebih rendah.
+Hanya PDF diterima. JPG, PNG dan DOCX ditolak. Had saiz draf perjanjian ialah 40 MB, atau had pelayan yang lebih rendah.
 
-Muat naik pertama menjadi **Semakan 1**. Setiap muat naik baharu menambah nombor: Semakan 2, Semakan 3, dan seterusnya. Sejarah draf memaparkan nama fail, nombor semakan dan hasil:
+Status selepas muat naik ialah **Semakan PUU**. Sejarah draf merekod pusingan **Semakan PUU 1**, **Semakan PUU 2**, dan seterusnya, bersama nama fail dan hasil:
 
 | Hasil | Maksud |
 | --- | --- |
@@ -565,14 +573,14 @@ Muat naik pertama menjadi **Semakan 1**. Setiap muat naik baharu menambah nombor
 
 ### Ibu Pejabat memutuskan semakan
 
-Pada status **Semakan 1** atau semakan seterusnya, Ibu Pejabat mempunyai dua tindakan:
+Pada status **Semakan PUU**, Ibu Pejabat mempunyai dua tindakan:
 
 | Butang | Kesan |
 | --- | --- |
-| Luluskan | Semakan diluluskan. Status menjadi **Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan AADK**. Negeri menyediakan dokumen perjanjian |
-| Semak Semula | Draf dikembalikan kepada Negeri. Status menjadi **Draf perjanjian dibatalkan PUU**. Negeri memuat naik PDF baharu |
+| Luluskan | Semakan diluluskan. Status menjadi **Draf Perjanjian dikembalikan ke Pentadbir Negeri untuk dapatkan Tandatangan Pemilik Premis**. Negeri menyediakan dokumen perjanjian |
+| Semak Semula | Draf dikembalikan kepada Negeri. Pengesahan meminta muat naik dokumen pindaan PUU (PDF, maksimum 40 MB). Mesej menyatakan draf perjanjian dikembalikan oleh PUU untuk pindaan lanjut. Status menjadi **Kuiri PUU**. Dokumen pindaan dipaparkan dalam sejarah muat naik. Negeri memuat naik PDF baharu |
 
-Kedua-dua tindakan meminta pengesahan. **Ya, Luluskan** atau **Ya, Semak Semula** mengesahkan pilihan.
+**Luluskan** meminta pengesahan. **Semak Semula** membuka pengesahan yang mengandungi ruang muat naik PDF. **Ya, Semak Semula** hanya diteruskan selepas dokumen pindaan dipilih.
 
 Jika status ialah **Pindaan Berdasarkan PUU**, Ibu Pejabat menekan **Selesai** selepas pindaan selesai. Permohonan diteruskan ke draf lulus.
 
@@ -582,16 +590,16 @@ Jika status ialah **Pindaan Berdasarkan PUU**, Ibu Pejabat menekan **Selesai** s
 
 Selepas semakan PUU diluluskan, Negeri mengesahkan empat perkara pada **Draf Lulus**, kemudian mengembalikan dokumen.
 
-Tandakan kesemua empat:
+Tandakan kesemua empat. Setiap kotak mempunyai tarikh di sebelah kanan. Tarikh diisi dengan tarikh semasa apabila kotak ditanda, dan boleh ditukar.
 
 1. Draf akhir diterima untuk penyediaan dokumen perjanjian.
 2. 3 Salinan Dokumen Perjanjian telah disediakan.
 3. Dokumen Perjanjian telah ditandatangani oleh pemilik premis.
-4. Dokumen Asal telah dihantar melalui Kurier / Serahan tangan kepada Cawangan Pembangunan.
+4. Dokumen perjanjian telah dihantar melalui kurier / Serahan tangan kepada Cawangan Pembangunan.
 
-Tanda disimpan secara automatik. Butang **Hantar Semula ke Ibu Pejabat** tidak menghantar selagi ada pengakuan yang belum ditanda.
+Tanda dan tarikh disimpan secara automatik. Butang **Hantar Semula ke Ibu Pejabat** tidak menghantar selagi ada pengakuan yang belum ditanda.
 
-Selepas empat pengakuan lengkap, tekan butang itu. Status menjadi **Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan**. Tindakan ini tidak tersedia kepada Ibu Pejabat.
+Selepas empat pengakuan lengkap, tekan butang itu. Status menjadi **Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan untuk tindakan Tandatangan Penyewa**. Tindakan ini tidak tersedia kepada Ibu Pejabat.
 
 ---
 
@@ -741,7 +749,7 @@ Di atas jadual, lima kad ringkasan dan pecahan **Status Tindakan** dipaparkan ba
 | Senarai Permohonan | Permohonan yang belum menjadi kontrak berkuat kuasa |
 | Senarai Kontrak Aktif | Kontrak yang diluluskan, belum diganti dan belum tamat, disusun mengikut nama premis |
 | Laporan Kontrak mengikut Negeri | Jadual lebar: negeri, PTJ, alamat, jenis langganan, tarikh mula dan tamat, baki hari, keluasan, kadar sewa, pemilik, kategori, status permohonan, kronologi proses Cawangan Pembangunan, rumusan dan tindakan |
-| Laporan Status Sewaan | Tajuk menggunakan tarikh semasa, contoh "setakat" tarikh hari itu. Rekod dikumpulkan mengikut Pertimbangan BPH, Semakan PUU, Pertimbangan MOF, Pertimbangan KE, Semakan Ibu Pejabat dan Tindakan PTJ |
+| Laporan Status Sewaan | Tajuk menggunakan tarikh semasa, contoh "setakat" tarikh hari itu. Rekod dikumpulkan mengikut Pertimbangan BPH, Semakan PUU, Pertimbangan MOF, Pertimbangan KE, Semakan Ibu Pejabat dan Tindakan PTJ. Bahagian Tindakan PTJ disusun mengikut baki bulan paling rendah dahulu |
 
 Pada laporan kontrak mengikut negeri, baki hari kritikal diwarnakan merah dan baki amaran diwarnakan kuning. Status yang telah diterima diwarnakan hijau.
 
@@ -877,7 +885,7 @@ Medan wajib yang kosong dipaparkan mesej di bawah medan. Betulkan nilai itu dan 
 | AADK | Agensi Antidadah Kebangsaan |
 | BPH | Bahagian Hartanah, Jabatan Perdana Menteri |
 | Cawangan Pembangunan | Pemilik sistem di Ibu Pejabat. Label skrin bagi peranan ini ialah Ibu Pejabat |
-| Draf perjanjian | Fail PDF perjanjian yang melalui pusingan Semakan 1, Semakan 2, dan seterusnya |
+| Draf perjanjian | Fail PDF perjanjian, maksimum 40 MB. Status semasa ialah Semakan PUU. Sejarah menyimpan pusingan Semakan PUU 1, Semakan PUU 2, dan seterusnya |
 | Ibu Pejabat | Peranan yang melihat semua negeri dan mengesahkan permohonan |
 | JRP | Borang yang dilengkapkan negeri pada langkah tindakan |
 | KE | Kementerian Ekonomi |

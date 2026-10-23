@@ -28,12 +28,27 @@ class AutosaveHqJrpChecklistRequest extends FormRequest
             'jrp_checklist' => ['required', 'array'],
             'jrp_checklist.dates' => ['sometimes', 'array'],
             'jrp_checklist.dates.*' => ['nullable', 'date'],
+            'jrp_checklist.notes' => ['sometimes', 'array'],
         ];
 
         foreach (HqJrpChecklist::allKeys() as $key) {
             $rules["jrp_checklist.{$key}"] = ['sometimes'];
         }
 
+        foreach (HqJrpChecklist::keysRequiringNote() as $key) {
+            $rules["jrp_checklist.notes.{$key}"] = ['nullable', 'string', 'max:2000'];
+        }
+
         return $rules;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'jrp_checklist.notes.*.max' => 'Catatan tidak boleh melebihi 2000 aksara.',
+        ];
     }
 }

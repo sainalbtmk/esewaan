@@ -96,6 +96,85 @@ test('hq review page restores autosaved jrp checklist values', function () {
         ->and($date[1] ?? '')->toBe('2026-07-16');
 });
 
+test('hq review page shows catatan only after mof and ke boxes are ticked', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+    $contract = createHqReviewContractForAutosave();
+    $contract->update([
+        'keluasan_mp' => 100,
+        'kategori_permohonan' => ApplicationCategories::LANJUTAN,
+        'hq_jrp_checklist' => [
+            HqJrpChecklist::KP => false,
+            HqJrpChecklist::MOF => true,
+            HqJrpChecklist::EPU => false,
+            HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS => false,
+            HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS => false,
+            HqJrpChecklist::AADK_SUBMIT_BPH => false,
+            HqJrpChecklist::AADK_RECEIVE_BPH_APPROVAL => false,
+            'notes' => [
+                HqJrpChecklist::MOF => 'Permohonan MOF sudah dihantar.',
+            ],
+        ],
+    ]);
+
+    $html = $this->actingAs($admin)
+        ->get(route('status-permohonan.review', $contract))
+        ->assertSuccessful()
+        ->assertDontSee('Mengemukakan Borang JRP kepada KDN untuk mendapatkan ulasan/kelulusan daripada agensi berikut')
+        ->getContent();
+
+    preg_match('/class="jrp-checklist-note-wrap ml-6([^"]*)"[^>]*data-jrp-note-for="mof_negeri_budget_office"/', $html, $mofWrap);
+    preg_match('/class="jrp-checklist-note-wrap ml-6([^"]*)"[^>]*data-jrp-note-for="epu_jpm_planning"/', $html, $epuWrap);
+
+    expect($mofWrap)->not->toBeEmpty()
+        ->and($mofWrap[1])->not->toContain('hidden')
+        ->and($epuWrap)->not->toBeEmpty()
+        ->and($epuWrap[1])->toContain('hidden')
+        ->and($html)->toContain('Permohonan MOF sudah dihantar.')
+        ->and($html)->toContain('name="jrp_checklist[notes][epu_jpm_planning]"');
+});
+
+test('admin hq autosave stores catatan for ticked mof and ke items and clears it when unticked', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+    $contract = createHqReviewContractForAutosave();
+
+    $this->actingAs($admin)
+        ->patch(route('status-permohonan.checklist-autosave', $contract), [
+            'jrp_checklist' => [
+                HqJrpChecklist::MOF => '1',
+                HqJrpChecklist::EPU => '1',
+                'notes' => [
+                    HqJrpChecklist::MOF => '  Catatan MOF  ',
+                    HqJrpChecklist::EPU => 'Catatan KE',
+                ],
+            ],
+        ])
+        ->assertSuccessful();
+
+    $contract->refresh();
+
+    expect($contract->hq_jrp_checklist['notes'][HqJrpChecklist::MOF])->toBe('Catatan MOF')
+        ->and($contract->hq_jrp_checklist['notes'][HqJrpChecklist::EPU])->toBe('Catatan KE');
+
+    $this->actingAs($admin)
+        ->patch(route('status-permohonan.checklist-autosave', $contract), [
+            'jrp_checklist' => [
+                HqJrpChecklist::MOF => '0',
+                HqJrpChecklist::EPU => '0',
+                'notes' => [
+                    HqJrpChecklist::MOF => 'Catatan MOF',
+                    HqJrpChecklist::EPU => 'Catatan KE',
+                ],
+            ],
+        ])
+        ->assertSuccessful();
+
+    $contract->refresh();
+
+    expect($contract->hq_jrp_checklist[HqJrpChecklist::MOF])->toBeFalse()
+        ->and($contract->hq_jrp_checklist['notes'][HqJrpChecklist::MOF])->toBeNull()
+        ->and($contract->hq_jrp_checklist['notes'][HqJrpChecklist::EPU])->toBeNull();
+});
+
 test('admin negeri cannot autosave hq jrp checklist', function () {
     $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Melaka']);
     $contract = createHqReviewContractForAutosave('Melaka');

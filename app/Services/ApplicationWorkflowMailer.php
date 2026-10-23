@@ -49,13 +49,11 @@ class ApplicationWorkflowMailer
 
     public function notifyDraftUploaded(RentalContract $contract, User $actedBy): void
     {
-        $round = (int) $contract->semakan_count;
-
         $this->notifyStage($contract, $actedBy, [
             'subject' => 'E-Sewaan AADK: Draf Perjanjian Dihantar untuk Semakan PUU',
             'heading' => 'Dalam Tindakan PUU',
-            'intro' => 'Draf perjanjian telah dimuat naik dan dihantar untuk Semakan '.$round.'.',
-            'next_status' => 'Peringkat 4 — Dalam tindakan PUU (Semakan '.$round.')',
+            'intro' => 'Draf perjanjian telah dimuat naik dan dihantar untuk '.$contract->semakanLabel().'.',
+            'next_status' => 'Peringkat 4 — Dalam tindakan PUU ('.$contract->semakanLabel().')',
             'cta_url' => route('status-permohonan.review', $contract),
             'cta_label' => 'Semak Draf Perjanjian',
         ]);

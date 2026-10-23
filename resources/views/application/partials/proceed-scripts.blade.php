@@ -12,6 +12,7 @@
     const useFullFormAutosave = @json($useFullFormAutosave ?? false);
     const activeSteps = JSON.parse(form.dataset.activeSteps || '[]');
     const saveButton = document.getElementById('form-save-button');
+    const simpanButton = document.getElementById('form-simpan-button');
     const submitHqWrap = document.getElementById('submit-hq-wrap');
     const currentStepInput = document.getElementById('current-step-input');
     const formSaveStatus = document.getElementById('form-save-status');
@@ -49,8 +50,52 @@
     }
 
     function updateSaveButtonLabel() {
-        if (!saveButton) return;
+        if (!saveButton) {
+            return;
+        }
+
         saveButton.textContent = 'Seterusnya';
+        saveButton.classList.toggle('hidden', isLastStep(currentStep));
+    }
+
+    function validateVisibleRequiredFields() {
+        if (!window.ApplicationFormValidation) {
+            return true;
+        }
+
+        const hiddenFields = form.querySelectorAll('.proceed-step-panel.hidden input, .proceed-step-panel.hidden textarea, .proceed-step-panel.hidden select');
+
+        hiddenFields.forEach((field) => {
+            if (!field.required) {
+                return;
+            }
+
+            field.dataset.proceedRequiredSuspended = '1';
+            field.required = false;
+        });
+
+        const valid = window.ApplicationFormValidation.validate(form);
+
+        hiddenFields.forEach((field) => {
+            if (field.dataset.proceedRequiredSuspended !== '1') {
+                return;
+            }
+
+            field.required = true;
+            delete field.dataset.proceedRequiredSuspended;
+        });
+
+        return valid;
+    }
+
+    function setStepSaveButtonsDisabled(disabled) {
+        if (saveButton) {
+            saveButton.disabled = disabled;
+        }
+
+        if (simpanButton) {
+            simpanButton.disabled = disabled;
+        }
     }
 
     function updateSubmitHqVisibility(progress = null) {
@@ -780,12 +825,10 @@
 
     bindFormFieldAutosave();
 
-    async function saveCurrentStep() {
+    async function saveCurrentStep(advance = true) {
         const currentPanel = form.querySelector(`.proceed-step-panel[data-step="${currentStep}"]`);
 
-        if (saveButton) {
-            saveButton.disabled = true;
-        }
+        setStepSaveButtonsDisabled(true);
 
         syncCurrentStepInput();
 
@@ -827,7 +870,7 @@
                 return;
             }
 
-            if (data.nextStep && !data.allCompleted) {
+            if (advance && data.nextStep && !data.allCompleted) {
                 currentStep = Number(data.nextStep);
             }
 
@@ -844,9 +887,7 @@
         } catch (error) {
             showStatus(formSaveStatus, error.message || 'Gagal menyimpan langkah tindakan.');
         } finally {
-            if (saveButton) {
-                saveButton.disabled = false;
-            }
+            setStepSaveButtonsDisabled(false);
         }
     }
 
@@ -854,20 +895,33 @@
         updateSubmitHqVisibility();
     });
 
-    if (saveButton) {
-        saveButton.addEventListener('click', (event) => {
+    if (simpanButton) {
+        simpanButton.addEventListener('click', (event) => {
             event.preventDefault();
 
-            if (isLastStep(currentStep) && redirectToFirstIncompleteRequiredStep()) {
-                return;
-            }
-
-            if (window.ApplicationFormValidation && !window.ApplicationFormValidation.validate(form)) {
+            if (!validateVisibleRequiredFields()) {
                 showStatus(formSaveStatus, INCOMPLETE_REQUIRED_MESSAGE);
                 return;
             }
 
-            saveCurrentStep();
+            saveCurrentStep(false);
+        });
+    }
+
+    if (saveButton) {
+        saveButton.addEventListener('click', (event) => {
+            event.preventDefault();
+
+            if (isLastStep(currentStep)) {
+                return;
+            }
+
+            if (!validateVisibleRequiredFields()) {
+                showStatus(formSaveStatus, INCOMPLETE_REQUIRED_MESSAGE);
+                return;
+            }
+
+            saveCurrentStep(true);
         });
     }
 

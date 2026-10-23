@@ -25,6 +25,22 @@
                         </div>
                     </dl>
                 </div>
+                <div id="confirm-action-upload-wrap" class="mt-4 hidden">
+                    <label for="confirm-action-upload" class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">
+                        Dokumen pindaan PUU (PDF) *
+                    </label>
+                    <p class="mb-2 text-xs text-slate-500">
+                        Hanya PDF, maksimum {{ \App\Support\UploadLimits::humanDraftLimit() }}.
+                    </p>
+                    <input
+                        type="file"
+                        id="confirm-action-upload"
+                        name="document"
+                        accept=".pdf,application/pdf"
+                        class="glass-input w-full rounded-xl px-3 py-2 text-sm"
+                    >
+                    <p id="confirm-action-upload-error" class="mt-1 hidden text-xs text-red-600" role="alert"></p>
+                </div>
                 <div id="confirm-action-reason-wrap" class="mt-4 hidden">
                     <label for="confirm-action-reason" id="confirm-action-reason-label" class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                         Alasan Padam *

@@ -32,7 +32,7 @@ test('header inbox dropdown lists unseen status notifications when badge is posi
         ->assertSuccessful()
         ->assertSee('data-sidebar-notification-badge="inbox_total"', false)
         ->assertSee('Premis Dropdown Visible')
-        ->assertSee('Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan')
+        ->assertSee(RentalContract::DRAF_DIKEMBALIKAN_HQ_STATUS_LABEL)
         ->assertSee('header-inbox-item', false);
 });
 
