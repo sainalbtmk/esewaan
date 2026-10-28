@@ -37,6 +37,7 @@
 
     $sahSehinggaValue = old('sah_sehingga', $contract?->sah_sehingga?->format('Y-m-d') ?? '');
     $tarikhMulaTawaranValue = old('tarikh_mula_tawaran', $contract?->tarikh_mula_tawaran?->format('Y-m-d') ?? '');
+    $parentBakiBulan = $parent ? \App\Support\RentalStatusReport::bakiBulan($parent) : null;
 @endphp
 
 @section('title', $isFollowUp ? 'Permohonan '.\App\Support\ApplicationCategories::label($contract->kategori_permohonan) : ($isEdit ? 'Kemaskini Permohonan' : 'Permohonan Baru'))
@@ -76,6 +77,7 @@
                         @include('partials.readonly-field', ['label' => 'Kadar Sewa Lama (RM)', 'value' => $parentRent !== null ? number_format((float) $parentRent, 2) : null])
                         @include('partials.readonly-field', ['label' => 'Tarikh Mula Lama', 'value' => $parent?->tarikh_mula_tawaran?->format('d/m/Y')])
                         @include('partials.readonly-field', ['label' => 'Tarikh Akhir Tempoh Tawaran Penyewaan Lama', 'value' => $parent?->sah_sehingga?->format('d/m/Y')])
+                        @include('partials.readonly-field', ['label' => 'Baki Bulan', 'value' => $parentBakiBulan === null ? null : $parentBakiBulan.' bulan'])
                         @include('partials.readonly-field', ['label' => 'Jenis Bangunan Lama', 'value' => \App\Support\BuildingTypes::all()[$parentPremise?->jenis_bangunan] ?? $parentPremise?->jenis_bangunan])
                         @include('partials.readonly-field', ['label' => 'Pemilik Lama', 'value' => $parentPremise?->nama_pemilik])
                         @include('partials.readonly-field', ['label' => 'Alamat Lama', 'value' => $parentPremise?->alamat_penuh, 'wrapperClass' => 'md:col-span-3', 'multiline' => true])
@@ -96,7 +98,7 @@
 
             <div class="px-6 py-5">
                 <div class="mx-auto max-w-4xl space-y-6">
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div>
                         <label for="kategori_permohonan" class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-600">
                             <span>Kategori Permohonan *</span>
@@ -159,6 +161,20 @@
                         </select>
                         <input type="hidden" name="negeri" value="{{ old('negeri', $contract?->premise?->negeri ?? $adminNegeri) }}">
                         @error('negeri')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                    </div>
+
+                    <div>
+                        <label for="daerah" class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                            <span>Daerah *</span>
+                            @include('partials.form-field-hint', ['text' => 'Daerah AADK dipaparkan mengikut negeri yang dipilih.'])
+                        </label>
+                        <select name="daerah" id="daerah" required class="glass-input w-full rounded-xl px-3 py-2 text-sm">
+                            <option value="">— Pilih daerah —</option>
+                            @foreach($daerahList as $daerah)
+                                <option value="{{ $daerah }}" @selected(old('daerah', $contract?->premise?->daerah) === $daerah)>{{ $daerah }}</option>
+                            @endforeach
+                        </select>
+                        @error('daerah')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                     </div>
                 </div>
 

@@ -1,12 +1,12 @@
 # Dokumen Ujian Penerimaan Pengguna (UAT)
 
-**Sistem E-Sewaan AADK**  
-Sistem Pengurusan Kontrak Sewaan  
+**SPEKTRA**  
+Sistem Pemantauan Kontrak Sewaan Premis AADK  
 Agensi Antidadah Kebangsaan
 
 | Medan | Butiran |
 | --- | --- |
-| No. dokumen | AADK/CP/E-SEWAAN/UAT/001 |
+| No. dokumen | AADK/CP/SPEKTRA/UAT/001 |
 | Versi | 1.0 |
 | Tarikh | 21 Oktober 2026 |
 | Status | Untuk pelaksanaan UAT |
@@ -37,7 +37,7 @@ Dokumen ini ialah skrip ujian penerimaan. Penguji mengisi lajur **Keputusan sebe
 
 ## 2. Tujuan
 
-Ujian ini mengesahkan bahawa E-Sewaan AADK memenuhi keperluan operasi pengurusan permohonan dan kontrak sewaan premis, dari pendaftaran permohonan negeri sehingga kontrak berkuat kuasa, termasuk kawalan akses, pemakluman dan laporan Ibu Pejabat.
+Ujian ini mengesahkan bahawa SPEKTRA memenuhi keperluan operasi pengurusan permohonan dan kontrak sewaan premis, dari pendaftaran permohonan negeri sehingga kontrak berkuat kuasa, termasuk kawalan akses, pemakluman dan laporan Ibu Pejabat.
 
 UAT dijalankan oleh pengguna bisnes. Ia bukan ujian teknikal pembangun. Keputusan lulus bermaksud skrin, mesej, aliran kerja dan had kuasa sepadan dengan operasi sebenar AADK.
 
@@ -82,8 +82,8 @@ Setiap permohonan melalui lapan peringkat pada skrin semakan:
 3. **Penyediaan Draf** — Negeri memuat naik draf perjanjian dalam format PDF.
 4. **Dalam tindakan PUU** — Ibu Pejabat meluluskan semakan, atau membatalkan semakan supaya Negeri memuat naik draf baharu. Setiap muat naik menambah pusingan Semakan PUU 1, Semakan PUU 2, dan seterusnya.
 5. **Draf Lulus** — Negeri mengesahkan empat perkara, kemudian mengembalikan dokumen kepada Cawangan Pembangunan.
-6. **Pengesahan dan Tandatangan** — Ibu Pejabat mengesahkan tiga perkara dan menghantar dokumen untuk mati setem.
-7. **Mati Setem** — Negeri mengesahkan dua perkara.
+6. **Pengesahan dan Tandatangan** — Ibu Pejabat mengesahkan empat perkara, dengan tarikh di sebelah kanan setiap kotak, dan menghantar dokumen untuk mati setem.
+7. **Mati Setem** — Negeri mengesahkan tiga perkara, dengan tarikh di sebelah kanan setiap kotak.
 8. **Selesai** — rekod masuk ke Senarai Kontrak Sewaan.
 
 ### Kategori dan langkah tindakan
@@ -279,9 +279,9 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan p
 
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DASH-01 | Tinggi | Ibu Pejabat | 1. Buka Papan Pemuka. 2. Bandingkan kiraan permohonan baharu, kontrak aktif dan pecahan status dengan senarai berkaitan. | Kad dan pecahan status tindakan dipaparkan untuk semua negeri. Angka sepadan dengan senarai selepas penapis yang sama digunakan. | | | | |
+| DASH-01 | Tinggi | Ibu Pejabat | 1. Buka Papan Pemuka. 2. Bandingkan kiraan permohonan baharu, kontrak aktif dan pecahan status dengan senarai berkaitan. 3. Klik satu baris Status Tindakan. | Kad dan pecahan status tindakan dipaparkan untuk semua negeri. Angka sepadan dengan senarai selepas penapis yang sama digunakan. Klik baris membuka senarai projek pada status itu, dan angka di hujung baris kekal. | | | | |
 | DASH-02 | Kritikal | Negeri | 1. Buka Papan Pemuka sebagai Negeri A. 2. Ulang sebagai Negeri B. | Setiap papan pemuka hanya mengira premis negeri sendiri. Angka dua negeri tidak bercampur. | | | | |
-| DASH-03 | Tinggi | Semua pentadbir | 1. Semak senarai status tindakan. | Label berikut dipaparkan: Belum Terima Permohonan, Semakan Cawangan Pembangunan Sebelum ke BPH, Minit Ceraian Kelulusan Kos, Pertimbangan MOF, Pertimbangan KE, Pertimbangan BPH/SUPS, Sedia Draf Perjanjian, Semakan Cawangan Pembangunan Sebelum ke PUU, Semakan PUU, Kuiri PUU, Pindaan Berdasarkan Syor PUU dan Tandatangan Pemilik Premis, Tandatangan Penyewa (AADK), Tindakan Mati Setem. | | | | |
+| DASH-03 | Tinggi | Semua pentadbir | 1. Semak senarai status tindakan. 2. Klik setiap baris. | Label berikut dipaparkan: Belum Terima Permohonan, Semakan Cawangan Pembangunan Sebelum ke BPH, Minit Ceraian Kelulusan Kos, Pertimbangan MOF, Pertimbangan KE, Pertimbangan BPH/SUPS, Sedia Draf Perjanjian, Semakan Cawangan Pembangunan Sebelum ke PUU, Semakan PUU, Kuiri PUU, Pindaan Berdasarkan Syor PUU dan Tandatangan Pemilik Premis, Tandatangan Penyewa (AADK), Tindakan Mati Setem. Setiap baris membuka senarai projek bagi status itu. | | | | |
 | DASH-04 | Tinggi | Semua pentadbir | 1. Semak bahagian kontrak yang akan tamat. | Kontrak aktif dibahagi kepada baki 3 bulan atau kurang, baki bawah 8 bulan tetapi lebih 3 bulan, dan baki lebih 8 bulan. Senarai amaran paling hampir tamat dipaparkan dahulu. | | | | |
 
 ### 9.6 Permohonan baharu
@@ -327,7 +327,7 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan p
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | DRAF-01 | Kritikal | Negeri | 1. Pada peringkat Penyediaan Draf, muat naik PDF draf perjanjian sehingga 40 MB. 2. Cuba fail lebih 40 MB dan fail bukan PDF. | Muat naik PDF yang sah berjaya. Status menjadi Semakan PUU. Fail boleh dibuka. Fail melebihi 40 MB atau bukan PDF ditolak. Pemakluman dihantar atau direkod. | | | | |
-| DRAF-02 | Kritikal | Ibu Pejabat | 1. Buka permohonan berstatus Semakan PUU. 2. Pilih Luluskan dan sahkan. | Status menjadi Draf Perjanjian dikembalikan ke Pentadbir Negeri untuk dapatkan Tandatangan Pemilik Premis. Hasil semakan pada dokumen ialah diluluskan. | | | | |
+| DRAF-02 | Kritikal | Ibu Pejabat | 1. Buka permohonan berstatus Semakan PUU. 2. Pilih Luluskan. 3. Muat naik dokumen yang telah lulus dalam PDF sehingga 40 MB dan sahkan. 4. Cuba tanpa fail, fail bukan PDF, atau fail melebihi 40 MB. | Luluskan tanpa PDF yang sah ditolak. Selepas berjaya, status menjadi Draf Perjanjian dikembalikan ke Pentadbir Negeri untuk dapatkan Tandatangan Pemilik Premis. Hasil semakan pada dokumen ialah diluluskan. Sejarah memaparkan dokumen lulus PUU. | | | | |
 | DRAF-03 | Kritikal | Ibu Pejabat, kemudian Negeri | 1. Pada pusingan semakan yang lain, Ibu Pejabat menekan Semak Semula. 2. Muat naik dokumen pindaan PUU dalam PDF sehingga 40 MB dan sahkan. 3. Cuba tanpa fail, fail bukan PDF, atau fail melebihi 40 MB. 4. Negeri memuat turun dokumen pindaan, kemudian muat naik PDF baharu. | Semak Semula tanpa PDF yang sah ditolak. Selepas berjaya, mesej menyatakan draf perjanjian dikembalikan oleh PUU untuk pindaan lanjut. Status menjadi Kuiri PUU. Sejarah memaparkan dokumen pindaan PUU. Muat naik baharu menjadi Semakan PUU seterusnya, bukan Semakan PUU 1 semula. | | | | |
 | DRAF-04 | Tinggi | Negeri | 1. Pada penyediaan draf, cuba muat naik JPG atau DOCX. | Hanya PDF diterima untuk draf perjanjian. | | | | |
 
@@ -342,13 +342,13 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan p
 
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| SIGN-01 | Kritikal | Ibu Pejabat | 1. Buka permohonan yang dikembalikan negeri. 2. Cuba hantar untuk mati setem sebelum tiga pengakuan lengkap. 3. Tanda tiga pengakuan dan sahkan. | Penghantaran disekat sehingga tiga pengakuan lengkap. Selepas sah, status menjadi Menunggu Mati Setem. | | | | |
+| SIGN-01 | Kritikal | Ibu Pejabat | 1. Buka permohonan yang dikembalikan negeri. 2. Cuba hantar untuk mati setem sebelum empat pengakuan lengkap. 3. Tanda empat pengakuan, semak tarikh di sebelah kanan, dan sahkan. | Penghantaran disekat sehingga empat pengakuan lengkap. Tarikh diisi dengan tarikh tanda dan boleh diubah. Selepas sah, status menjadi Menunggu Mati Setem. | | | | |
 
 ### 9.13 Mati setem
 
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| STEM-01 | Kritikal | Negeri | 1. Pada Mati Setem, cuba selesaikan dengan satu pengakuan sahaja. 2. Tanda kedua-dua pengakuan dan tekan Selesai. 3. Buka Senarai Kontrak Sewaan. | Satu pengakuan tidak mencukupi. Selepas kedua-duanya ditanda, permohonan hilang daripada senarai kerja aktif dan muncul sebagai kontrak sewaan. Mesej kejayaan dipaparkan. | | | | |
+| STEM-01 | Kritikal | Negeri | 1. Pada Mati Setem, cuba selesaikan dengan satu pengakuan sahaja. 2. Tanda ketiga-tiga pengakuan, semak tarikh di sebelah kanan, dan tekan Selesai. 3. Buka Senarai Kontrak Sewaan. | Satu pengakuan tidak mencukupi. Tarikh diisi dengan tarikh tanda dan boleh diubah. Selepas ketiga-tiganya ditanda, permohonan hilang daripada senarai kerja aktif dan muncul sebagai kontrak sewaan. Mesej kejayaan dipaparkan. | | | | |
 
 ### 9.14 Pindah dan lanjutan
 
@@ -410,7 +410,7 @@ Kes ini ialah bukti penerimaan aliran bisnes. Gunakan premis fiksyen yang baharu
 
 | ID | Keutamaan | Senario | Langkah ringkas | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| E2E-01 | Kritikal | Permohonan baharu hingga kontrak aktif | 1. Negeri mencipta permohonan Baru dan memuat naik dokumen sokongan. 2. Negeri melengkapkan surat niat, JRP dan surat agensi. 3. Negeri menekan Hantar ke Ibu Pejabat dan mengesahkan Ya, Hantar. 4. Ibu Pejabat menyemak senarai semak dan meneruskan ke draf. 5. Negeri memuat naik PDF draf. 6. Ibu Pejabat meluluskan Semakan PUU 1. 7. Negeri mengesahkan empat pengakuan dan mengembalikan dokumen. 8. Ibu Pejabat mengesahkan tiga pengakuan tandatangan. 9. Negeri mengesahkan dua pengakuan mati setem. | Satu kontrak baharu muncul dalam Senarai Kontrak Sewaan negeri tersebut dan dalam laporan Ibu Pejabat. Papan pemuka kedua-dua peranan berubah dengan betul. Pemakluman setiap peringkat diterima pihak yang berkenaan. | | | | |
+| E2E-01 | Kritikal | Permohonan baharu hingga kontrak aktif | 1. Negeri mencipta permohonan Baru dan memuat naik dokumen sokongan. 2. Negeri melengkapkan surat niat, JRP dan surat agensi. 3. Negeri menekan Hantar ke Ibu Pejabat dan mengesahkan Ya, Hantar. 4. Ibu Pejabat menyemak senarai semak dan meneruskan ke draf. 5. Negeri memuat naik PDF draf. 6. Ibu Pejabat meluluskan Semakan PUU 1. 7. Negeri mengesahkan empat pengakuan dan mengembalikan dokumen. 8. Ibu Pejabat mengesahkan empat pengakuan tandatangan. 9. Negeri mengesahkan tiga pengakuan mati setem. | Satu kontrak baharu muncul dalam Senarai Kontrak Sewaan negeri tersebut dan dalam laporan Ibu Pejabat. Papan pemuka kedua-dua peranan berubah dengan betul. Pemakluman setiap peringkat diterima pihak yang berkenaan. | | | | |
 | E2E-02 | Kritikal | Lanjutan kontrak | 1. Negeri mencipta Lanjutan daripada kontrak aktif. 2. Negeri mengisi catatan, notis pemilik, JRP dan surat agensi. 3. Ulang langkah semakan hingga mati setem seperti E2E-01, dengan langkah lanjutan dan bukan surat niat. | Kontrak asal diganti selepas kelulusan Ibu Pejabat. Kontrak lanjutan yang selesai menjadi kontrak aktif. | | | | |
 | E2E-03 | Kritikal | Pindah premis, termasuk satu pembatalan semakan PUU | 1. Negeri mencipta Pindah dan mengisi butiran premis baharu. 2. Lengkapkan surat niat, JRP, surat agensi dan catatan, kemudian hantar. 3. Ibu Pejabat meneruskan ke draf. 4. Negeri memuat naik draf pertama. 5. Ibu Pejabat membatalkan semakan. 6. Negeri memuat naik draf kedua. 7. Ibu Pejabat meluluskan Semakan PUU 2. 8. Siapkan pengesahan negeri, tandatangan Ibu Pejabat dan mati setem. | Pusingan kedua direkod sebagai Semakan PUU 2. Kontrak pindah yang selesai aktif. Kontrak premis lama tidak lagi aktif. | | | | |
 
@@ -507,4 +507,4 @@ Saya mengesahkan bahawa kes ujian dalam dokumen ini telah dijalankan pada persek
 
 ---
 
-*Tamat dokumen AADK/CP/E-SEWAAN/UAT/001, versi 1.0.*
+*Tamat dokumen AADK/CP/SPEKTRA/UAT/001, versi 1.0.*

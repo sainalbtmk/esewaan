@@ -12,6 +12,7 @@ function validApplicationPayload(string $negeri = 'Johor', string $kategori = 'b
     return [
         'kategori_permohonan' => $kategori,
         'negeri' => $negeri,
+        'daerah' => $negeri === 'Selangor' ? 'Petaling' : 'Johor Bahru',
         'nama_ptj' => 'Premis Ujian',
         'alamat_penuh' => 'Alamat penuh ujian',
         'nama_pemilik' => 'Pemilik Ujian',
@@ -55,7 +56,8 @@ test('admin negeri can submit permohonan baru and is redirected to tindakan page
         ->and($contract->kategori_permohonan)->toBe('baru')
         ->and((float) $contract->keluasan_mp)->toBe(120.5)
         ->and($contract->tarikh_mula_tawaran?->format('Y-m-d'))->toBe(now()->format('Y-m-d'))
-        ->and($contract->premise?->nama_ptj)->toBe('Premis Ujian');
+        ->and($contract->premise?->nama_ptj)->toBe('Premis Ujian')
+        ->and($contract->premise?->daerah)->toBe('Petaling');
 
     expect(Premise::query()->count())->toBe(1);
 });
@@ -71,6 +73,8 @@ test('permohonan baru form allows selecting kategori', function () {
         ->assertSee('name="keluasan_mp"', false)
         ->assertSee('id="keluasan_kps"', false)
         ->assertSee('Nama Premis')
+        ->assertSee('name="daerah"', false)
+        ->assertSee('Petaling')
         ->assertSee('>Baru</option>', false)
         ->assertSee('>Pindah</option>', false)
         ->assertSee('>Lanjutan</option>', false);
@@ -97,6 +101,7 @@ test('admin negeri can submit permohonan baru only for their own negeri', functi
 
     $invalidPayload = validApplicationPayload('Johor');
     $invalidPayload['negeri'] = 'Perak';
+    $invalidPayload['daerah'] = 'Kinta';
 
     $this->actingAs($admin)
         ->post(route('application.store'), $invalidPayload)

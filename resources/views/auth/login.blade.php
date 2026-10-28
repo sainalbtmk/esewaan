@@ -61,13 +61,14 @@
     }
 
     .corp-logo {
-        width: 52px;
-        height: 52px;
-        flex-shrink: 0;
+        height: 76px;
+        width: auto;
+        max-width: min(460px, 72vw);
+        flex-shrink: 1;
         object-fit: contain;
         background: #fff;
-        border-radius: 4px;
-        padding: 3px;
+        border-radius: 6px;
+        padding: 4px 8px;
     }
 
     .corp-logo-fallback {
@@ -462,7 +463,7 @@
     if ($custom && file_exists(public_path($custom))) {
         $loginLogoPath = $custom;
     } else {
-        foreach (['aadk.png', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'images/logo.png', 'images/logo.jpg', 'images/logo.jpeg', 'images/logo.webp'] as $name) {
+        foreach (['images/spektra-logo.jpg', 'aadk.png', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'images/logo.png', 'images/logo.jpg', 'images/logo.jpeg', 'images/logo.webp'] as $name) {
             if (file_exists(public_path($name))) {
                 $loginLogoPath = $name;
                 break;
@@ -475,16 +476,16 @@
     <header class="corp-header">
         <div class="corp-lockup">
             @if($loginLogoPath)
-                <img src="{{ asset($loginLogoPath) }}" alt="AADK" class="corp-logo">
+                <img src="{{ asset($loginLogoPath) }}" alt="SPEKTRA" class="corp-logo">
             @else
-                <div class="corp-logo-fallback" aria-hidden="true">E</div>
+                <div class="corp-logo-fallback" aria-hidden="true">S</div>
+                <div>
+                    <p class="corp-system">SPEKTRA</p>
+                    <p class="corp-agency">Sistem Pemantauan Kontrak Sewaan Premis AADK</p>
+                </div>
             @endif
-            <div>
-                <p class="corp-system">E-SEWAAN</p>
-                <p class="corp-agency">Agensi Antidadah Kebangsaan</p>
-            </div>
         </div>
-        <p class="corp-header-meta">Sistem Pengurusan Kontrak Sewaan Premis</p>
+        <p class="corp-header-meta">Agensi Antidadah Kebangsaan</p>
     </header>
     <div class="corp-rule" aria-hidden="true"></div>
 
@@ -554,7 +555,7 @@
                     <button type="submit" class="corp-submit">Log Masuk</button>
                 </form>
 
-                <p class="corp-note">Akses terhad kepada pengguna berdaftar sistem E-Sewaan.</p>
+                <p class="corp-note">Akses terhad kepada pengguna berdaftar sistem SPEKTRA.</p>
             </div>
         </section>
     </div>

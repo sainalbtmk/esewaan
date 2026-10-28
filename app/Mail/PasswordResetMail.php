@@ -21,7 +21,7 @@ class PasswordResetMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'E-Sewaan AADK: Set Semula Kata Laluan',
+            subject: 'SPEKTRA: Set Semula Kata Laluan',
         );
     }
 

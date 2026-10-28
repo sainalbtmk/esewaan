@@ -9,6 +9,7 @@ use App\Models\RentalContract;
 use App\Models\User;
 use App\Support\AdminProceedSteps;
 use App\Support\ApplicationCategories;
+use App\Support\HqDraftAcknowledgements;
 use App\Support\UploadLimits;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -1018,6 +1019,7 @@ test('admin negeri can edit pending proceed application from status list', funct
     $this->actingAs($admin)
         ->put(route('application.update', $contract), [
             'negeri' => 'Johor',
+            'daerah' => 'Johor Bahru',
             'nama_ptj' => 'Premis Dikemaskini',
             'alamat_penuh' => 'Alamat dikemaskini',
             'nama_pemilik' => 'Pemilik Dikemaskini',
@@ -1072,7 +1074,9 @@ test('admin hq sees luluskan and batalkan actions on semakan puu review page', f
         ->assertSee('Luluskan')
         ->assertSee('Semak Semula')
         ->assertSee('data-confirm-upload="true"', false)
-        ->assertSee('Dokumen pindaan PUU (PDF)');
+        ->assertSee('data-confirm-upload-label="Dokumen yang telah lulus (PDF) *"', false)
+        ->assertSee('data-confirm-upload-label="Dokumen pindaan PUU (PDF) *"', false)
+        ->assertSee('Hanya PDF, maksimum '.\App\Support\UploadLimits::humanDraftLimit(), false);
 });
 
 test('admin negeri upload draft requires pdf file', function () {
@@ -1215,7 +1219,9 @@ test('approve and reject puu review label semakan documents as diluluskan or dib
     $secondDocument = $contract->fresh()->documents()->where('semakan_round', 2)->first();
 
     $this->actingAs($hq)
-        ->post(route('status-permohonan.approve-puu', $contract->fresh()));
+        ->post(route('status-permohonan.approve-puu', $contract->fresh()), [
+            'document' => puuAmendmentPdf('lulus-semakan-2.pdf'),
+        ]);
 
     expect($secondDocument?->fresh()->semakan_status)->toBe(ContractDocument::SEMAKAN_DILULUSKAN)
         ->and($secondDocument?->fresh()->semakanStatusLabel())->toBe('Diluluskan')
@@ -1259,14 +1265,17 @@ test('admin negeri review page shows semakan status labels in draft history', fu
         ->assertSee('Menunggu Semakan PUU');
 
     $this->actingAs($hq)
-        ->post(route('status-permohonan.approve-puu', $contract->fresh()));
+        ->post(route('status-permohonan.approve-puu', $contract->fresh()), [
+            'document' => puuAmendmentPdf('lulus-sejarah.pdf'),
+        ]);
 
     $this->actingAs($negeri)
         ->get(route('status-permohonan.review', $contract->fresh()))
         ->assertSuccessful()
         ->assertSee('Semakan PUU 2')
         ->assertSee('Diluluskan')
-        ->assertSee('Pindaan berdasarkan ulasan PUU');
+        ->assertSee('Pindaan berdasarkan ulasan PUU')
+        ->assertSee('Dokumen lulus PUU: lulus-sejarah.pdf');
 });
 
 test('admin negeri re-upload after puu rejection increments semakan count and keeps history', function () {
@@ -1309,21 +1318,30 @@ test('admin negeri re-upload after puu rejection increments semakan count and ke
 });
 
 test('admin hq approve puu review moves application to draf lulus with selesai status', function () {
+    Storage::fake('local');
     $admin = User::factory()->create(['role' => 'admin_hq']);
     $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_SEMAKAN_PUU);
     $contract->update(['semakan_count' => 1]);
 
     $this->actingAs($admin)
-        ->post(route('status-permohonan.approve-puu', $contract))
+        ->post(route('status-permohonan.approve-puu', $contract), [
+            'document' => puuAmendmentPdf('dokumen-lulus.pdf'),
+        ])
         ->assertRedirect(route('status-permohonan.index'))
         ->assertSessionHas('success', 'Semakan PUU diluluskan. Status permohonan dikemaskini kepada '.RentalContract::DRAF_LULUS_STATUS_LABEL.'.');
 
     $contract->refresh();
 
+    $approvedDocument = $contract->documents()->where('jenis', ContractDocument::JENIS_LULUS_PUU)->first();
+
     expect($contract->workflow_tahap)->toBe(RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS)
         ->and($contract->applicationStatusLabel())->toBe(RentalContract::DRAF_LULUS_STATUS_LABEL)
         ->and($contract->workflowLabel())->toBe(RentalContract::DRAF_LULUS_STATUS_LABEL)
-        ->and($contract->draftAgreementCurrentStepIndex())->toBe(4);
+        ->and($contract->draftAgreementCurrentStepIndex())->toBe(4)
+        ->and($approvedDocument)->not->toBeNull()
+        ->and($approvedDocument->nama_fail)->toBe('dokumen-lulus.pdf')
+        ->and($approvedDocument->semakan_round)->toBe(1)
+        ->and(Storage::disk('local')->exists($approvedDocument->path))->toBeTrue();
 
     $this->actingAs($admin)
         ->get(route('status-permohonan.review', $contract))
@@ -1402,6 +1420,40 @@ test('admin hq reject puu review requires a pdf within the draft size limit', fu
     $this->actingAs($admin)
         ->from(route('status-permohonan.review', $contract))
         ->post(route('status-permohonan.reject-puu', $contract), [
+            'document' => UploadedFile::fake()->create('besar.pdf', UploadLimits::DRAFT_MAX_KILOBYTES + 1, 'application/pdf'),
+        ])
+        ->assertRedirect(route('status-permohonan.review', $contract))
+        ->assertSessionHasErrors('document');
+
+    expect($contract->fresh()->workflow_tahap)->toBe(RentalContract::WORKFLOW_SEMAKAN_PUU)
+        ->and($contract->documents()->count())->toBe(0);
+});
+
+test('admin hq approve puu review requires a pdf within the draft size limit', function () {
+    Storage::fake('local');
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+    $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_SEMAKAN_PUU);
+    $contract->update(['semakan_count' => 1]);
+
+    $this->actingAs($admin)
+        ->from(route('status-permohonan.review', $contract))
+        ->post(route('status-permohonan.approve-puu', $contract))
+        ->assertRedirect(route('status-permohonan.review', $contract))
+        ->assertSessionHasErrors('document');
+
+    expect($contract->fresh()->workflow_tahap)->toBe(RentalContract::WORKFLOW_SEMAKAN_PUU);
+
+    $this->actingAs($admin)
+        ->from(route('status-permohonan.review', $contract))
+        ->post(route('status-permohonan.approve-puu', $contract), [
+            'document' => UploadedFile::fake()->create('lulus.txt', 20, 'text/plain'),
+        ])
+        ->assertRedirect(route('status-permohonan.review', $contract))
+        ->assertSessionHasErrors('document');
+
+    $this->actingAs($admin)
+        ->from(route('status-permohonan.review', $contract))
+        ->post(route('status-permohonan.approve-puu', $contract), [
             'document' => UploadedFile::fake()->create('besar.pdf', UploadLimits::DRAFT_MAX_KILOBYTES + 1, 'application/pdf'),
         ])
         ->assertRedirect(route('status-permohonan.review', $contract))
@@ -1729,16 +1781,32 @@ test('status list kemajuan uses overall lifecycle progress not proceed-only perc
         ->assertSee('100%');
 });
 
-test('admin hq sees three finalize checkboxes on returned draft review page', function () {
+function hqFinalizeAcknowledgements(): array
+{
+    return [
+        HqDraftAcknowledgements::TERIMA_PERJANJIAN_PEMILIK => '1',
+        HqDraftAcknowledgements::DIHANTAR_PKP_SAKSI => '1',
+        HqDraftAcknowledgements::DIHANTAR_TKPP_PENYEWA => '1',
+        HqDraftAcknowledgements::DIKEMBALIKAN_NEGERI => '1',
+        'dates' => [
+            HqDraftAcknowledgements::DIKEMBALIKAN_NEGERI => '2026-05-01',
+        ],
+    ];
+}
+
+test('admin hq sees the replacement finalize actions with a date on the right', function () {
     $admin = User::factory()->create(['role' => 'admin_hq']);
     $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ);
 
     $this->actingAs($admin)
         ->get(route('status-permohonan.review', $contract))
         ->assertSuccessful()
-        ->assertSee('Cawangan Pembangunan AADK menerima dokumen perjanjian')
-        ->assertSee('Perjanjian ditandatangani TKPP AADK dikembalikan kepada AADK Negeri')
-        ->assertSee('1 salinan perjanjian dihantar ke Cawangan Pembangunan AADK')
+        ->assertSee('Cawangan Pembangunan terima Perjanjian yang telah ditandatangani oleh Pemilik Premis')
+        ->assertSee('Perjanjian dihantar ke Pejabat PKP untuk tandatangan Saksi')
+        ->assertSee('Perjanjian dihantar ke Pejabat TKPP untuk tandatangan Penyewa')
+        ->assertSee('Perjanjian dikembalikan ke AADK Negeri untuk tindakan mati setem dan edaran kepada Pemilik Premis')
+        ->assertDontSee('1 salinan perjanjian dihantar ke Cawangan Pembangunan AADK')
+        ->assertSee('name="dates['.HqDraftAcknowledgements::DIHANTAR_TKPP_PENYEWA.']"', false)
         ->assertSee('Hantar ke Negeri')
         ->assertSee('Mati Setem')
         ->assertSee('Simpan')
@@ -1747,15 +1815,21 @@ test('admin hq sees three finalize checkboxes on returned draft review page', fu
 });
 
 test('admin hq autosave persists partial draft acknowledgements', function () {
+    Carbon::setTestNow(Carbon::parse('2026-10-23 20:00:00', 'UTC'));
+
     $admin = User::factory()->create(['role' => 'admin_hq']);
     $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ);
 
     $this->actingAs($admin)
         ->patchJson(route('status-permohonan.hq-acknowledgements-autosave', $contract), [
             'acknowledgements' => [
-                'terima_dokumen_acknowledged' => '1',
-                'perjanjian_ditandatangani_acknowledged' => '0',
-                'salinan_promis_acknowledged' => '0',
+                HqDraftAcknowledgements::TERIMA_PERJANJIAN_PEMILIK => '1',
+                HqDraftAcknowledgements::DIHANTAR_PKP_SAKSI => '0',
+                HqDraftAcknowledgements::DIHANTAR_TKPP_PENYEWA => '1',
+                HqDraftAcknowledgements::DIKEMBALIKAN_NEGERI => '0',
+                'dates' => [
+                    HqDraftAcknowledgements::DIHANTAR_TKPP_PENYEWA => '2026-03-18',
+                ],
             ],
         ])
         ->assertSuccessful()
@@ -1764,32 +1838,36 @@ test('admin hq autosave persists partial draft acknowledgements', function () {
 
     $saved = $contract->fresh()->hq_draft_acknowledgements;
 
-    expect($saved['terima_dokumen_acknowledged'])->toBeTrue()
-        ->and($saved['perjanjian_ditandatangani_acknowledged'])->toBeFalse()
-        ->and($saved['salinan_promis_acknowledged'])->toBeFalse()
+    expect($saved[HqDraftAcknowledgements::TERIMA_PERJANJIAN_PEMILIK])->toBeTrue()
+        ->and($saved[HqDraftAcknowledgements::DIHANTAR_PKP_SAKSI])->toBeFalse()
+        ->and($saved[HqDraftAcknowledgements::DIHANTAR_TKPP_PENYEWA])->toBeTrue()
+        ->and($saved[HqDraftAcknowledgements::DIKEMBALIKAN_NEGERI])->toBeFalse()
+        ->and($saved['dates'][HqDraftAcknowledgements::TERIMA_PERJANJIAN_PEMILIK])->toBe('2026-10-24')
+        ->and($saved['dates'][HqDraftAcknowledgements::DIHANTAR_TKPP_PENYEWA])->toBe('2026-03-18')
+        ->and($saved['dates'])->not->toHaveKey(HqDraftAcknowledgements::DIHANTAR_PKP_SAKSI)
         ->and($contract->fresh()->workflow_tahap)->toBe(RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ);
+
+    Carbon::setTestNow();
 });
 
-test('admin hq finalizes application into kontrak sewaan after ticking all three checkboxes', function () {
+test('admin hq finalizes application into mati setem after ticking all acknowledgement actions', function () {
     $negeriAdmin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Melaka', 'name' => 'Admin Melaka Selesai']);
     $admin = User::factory()->create(['role' => 'admin_hq']);
     $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ);
     $contract->update(['admin_negeri_user_id' => $negeriAdmin->id, 'hq_approved_at' => now()]);
 
     $this->actingAs($admin)
-        ->post(route('status-permohonan.finalize', $contract), [
-            'terima_dokumen_acknowledged' => '1',
-            'perjanjian_ditandatangani_acknowledged' => '1',
-            'salinan_promis_acknowledged' => '1',
-        ])
+        ->post(route('status-permohonan.finalize', $contract), hqFinalizeAcknowledgements())
         ->assertRedirect(route('status-permohonan.index'))
         ->assertSessionHas('success');
 
     expect($contract->fresh()->workflow_tahap)->toBe(RentalContract::WORKFLOW_MATI_SETEM)
         ->and($contract->fresh()->isHqApproved())->toBeFalse()
-        ->and($contract->fresh()->hq_draft_acknowledgements['terima_dokumen_acknowledged'])->toBeTrue()
-        ->and($contract->fresh()->hq_draft_acknowledgements['perjanjian_ditandatangani_acknowledged'])->toBeTrue()
-        ->and($contract->fresh()->hq_draft_acknowledgements['salinan_promis_acknowledged'])->toBeTrue();
+        ->and($contract->fresh()->hq_draft_acknowledgements[HqDraftAcknowledgements::TERIMA_PERJANJIAN_PEMILIK])->toBeTrue()
+        ->and($contract->fresh()->hq_draft_acknowledgements[HqDraftAcknowledgements::DIHANTAR_PKP_SAKSI])->toBeTrue()
+        ->and($contract->fresh()->hq_draft_acknowledgements[HqDraftAcknowledgements::DIHANTAR_TKPP_PENYEWA])->toBeTrue()
+        ->and($contract->fresh()->hq_draft_acknowledgements[HqDraftAcknowledgements::DIKEMBALIKAN_NEGERI])->toBeTrue()
+        ->and($contract->fresh()->hq_draft_acknowledgements['dates'][HqDraftAcknowledgements::DIKEMBALIKAN_NEGERI])->toBe('2026-05-01');
 });
 
 test('admin negeri completes mati setem and moves application into kontrak sewaan', function () {
@@ -1801,6 +1879,10 @@ test('admin negeri completes mati setem and moves application into kontrak sewaa
         ->post(route('status-permohonan.complete-mati-setem', $contract), [
             'mati_setem_lhdn_acknowledged' => '1',
             'edaran_pemilik_acknowledged' => '1',
+            'salinan_dihantar_cawangan_pembangunan_acknowledged' => '1',
+            'dates' => [
+                'salinan_dihantar_cawangan_pembangunan_acknowledged' => '2026-04-09',
+            ],
         ])
         ->assertRedirect(route('kontrak-sewaan.index'))
         ->assertSessionHas('success');
@@ -1809,7 +1891,9 @@ test('admin negeri completes mati setem and moves application into kontrak sewaa
         ->and($contract->fresh()->isHqApproved())->toBeTrue()
         ->and($contract->fresh()->status_aktif)->toBe('aktif')
         ->and($contract->fresh()->negeri_mati_setem_acknowledgements['mati_setem_lhdn_acknowledged'])->toBeTrue()
-        ->and($contract->fresh()->negeri_mati_setem_acknowledgements['edaran_pemilik_acknowledged'])->toBeTrue();
+        ->and($contract->fresh()->negeri_mati_setem_acknowledgements['edaran_pemilik_acknowledged'])->toBeTrue()
+        ->and($contract->fresh()->negeri_mati_setem_acknowledgements['salinan_dihantar_cawangan_pembangunan_acknowledged'])->toBeTrue()
+        ->and($contract->fresh()->negeri_mati_setem_acknowledgements['dates']['salinan_dihantar_cawangan_pembangunan_acknowledged'])->toBe('2026-04-09');
 
     $this->actingAs($negeriAdmin)
         ->get(route('kontrak-sewaan.index'))
@@ -1817,18 +1901,83 @@ test('admin negeri completes mati setem and moves application into kontrak sewaa
         ->assertSee('Admin Melaka Selesai');
 });
 
-test('admin hq must tick all three checkboxes before finalizing', function () {
+test('admin negeri sees the third mati setem checkbox with a date on the right', function () {
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Melaka']);
+    $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_MATI_SETEM);
+    $contract->update(['admin_negeri_user_id' => $admin->id]);
+
+    $this->actingAs($admin)
+        ->get(route('status-permohonan.review', $contract))
+        ->assertSuccessful()
+        ->assertSee('3 Salinan Dokumen Perjanjian telah dimatikan setem di LHDN')
+        ->assertSee('1 Salinan Dokumen Perjanjian telah diedar kepada Pemilik Premis')
+        ->assertSee('Salinan dihantar ke Cawangan Pembangunan melalui Pos/Kourier')
+        ->assertSee('name="dates[salinan_dihantar_cawangan_pembangunan_acknowledged]"', false)
+        ->assertSee('Selesai');
+});
+
+test('admin negeri autosave stores the mati setem date beside a ticked checkbox', function () {
+    Carbon::setTestNow(Carbon::parse('2026-10-23 20:00:00', 'UTC'));
+
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Melaka']);
+    $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_MATI_SETEM);
+    $contract->update(['admin_negeri_user_id' => $admin->id]);
+
+    $this->actingAs($admin)
+        ->patchJson(route('status-permohonan.mati-setem-autosave', $contract), [
+            'acknowledgements' => [
+                'mati_setem_lhdn_acknowledged' => '1',
+                'edaran_pemilik_acknowledged' => '0',
+                'salinan_dihantar_cawangan_pembangunan_acknowledged' => '1',
+                'dates' => [
+                    'salinan_dihantar_cawangan_pembangunan_acknowledged' => '2026-02-11',
+                ],
+            ],
+        ])
+        ->assertSuccessful()
+        ->assertJsonPath('success', true);
+
+    $saved = $contract->fresh()->negeri_mati_setem_acknowledgements;
+
+    expect($saved['mati_setem_lhdn_acknowledged'])->toBeTrue()
+        ->and($saved['edaran_pemilik_acknowledged'])->toBeFalse()
+        ->and($saved['salinan_dihantar_cawangan_pembangunan_acknowledged'])->toBeTrue()
+        ->and($saved['dates']['mati_setem_lhdn_acknowledged'])->toBe('2026-10-24')
+        ->and($saved['dates']['salinan_dihantar_cawangan_pembangunan_acknowledged'])->toBe('2026-02-11')
+        ->and($saved['dates'])->not->toHaveKey('edaran_pemilik_acknowledged');
+
+    Carbon::setTestNow();
+});
+
+test('admin negeri cannot complete mati setem without the third acknowledgement', function () {
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Melaka']);
+    $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_MATI_SETEM);
+
+    $this->actingAs($admin)
+        ->from(route('status-permohonan.review', $contract))
+        ->post(route('status-permohonan.complete-mati-setem', $contract), [
+            'mati_setem_lhdn_acknowledged' => '1',
+            'edaran_pemilik_acknowledged' => '1',
+        ])
+        ->assertRedirect(route('status-permohonan.review', $contract))
+        ->assertSessionHasErrors('salinan_dihantar_cawangan_pembangunan_acknowledged');
+
+    expect($contract->fresh()->workflow_tahap)->toBe(RentalContract::WORKFLOW_MATI_SETEM);
+});
+
+test('admin hq must tick every acknowledgement before finalizing', function () {
     $admin = User::factory()->create(['role' => 'admin_hq']);
     $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ);
 
     $this->actingAs($admin)
         ->from(route('status-permohonan.review', $contract))
         ->post(route('status-permohonan.finalize', $contract), [
-            'terima_dokumen_acknowledged' => '1',
-            'perjanjian_ditandatangani_acknowledged' => '1',
+            HqDraftAcknowledgements::TERIMA_PERJANJIAN_PEMILIK => '1',
+            HqDraftAcknowledgements::DIHANTAR_PKP_SAKSI => '1',
+            HqDraftAcknowledgements::DIHANTAR_TKPP_PENYEWA => '1',
         ])
         ->assertRedirect(route('status-permohonan.review', $contract))
-        ->assertSessionHasErrors('salinan_promis_acknowledged');
+        ->assertSessionHasErrors(HqDraftAcknowledgements::DIKEMBALIKAN_NEGERI);
 
     expect($contract->fresh()->workflow_tahap)->toBe(RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ);
 });
@@ -1838,11 +1987,7 @@ test('admin hq cannot finalize when not in returned draft stage', function () {
     $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS);
 
     $this->actingAs($admin)
-        ->post(route('status-permohonan.finalize', $contract), [
-            'terima_dokumen_acknowledged' => '1',
-            'perjanjian_ditandatangani_acknowledged' => '1',
-            'salinan_promis_acknowledged' => '1',
-        ])
+        ->post(route('status-permohonan.finalize', $contract), hqFinalizeAcknowledgements())
         ->assertForbidden();
 });
 
@@ -1851,11 +1996,7 @@ test('admin negeri cannot finalize application', function () {
     $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ);
 
     $this->actingAs($admin)
-        ->post(route('status-permohonan.finalize', $contract), [
-            'terima_dokumen_acknowledged' => '1',
-            'perjanjian_ditandatangani_acknowledged' => '1',
-            'salinan_promis_acknowledged' => '1',
-        ])
+        ->post(route('status-permohonan.finalize', $contract), hqFinalizeAcknowledgements())
         ->assertForbidden();
 });
 

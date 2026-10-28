@@ -22,6 +22,9 @@ test('dashboard shell uses the corporate theme', function () {
         ->get(route('dashboard'))
         ->assertSuccessful()
         ->assertSee('corp-app', false)
+        ->assertSee('alt="SPEKTRA"', false)
+        ->assertSee('images/spektra-logo.jpg', false)
+        ->assertDontSee('E-SEWAAN', false)
         ->assertSee('#c4a35a', false)
         ->assertSee('#0e2744', false);
 });
@@ -463,4 +466,82 @@ test('belum terima permohonan decreases after the follow-up is sent to hq', func
     );
 
     expect($negeriBreakdown->firstWhere('key', StatusTindakan::BARU_TERIMA_PERMOHONAN)['count'])->toBe(3);
+});
+
+test('status tindakan row opens the projects counted on that row', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+
+    $hq = createDashboardContract(RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $approved = createDashboardContract(RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS);
+    $within = createDashboardContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
+        'Johor',
+        now()->addMonths(2)->toDateString(),
+    );
+    $far = createDashboardContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
+        'Johor',
+        now()->addMonths(20)->toDateString(),
+    );
+    $otherNegeri = createDashboardContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
+        'Melaka',
+        now()->addMonths(2)->toDateString(),
+    );
+
+    $this->actingAs($admin)
+        ->get(route('dashboard'))
+        ->assertSuccessful()
+        ->assertSee('kontrak', false)
+        ->assertSee(route('status-permohonan.index', ['status_tindakan' => StatusTindakan::SEMAKAN_PUU]), false)
+        ->assertSee(route('kontrak-sewaan.index', ['status_tindakan' => StatusTindakan::BARU_TERIMA_PERMOHONAN]), false);
+
+    $semakanIds = collect(StatusTindakan::matchingIds(StatusTindakan::SEMAKAN_PUU))->sort()->values()->all();
+
+    $semakan = $this->actingAs($admin)->get(route('status-permohonan.index', [
+        'status_tindakan' => StatusTindakan::SEMAKAN_PUU,
+    ]));
+
+    $semakan->assertSuccessful()
+        ->assertSee('Senarai projek bagi status')
+        ->assertSee('Semakan PUU');
+
+    expect($semakan->viewData('contracts')->pluck('id')->sort()->values()->all())->toBe($semakanIds)
+        ->and($semakan->viewData('contracts')->pluck('id')->all())->toContain($hq->id)
+        ->and($semakan->viewData('contracts')->pluck('id')->all())->not->toContain($approved->id);
+
+    $this->actingAs($admin)
+        ->get(route('status-permohonan.index', [
+            'status_tindakan' => StatusTindakan::SEMAKAN_PUU,
+            'partial' => 1,
+        ]))
+        ->assertSuccessful()
+        ->assertSee('Semakan PUU');
+
+    $belumIds = collect(StatusTindakan::matchingIds(StatusTindakan::BARU_TERIMA_PERMOHONAN))->sort()->values()->all();
+
+    $belum = $this->actingAs($admin)->get(route('kontrak-sewaan.index', [
+        'status_tindakan' => StatusTindakan::BARU_TERIMA_PERMOHONAN,
+    ]));
+
+    expect($belum->viewData('contracts')->pluck('id')->sort()->values()->all())->toBe($belumIds)
+        ->and($belum->viewData('contracts')->pluck('id')->all())->toContain($within->id, $otherNegeri->id)
+        ->and($belum->viewData('contracts')->pluck('id')->all())->not->toContain($far->id, $hq->id);
+
+    $kuiri = $this->actingAs($admin)->get(route('status-permohonan.index', [
+        'status_tindakan' => StatusTindakan::KUIRI_PUU,
+    ]));
+
+    expect($kuiri->viewData('contracts')->total())->toBe(0)
+        ->and($kuiri->viewData('statusTindakanLabel'))->toBe('Kuiri PUU');
+
+    $negeri = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
+
+    $negeriBelum = $this->actingAs($negeri)->get(route('kontrak-sewaan.index', [
+        'status_tindakan' => StatusTindakan::BARU_TERIMA_PERMOHONAN,
+    ]));
+
+    expect($negeriBelum->viewData('contracts')->pluck('id')->all())
+        ->toContain($within->id)
+        ->not->toContain($otherNegeri->id);
 });

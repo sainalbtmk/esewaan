@@ -25,6 +25,14 @@ class StoreRentalApplicationRequest extends FormRequest
         return [
             'kategori_permohonan' => ['required', Rule::in(ApplicationCategories::values())],
             'negeri' => ['required', 'string', 'max:100'],
+            'daerah' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::exists('aadk_daerah', 'daerah')->where(
+                    fn ($query) => $query->where('negeri', (string) $this->input('negeri')),
+                ),
+            ],
             'nama_ptj' => ['required', 'string', 'max:255'],
             'alamat_penuh' => ['required', 'string', 'max:65535'],
             'nama_pemilik' => ['required', 'string', 'max:255'],
@@ -45,6 +53,8 @@ class StoreRentalApplicationRequest extends FormRequest
             'kategori_permohonan.required' => 'Sila pilih kategori permohonan.',
             'kategori_permohonan.in' => 'Kategori permohonan tidak sah.',
             'negeri.required' => 'Negeri diperlukan.',
+            'daerah.required' => 'Sila pilih daerah.',
+            'daerah.exists' => 'Daerah tidak sah bagi negeri yang dipilih.',
             'nama_ptj.required' => 'Nama premis diperlukan.',
             'alamat_penuh.required' => 'Alamat penuh premis diperlukan.',
             'nama_pemilik.required' => 'Pemilik diperlukan.',

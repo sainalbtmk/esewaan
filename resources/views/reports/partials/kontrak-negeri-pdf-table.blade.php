@@ -7,12 +7,13 @@
         <tr>
             <th>No</th>
             <th>Negeri</th>
+            <th>Daerah</th>
             <th>PTJ</th>
             <th>Alamat</th>
-            <th>Jenis Langganan</th>
+            <th>Jenis Bangunan</th>
             <th>Mula</th>
             <th>Tamat</th>
-            <th>Baki Hari</th>
+            <th>Baki Bulan</th>
             <th>Keluasan (mp)</th>
             <th>Kadar Sewa</th>
             <th>Pemilik</th>
@@ -33,17 +34,18 @@
                     default => '',
                 };
                 $statusClass = ContractNegeriReport::isStatusDiterima($contract) ? 'status-terima' : 'status-lain';
-                $bakiHari = ContractNegeriReport::bakiHari($contract);
+                $bakiBulan = ContractNegeriReport::bakiBulan($contract);
             @endphp
             <tr>
                 <td>{{ $index + 1 }}</td>
                 <td>{{ $contract->premise?->negeri ?? '–' }}</td>
+                <td>{{ $contract->premise?->daerah ?: '–' }}</td>
                 <td>{{ $contract->premise?->nama_ptj ?? '–' }}</td>
                 <td class="pre">{{ $contract->premise?->alamat_penuh ?: '–' }}</td>
                 <td>{{ ContractNegeriReport::jenisLangganan($contract) }}</td>
                 <td>{{ ContractNegeriReport::mula($contract) }}</td>
                 <td>{{ ContractNegeriReport::tamat($contract) }}</td>
-                <td class="{{ $bakiClass }}">{{ $bakiHari === null ? '–' : number_format($bakiHari) }}</td>
+                <td class="{{ $bakiClass }}">{{ $bakiBulan === null ? '–' : number_format($bakiBulan) }}</td>
                 <td>{{ ContractNegeriReport::keluasan($contract) }}</td>
                 <td>{{ ContractNegeriReport::kadarSewa($contract) }}</td>
                 <td>{{ $contract->premise?->nama_pemilik ?: '–' }}</td>
@@ -55,7 +57,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="16" class="muted">Tiada rekod untuk laporan ini.</td>
+                <td colspan="17" class="muted">Tiada rekod untuk laporan ini.</td>
             </tr>
         @endforelse
     </tbody>

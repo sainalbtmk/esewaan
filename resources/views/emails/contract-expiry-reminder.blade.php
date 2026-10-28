@@ -38,6 +38,6 @@
         <a href="{{ route('kontrak-sewaan.index') }}">Buka Senarai Kontrak Sewaan</a>
     </p>
     <p class="muted">{{ $tier->footnote() }}</p>
-    <p class="muted">Ini adalah notifikasi automatik daripada Sistem E-Sewaan AADK.</p>
+    <p class="muted">Ini adalah notifikasi automatik daripada SPEKTRA.</p>
 </body>
 </html>

@@ -22,6 +22,14 @@ class GenerateReportRequest extends FormRequest
         return [
             'jenis' => ['nullable', 'string', Rule::in(HqReportService::typeValues())],
             'negeri' => ['nullable', 'string', Rule::in(MalaysianStates::values())],
+            'daerah' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::exists('aadk_daerah', 'daerah')->where(
+                    fn ($query) => $query->where('negeri', (string) $this->input('negeri')),
+                ),
+            ],
         ];
     }
 
@@ -33,22 +41,25 @@ class GenerateReportRequest extends FormRequest
         return [
             'jenis.in' => 'Jenis laporan tidak sah.',
             'negeri.in' => 'Negeri tidak sah.',
+            'daerah.exists' => 'Daerah tidak sah bagi negeri yang dipilih.',
         ];
     }
 
     protected function prepareForValidation(): void
     {
-        $negeri = $this->input('negeri');
+        $negeri = filled($this->input('negeri')) ? $this->input('negeri') : null;
+        $daerah = $this->input('daerah');
         $jenis = $this->input('jenis');
 
         $this->merge([
-            'negeri' => filled($negeri) ? $negeri : null,
+            'negeri' => $negeri,
+            'daerah' => filled($negeri) && filled($daerah) ? $daerah : null,
             'jenis' => filled($jenis) ? $jenis : HqReportService::TYPE_RINGKASAN,
         ]);
     }
 
     /**
-     * @return array{jenis: string, negeri: string|null}
+     * @return array{jenis: string, negeri: string|null, daerah: string|null}
      */
     public function filters(): array
     {
@@ -57,6 +68,7 @@ class GenerateReportRequest extends FormRequest
         return [
             'jenis' => (string) ($validated['jenis'] ?? HqReportService::TYPE_RINGKASAN),
             'negeri' => filled($validated['negeri'] ?? null) ? (string) $validated['negeri'] : null,
+            'daerah' => filled($validated['daerah'] ?? null) ? (string) $validated['daerah'] : null,
         ];
     }
 }

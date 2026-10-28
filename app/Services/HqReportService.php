@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ActivityLog;
 use App\Models\ContractDocument;
+use App\Models\Premise;
 use App\Models\RentalContract;
 use App\Support\ContractNegeriReport;
 use App\Support\MalaysianStates;
@@ -51,38 +52,46 @@ class HqReportService
      *     jenis: string,
      *     jenisLabel: string,
      *     negeri: string|null,
+     *     daerah: string|null,
+     *     scopeLabel: string,
+     *     breakdownMode: string,
      *     generatedAt: string,
      *     summary: array{permohonanBaharu: int, dalamTindakan: int, kontrakAktif: int, kontrakLapanBulan: int, kontrakTigaBulan: int},
      *     statusBreakdown: list<array{key: string, status: string, count: int}>,
-     *     negeriBreakdown: list<array{negeri: string, permohonan: int, kontrak_aktif: int}>,
+     *     negeriBreakdown: list<array{label: string, permohonan: int, kontrak_aktif: int}>,
      *     rows: Collection<int, RentalContract>,
      *     statusGroups: list<array{key: string, title: string, rows: Collection<int, RentalContract>}>
      * }
      */
-    public function build(?string $jenis = null, ?string $negeri = null): array
+    public function build(?string $jenis = null, ?string $negeri = null, ?string $daerah = null): array
     {
         $jenis = in_array($jenis, self::typeValues(), true) ? $jenis : self::TYPE_RINGKASAN;
         $negeri = filled($negeri) && in_array($negeri, MalaysianStates::values(), true) ? $negeri : null;
+        $daerah = filled($negeri) && filled($daerah) ? $daerah : null;
 
-        $activeContracts = $this->activeContractsQuery($negeri)
+        $activeContracts = $this->activeContractsQuery($negeri, $daerah)
+            ->with('premise')
+            ->get();
+
+        $overdueContracts = $this->overdueContractsQuery($negeri, $daerah)
             ->with('premise')
             ->get();
 
         $kontrakTigaBulan = $activeContracts
             ->filter->isContractEndWithinThreeMonths()
-            ->count();
+            ->count() + $overdueContracts->count();
 
         $kontrakLapanBulan = $activeContracts
             ->filter(fn (RentalContract $contract): bool => $contract->isContractEndWithinEightMonths()
                 && ! $contract->isContractEndWithinThreeMonths())
             ->count();
 
-        $statusBreakdown = collect(StatusTindakan::breakdownWithCounts($negeri))
+        $statusBreakdown = collect(StatusTindakan::breakdownWithCounts($negeri, $daerah))
             ->filter(fn (array $row): bool => $row['count'] > 0)
             ->values()
             ->all();
 
-        $rows = $this->rowsForType($jenis, $negeri, $activeContracts);
+        $rows = $this->rowsForType($jenis, $negeri, $daerah, $activeContracts, $overdueContracts);
         $statusGroups = [];
 
         if ($jenis === self::TYPE_STATUS_SEWAAN) {
@@ -96,16 +105,19 @@ class HqReportService
             'jenis' => $jenis,
             'jenisLabel' => self::typeLabels()[$jenis],
             'negeri' => $negeri,
+            'daerah' => $daerah,
+            'scopeLabel' => $this->scopeLabel($negeri, $daerah),
+            'breakdownMode' => filled($negeri) ? 'daerah' : 'negeri',
             'generatedAt' => now()->timezone(config('app.timezone'))->format('d/m/Y H:i'),
             'summary' => [
-                'permohonanBaharu' => $this->permohonanBaharuQuery($negeri)->count(),
+                'permohonanBaharu' => $this->permohonanBaharuQuery($negeri, $daerah)->count(),
                 'dalamTindakan' => (int) collect($statusBreakdown)->sum('count'),
                 'kontrakAktif' => $activeContracts->count(),
                 'kontrakLapanBulan' => $kontrakLapanBulan,
                 'kontrakTigaBulan' => $kontrakTigaBulan,
             ],
             'statusBreakdown' => $statusBreakdown,
-            'negeriBreakdown' => $this->negeriBreakdown($negeri),
+            'negeriBreakdown' => $this->locationBreakdown($negeri, $daerah),
             'rows' => $rows,
             'statusGroups' => $statusGroups,
         ];
@@ -115,65 +127,88 @@ class HqReportService
      * @param  Builder<RentalContract>  $query
      * @return Builder<RentalContract>
      */
-    private function scopeToNegeri(Builder $query, ?string $negeri): Builder
+    private function scopeToLocation(Builder $query, ?string $negeri, ?string $daerah): Builder
     {
-        if (! filled($negeri)) {
+        if (! filled($negeri) && ! filled($daerah)) {
             return $query;
         }
 
-        return $query->whereHas('premise', fn (Builder $premiseQuery) => $premiseQuery->where('negeri', $negeri));
+        return $query->whereHas('premise', function (Builder $premiseQuery) use ($negeri, $daerah): void {
+            if (filled($negeri)) {
+                $premiseQuery->where('negeri', $negeri);
+            }
+
+            if (filled($daerah)) {
+                $premiseQuery->where('daerah', $daerah);
+            }
+        });
     }
 
     /**
      * @return Builder<RentalContract>
      */
-    private function permohonanBaharuQuery(?string $negeri): Builder
+    private function permohonanBaharuQuery(?string $negeri, ?string $daerah): Builder
     {
         return RentalContract::query()
             ->where('workflow_tahap', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ)
-            ->tap(fn (Builder $query) => $this->scopeToNegeri($query, $negeri));
+            ->tap(fn (Builder $query) => $this->scopeToLocation($query, $negeri, $daerah));
     }
 
     /**
      * @return Builder<RentalContract>
      */
-    private function activeContractsQuery(?string $negeri): Builder
+    private function activeContractsQuery(?string $negeri, ?string $daerah): Builder
     {
         return RentalContract::query()
             ->hqApproved()
             ->notSuperseded()
             ->kontrakNotExpired()
-            ->tap(fn (Builder $query) => $this->scopeToNegeri($query, $negeri));
+            ->tap(fn (Builder $query) => $this->scopeToLocation($query, $negeri, $daerah));
+    }
+
+    /**
+     * HQ-approved contracts whose remaining term is already below zero months.
+     *
+     * @return Builder<RentalContract>
+     */
+    private function overdueContractsQuery(?string $negeri, ?string $daerah): Builder
+    {
+        return RentalContract::query()
+            ->hqApproved()
+            ->notSuperseded()
+            ->kontrakExpired()
+            ->tap(fn (Builder $query) => $this->scopeToLocation($query, $negeri, $daerah));
     }
 
     /**
      * @return Builder<RentalContract>
      */
-    private function permohonanQuery(?string $negeri): Builder
+    private function permohonanQuery(?string $negeri, ?string $daerah): Builder
     {
         return RentalContract::query()
             ->whereNotIn('workflow_tahap', RentalContract::hqApprovedWorkflows())
-            ->tap(fn (Builder $query) => $this->scopeToNegeri($query, $negeri))
+            ->tap(fn (Builder $query) => $this->scopeToLocation($query, $negeri, $daerah))
             ->with('premise')
             ->latest('updated_at');
     }
 
     /**
      * @param  Collection<int, RentalContract>  $activeContracts
+     * @param  Collection<int, RentalContract>  $overdueContracts
      * @return Collection<int, RentalContract>
      */
-    private function rowsForType(string $jenis, ?string $negeri, Collection $activeContracts): Collection
+    private function rowsForType(string $jenis, ?string $negeri, ?string $daerah, Collection $activeContracts, Collection $overdueContracts): Collection
     {
         return match ($jenis) {
             self::TYPE_KONTRAK_AKTIF => $activeContracts
                 ->sortBy(fn (RentalContract $contract) => $contract->premise?->nama_ptj ?? '')
                 ->values(),
-            self::TYPE_PERMOHONAN => $this->permohonanQuery($negeri)->get(),
-            self::TYPE_STATUS_SEWAAN => $this->statusSewaanContracts($negeri),
+            self::TYPE_PERMOHONAN => $this->permohonanQuery($negeri, $daerah)->get(),
+            self::TYPE_STATUS_SEWAAN => $this->statusSewaanContracts($negeri, $daerah),
             self::TYPE_KONTRAK_NEGERI => $this->attachChronology(
                 RentalContract::query()
                     ->notSuperseded()
-                    ->tap(fn (Builder $query) => $this->scopeToNegeri($query, $negeri))
+                    ->tap(fn (Builder $query) => $this->scopeToLocation($query, $negeri, $daerah))
                     ->with([
                         'premise',
                         'processLogs' => fn ($query) => $query->orderBy('tarikh_tindakan')->orderBy('id'),
@@ -181,15 +216,18 @@ class HqReportService
                     ->get()
                     ->sortBy(fn (RentalContract $contract): array => [
                         $contract->premise?->negeri ?? '',
+                        $contract->premise?->daerah ?? '',
                         $contract->premise?->nama_ptj ?? '',
                         $contract->id,
                     ])
                     ->values()
             ),
-            default => $this->permohonanQuery($negeri)->get()
+            default => $this->permohonanQuery($negeri, $daerah)->get()
                 ->concat($activeContracts)
+                ->concat($overdueContracts)
                 ->sortBy(fn (RentalContract $contract) => [
                     $contract->premise?->negeri ?? '',
+                    $contract->premise?->daerah ?? '',
                     $contract->premise?->nama_ptj ?? '',
                 ])
                 ->values(),
@@ -199,12 +237,12 @@ class HqReportService
     /**
      * @return Collection<int, RentalContract>
      */
-    private function statusSewaanContracts(?string $negeri): Collection
+    private function statusSewaanContracts(?string $negeri, ?string $daerah): Collection
     {
         $inProcess = RentalContract::query()
             ->notSuperseded()
             ->whereIn('workflow_tahap', StatusTindakan::sentToHqWorkflows())
-            ->tap(fn (Builder $query) => $this->scopeToNegeri($query, $negeri))
+            ->tap(fn (Builder $query) => $this->scopeToLocation($query, $negeri, $daerah))
             ->with([
                 'premise',
                 'parentContract',
@@ -217,7 +255,6 @@ class HqReportService
         $awaitingFollowUp = RentalContract::query()
             ->hqApproved()
             ->notSuperseded()
-            ->kontrakNotExpired()
             ->whereDoesntHave(
                 'followUpApplications',
                 fn (Builder $query) => $query->where(
@@ -226,10 +263,11 @@ class HqReportService
                     RentalContract::WORKFLOW_MENUNGGU_PROCEED_NEGERI,
                 ),
             )
-            ->tap(fn (Builder $query) => $this->scopeToNegeri($query, $negeri))
+            ->tap(fn (Builder $query) => $this->scopeToLocation($query, $negeri, $daerah))
             ->with(['premise', 'parentContract', 'followUpApplications'])
             ->get()
-            ->filter(fn (RentalContract $contract): bool => $contract->isContractEndWithinEightMonths());
+            ->filter(fn (RentalContract $contract): bool => $contract->isExpired()
+                || $contract->isContractEndWithinEightMonths());
 
         return $inProcess
             ->concat($awaitingFollowUp)
@@ -267,19 +305,55 @@ class HqReportService
         });
     }
 
-    /**
-     * @return list<array{negeri: string, permohonan: int, kontrak_aktif: int}>
-     */
-    private function negeriBreakdown(?string $negeri): array
+    private function scopeLabel(?string $negeri, ?string $daerah): string
     {
-        $states = filled($negeri) ? [$negeri] : MalaysianStates::values();
+        if (filled($negeri) && filled($daerah)) {
+            return $negeri.' · Daerah '.$daerah;
+        }
 
-        return collect($states)
+        if (filled($negeri)) {
+            return $negeri;
+        }
+
+        return 'Semua negeri';
+    }
+
+    /**
+     * @return list<array{label: string, permohonan: int, kontrak_aktif: int}>
+     */
+    private function locationBreakdown(?string $negeri, ?string $daerah): array
+    {
+        if (filled($negeri)) {
+            $labels = filled($daerah)
+                ? [$daerah]
+                : Premise::query()
+                    ->where('negeri', $negeri)
+                    ->where('daerah', '!=', '')
+                    ->whereHas('rentalContracts')
+                    ->distinct()
+                    ->orderBy('daerah')
+                    ->pluck('daerah')
+                    ->all();
+
+            return collect($labels)
+                ->map(function (string $label) use ($negeri): array {
+                    return [
+                        'label' => $label,
+                        'permohonan' => $this->permohonanQuery($negeri, $label)->count(),
+                        'kontrak_aktif' => $this->activeContractsQuery($negeri, $label)->count(),
+                    ];
+                })
+                ->filter(fn (array $row): bool => $row['permohonan'] > 0 || $row['kontrak_aktif'] > 0)
+                ->values()
+                ->all();
+        }
+
+        return collect(MalaysianStates::values())
             ->map(function (string $state): array {
                 return [
-                    'negeri' => $state,
-                    'permohonan' => $this->permohonanQuery($state)->count(),
-                    'kontrak_aktif' => $this->activeContractsQuery($state)->count(),
+                    'label' => $state,
+                    'permohonan' => $this->permohonanQuery($state, null)->count(),
+                    'kontrak_aktif' => $this->activeContractsQuery($state, null)->count(),
                 ];
             })
             ->filter(fn (array $row): bool => $row['permohonan'] > 0 || $row['kontrak_aktif'] > 0)

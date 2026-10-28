@@ -9,7 +9,7 @@
             <meta name="sidebar-notifications-url" content="{{ route('sidebar-notifications') }}">
         @endif
     @endauth
-    <title>{{ config('app.name') }} - @yield('title', 'E-Sewaan AADK')</title>
+    <title>{{ config('app.name') }} - @yield('title', 'SPEKTRA')</title>
     <link rel="icon" href="{{ asset('favicon.png') . '?v=' . filemtime(public_path('favicon.png')) }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ asset('favicon.png') . '?v=' . filemtime(public_path('favicon.png')) }}">
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
@@ -42,14 +42,14 @@
         {{-- Desktop Sidebar --}}
         <aside id="sidebar" class="glass-sidebar hidden lg:flex h-full min-h-0 w-60 flex-shrink-0 flex-col overflow-hidden transition-all duration-300">
             <div class="flex h-full min-h-0 flex-col">
-                <div class="flex h-20 flex-shrink-0 items-center gap-3 border-b border-white/10 px-4">
+                <div class="flex flex-shrink-0 items-center border-b border-white/10 px-3 py-3">
                     @php
                         $logoPath = null;
                         $custom = config('app.logo');
                         if ($custom && file_exists(public_path($custom))) {
                             $logoPath = $custom;
                         } else {
-                            foreach (['aadk.png', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'images/logo.png', 'images/logo.jpg', 'images/logo.jpeg', 'images/logo.webp'] as $name) {
+                            foreach (['images/spektra-logo.jpg', 'aadk.png', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'images/logo.png', 'images/logo.jpg', 'images/logo.jpeg', 'images/logo.webp'] as $name) {
                                 if (file_exists(public_path($name))) {
                                     $logoPath = $name;
                                     break;
@@ -58,16 +58,13 @@
                         }
                     @endphp
                     @if($logoPath)
-                        <img src="{{ asset($logoPath) }}" alt="E-SEWAAN" class="h-9 w-9 min-w-[2.25rem] max-h-9 max-w-9 rounded-xl object-contain flex-shrink-0 shadow-lg bg-white p-0.5">
+                        <img src="{{ asset($logoPath) }}" alt="SPEKTRA" class="h-auto w-full rounded-lg bg-white object-contain p-1.5">
                     @else
-                        <div class="w-9 h-9 rounded-xl bg-slate-600 flex items-center justify-center flex-shrink-0 shadow-lg">
-                            <svg class="w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                        <div>
+                            <p class="text-sm font-semibold leading-tight text-white">SPEKTRA</p>
+                            <p class="text-xs leading-snug text-white/50">Sistem Pemantauan Kontrak Sewaan Premis AADK</p>
                         </div>
                     @endif
-                    <div>
-                        <p class="text-white font-semibold text-sm leading-tight">E-SEWAAN</p>
-                        <p class="text-white/50 text-xs">Sistem Kontrak Sewaan</p>
-                    </div>
                 </div>
                 <nav class="sidebar-scroll min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-y-contain px-3 py-4 pr-2 scroll-smooth">
                     @if(auth()->user()->isAdmin())
@@ -93,34 +90,14 @@
         <div id="mobile-sidebar-overlay" class="lg:hidden fixed inset-0 z-40 hidden">
             <div class="fixed inset-0 bg-black/50" id="mobile-overlay-backdrop"></div>
             <aside class="glass-sidebar relative z-50 flex h-full min-h-0 w-64 flex-col overflow-hidden shadow-xl">
-                <div class="flex h-20 flex-shrink-0 items-center justify-between border-b border-white/10 px-4">
-                    <div class="flex items-center gap-3">
-                        @if(isset($logoPath) && $logoPath)
-                            <img src="{{ asset($logoPath) }}" alt="E-SEWAAN" class="h-9 w-9 min-w-[2.25rem] max-h-9 max-w-9 rounded-xl object-contain flex-shrink-0 bg-white p-0.5">
+                <div class="flex flex-shrink-0 items-center justify-between gap-3 border-b border-white/10 px-3 py-3">
+                    <div class="min-w-0 flex-1">
+                        @if($logoPath)
+                            <img src="{{ asset($logoPath) }}" alt="SPEKTRA" class="h-auto w-full rounded-lg bg-white object-contain p-1.5">
                         @else
-                            @php
-                                if (!isset($logoPath) || !$logoPath) {
-                                    $logoPath = null;
-                                    $custom = config('app.logo');
-                                    if ($custom && file_exists(public_path($custom))) {
-                                        $logoPath = $custom;
-                                    } else {
-                                        foreach (['aadk.png', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'images/logo.png', 'images/logo.jpg', 'images/logo.jpeg', 'images/logo.webp'] as $name) {
-                                            if (file_exists(public_path($name))) {
-                                                $logoPath = $name;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            @endphp
-                            @if($logoPath)
-                                <img src="{{ asset($logoPath) }}" alt="E-SEWAAN" class="h-9 w-9 min-w-[2.25rem] max-h-9 max-w-9 rounded-xl object-contain flex-shrink-0 bg-white p-0.5">
-                            @else
-                                <div class="w-9 h-9 rounded-xl bg-slate-600 flex items-center justify-center"><span class="text-white font-bold text-sm">E</span></div>
-                            @endif
+                            <p class="text-sm font-semibold text-white">SPEKTRA</p>
+                            <p class="text-xs text-white/50">Sistem Pemantauan Kontrak Sewaan Premis AADK</p>
                         @endif
-                        <div><p class="text-white font-semibold text-sm">E-SEWAAN</p><p class="text-white/50 text-xs">Sistem Kontrak Sewaan</p></div>
                     </div>
                     <button type="button" id="mobile-close-sidebar" class="p-2 text-white/60 hover:text-white">&times;</button>
                 </div>
@@ -156,8 +133,8 @@
                         <svg class="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                     <div>
-                        <h1 class="text-base font-semibold text-slate-900">@yield('header_title', 'E-Sewaan')</h1>
-                        <p class="text-xs text-slate-500 hidden sm:block">@yield('header_subtitle', 'Sistem Pengurusan Kontrak Sewaan AADK')</p>
+                        <h1 class="text-base font-semibold text-slate-900">@yield('header_title', 'SPEKTRA')</h1>
+                        <p class="text-xs text-slate-500 hidden sm:block">@yield('header_subtitle', 'Sistem Pemantauan Kontrak Sewaan Premis AADK')</p>
                     </div>
                 </div>
                 @if(auth()->user()->isAdmin())
@@ -207,7 +184,7 @@
         if ($custom && file_exists(public_path($custom))) {
             $guestLogoPath = $custom;
         } else {
-            foreach (['aadk.png', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'images/logo.png', 'images/logo.jpg', 'images/logo.jpeg', 'images/logo.webp'] as $name) {
+            foreach (['images/spektra-logo.jpg', 'aadk.png', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'images/logo.png', 'images/logo.jpg', 'images/logo.jpeg', 'images/logo.webp'] as $name) {
                 if (file_exists(public_path($name))) {
                     $guestLogoPath = $name;
                     break;
@@ -219,12 +196,13 @@
         <header class="corp-header">
             <a href="{{ route('login') }}" class="corp-lockup">
                 @if($guestLogoPath)
-                    <img src="{{ asset($guestLogoPath) }}" alt="AADK" class="corp-logo">
+                    <img src="{{ asset($guestLogoPath) }}" alt="SPEKTRA" class="corp-logo">
+                @else
+                    <div>
+                        <p class="corp-system">SPEKTRA</p>
+                        <p class="corp-agency">Agensi Antidadah Kebangsaan</p>
+                    </div>
                 @endif
-                <div>
-                    <p class="corp-system">E-SEWAAN</p>
-                    <p class="corp-agency">Agensi Antidadah Kebangsaan</p>
-                </div>
             </a>
             <a href="{{ route('login') }}" class="corp-guest-login">Log Masuk</a>
         </header>

@@ -5,6 +5,9 @@
     $puuAmendments = $contract->documents
         ->where('jenis', \App\Models\ContractDocument::JENIS_PINDAAN_PUU)
         ->keyBy(fn ($document) => (int) $document->semakan_round);
+    $approvedDocuments = $contract->documents
+        ->where('jenis', \App\Models\ContractDocument::JENIS_LULUS_PUU)
+        ->keyBy(fn ($document) => (int) $document->semakan_round);
 @endphp
 
 @if($draftDocuments->isNotEmpty())
@@ -36,6 +39,16 @@
                                 class="truncate text-xs text-amber-800 underline-offset-2 hover:underline"
                             >
                                 Dokumen pindaan PUU: {{ $amendment->nama_fail }}
+                            </a>
+                        @endif
+                        @if($approved = $approvedDocuments->get((int) $document->semakan_round))
+                            <a
+                                href="{{ $approved->downloadUrl() }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="truncate text-xs text-emerald-800 underline-offset-2 hover:underline"
+                            >
+                                Dokumen lulus PUU: {{ $approved->nama_fail }}
                             </a>
                         @endif
                     </div>

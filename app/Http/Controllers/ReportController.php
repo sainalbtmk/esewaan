@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\GenerateReportRequest;
+use App\Models\AadkDaerah;
 use App\Services\HqReportService;
 use App\Support\MalaysianStates;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -17,11 +18,12 @@ class ReportController extends Controller
     public function index(GenerateReportRequest $request): View
     {
         $filters = $request->filters();
-        $report = $this->reports->build($filters['jenis'], $filters['negeri']);
+        $report = $this->reports->build($filters['jenis'], $filters['negeri'], $filters['daerah']);
 
         return view('reports.index', [
             'report' => $report,
             'negeriList' => MalaysianStates::all(),
+            'daerahByNegeri' => AadkDaerah::groupedNames(),
             'jenisList' => HqReportService::typeLabels(),
             'filters' => $filters,
         ]);
@@ -30,9 +32,9 @@ class ReportController extends Controller
     public function exportPdf(GenerateReportRequest $request): Response|StreamedResponse
     {
         $filters = $request->filters();
-        $report = $this->reports->build($filters['jenis'], $filters['negeri']);
+        $report = $this->reports->build($filters['jenis'], $filters['negeri'], $filters['daerah']);
 
-        $filename = 'laporan-esewaan-'.now()->format('Ymd-His').'.pdf';
+        $filename = 'laporan-spektra-'.now()->format('Ymd-His').'.pdf';
         $paper = in_array($report['jenis'], [
             HqReportService::TYPE_KONTRAK_NEGERI,
             HqReportService::TYPE_STATUS_SEWAAN,

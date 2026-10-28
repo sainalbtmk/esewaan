@@ -210,12 +210,13 @@
     }
 
     .corp-guest .corp-logo {
-        width: 52px;
-        height: 52px;
+        height: 68px;
+        width: auto;
+        max-width: min(440px, 68vw);
         object-fit: contain;
         background: #fff;
-        border-radius: 4px;
-        padding: 3px;
+        border-radius: 6px;
+        padding: 4px 8px;
     }
 
     .corp-guest .corp-system,

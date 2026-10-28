@@ -22,6 +22,11 @@ test('login page shows forgot password link', function () {
         ->assertSuccessful()
         ->assertSee('Lupa Katalaluan?', false)
         ->assertSee('Agensi Antidadah Kebangsaan', false)
+        ->assertSee('SPEKTRA', false)
+        ->assertSee('images/spektra-logo.jpg', false)
+        ->assertSee('sistem SPEKTRA', false)
+        ->assertDontSee('E-SEWAAN', false)
+        ->assertDontSee('E-Sewaan', false)
         ->assertSee('corp-login', false)
         ->assertSee(route('password.request', absolute: false), false);
 });

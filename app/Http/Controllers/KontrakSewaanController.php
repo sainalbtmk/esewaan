@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\SidebarNotificationService;
 use App\Support\AdminProceedSteps;
 use App\Support\RentalContractListSearch;
+use App\Support\StatusTindakan;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -22,9 +23,11 @@ class KontrakSewaanController extends Controller
         $tab = $request->input('tab', 'active');
         $tab = in_array($tab, ['active', 'history'], true) ? $tab : 'active';
 
+        $statusTindakan = $tab === 'active' ? StatusTindakan::keyFrom($request->input('status_tindakan')) : null;
+
         $contracts = ($tab === 'history'
             ? $this->historyQuery($request->user(), $search)
-            : $this->activeQuery($request->user(), $search))
+            : $this->activeQuery($request->user(), $search, $statusTindakan))
             ->paginate(15)
             ->withQueryString();
 
@@ -32,6 +35,8 @@ class KontrakSewaanController extends Controller
             'contracts' => $contracts,
             'search' => $search,
             'tab' => $tab,
+            'statusTindakan' => $statusTindakan,
+            'statusTindakanLabel' => $statusTindakan !== null ? StatusTindakan::label($statusTindakan) : null,
         ];
 
         if ($this->wantsTablePartial($request)) {
@@ -86,12 +91,17 @@ class KontrakSewaanController extends Controller
     /**
      * @return Builder<RentalContract>
      */
-    private function activeQuery(User $user, string $search): Builder
+    private function activeQuery(User $user, string $search, ?string $statusTindakan = null): Builder
     {
         $placeholder = RentalContract::PLACEHOLDER_CONTRACT_DATE;
 
         return $this->baseQuery($user, $search)
             ->kontrakNotExpired()
+            ->tap(fn (Builder $query) => StatusTindakan::applyFilter(
+                $query,
+                $statusTindakan,
+                $user->isAdminNegeri() ? $user->negeri : null,
+            ))
             ->orderByRaw(
                 'CASE WHEN tarikh_mula = ? THEN COALESCE(sah_sehingga, \'9999-12-31\') ELSE COALESCE(tarikh_tamat, \'9999-12-31\') END ASC',
                 [$placeholder]

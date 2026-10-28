@@ -11,9 +11,9 @@ enum ContractExpiryReminderTier: string
     public function subject(): string
     {
         return match ($this) {
-            self::EightMonth => 'E-Sewaan AADK: Peringatan Kontrak Bawah 8 Bulan',
-            self::FiveMonth => 'E-Sewaan AADK: Peringatan Tegas Kontrak Bawah 5 Bulan',
-            self::ThreeMonth => 'E-Sewaan AADK: AMARAN Kontrak Baki 3 Bulan',
+            self::EightMonth => 'SPEKTRA: Peringatan Kontrak Bawah 8 Bulan',
+            self::FiveMonth => 'SPEKTRA: Peringatan Tegas Kontrak Bawah 5 Bulan',
+            self::ThreeMonth => 'SPEKTRA: AMARAN Kontrak Baki 3 Bulan',
         };
     }
 

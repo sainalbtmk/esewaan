@@ -36,7 +36,7 @@ class ContractFollowUpController extends Controller
             $premise = Premise::query()->create([
                 'nama_ptj' => '',
                 'negeri' => $parentPremise->negeri,
-                'daerah' => '',
+                'daerah' => $kategori === ApplicationCategories::LANJUTAN ? $parentPremise->daerah : '',
                 'alamat_penuh' => '',
                 'jenis_bangunan' => null,
                 'nama_pemilik' => null,

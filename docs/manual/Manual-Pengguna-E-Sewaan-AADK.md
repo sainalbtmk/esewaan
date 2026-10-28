@@ -1,12 +1,12 @@
 # Manual Pengguna
 
-**Sistem E-Sewaan AADK**  
-Sistem Pengurusan Kontrak Sewaan  
+**SPEKTRA**  
+Sistem Pemantauan Kontrak Sewaan Premis AADK  
 Agensi Antidadah Kebangsaan
 
 | Medan | Butiran |
 | --- | --- |
-| No. dokumen | AADK/CP/E-SEWAAN/MANUAL/001 |
+| No. dokumen | AADK/CP/SPEKTRA/MANUAL/001 |
 | Versi | 1.0 |
 | Tarikh | 22 Oktober 2026 |
 | Status | Untuk kegunaan pengguna |
@@ -52,7 +52,7 @@ Manual ini menerangkan cara menggunakan setiap fungsi yang dipaparkan pada skrin
 
 ## 1. Pengenalan
 
-E-Sewaan AADK merekod perjalanan permohonan sewaan premis, dari pendaftaran oleh pentadbir negeri sehingga kontrak berkuat kuasa. Sistem menyimpan butiran premis, langkah tindakan, senarai semak kelulusan, draf perjanjian, pengakuan tandatangan, pengakuan mati setem, senarai kontrak dan laporan Ibu Pejabat.
+SPEKTRA merekod perjalanan permohonan sewaan premis, dari pendaftaran oleh pentadbir negeri sehingga kontrak berkuat kuasa. Sistem menyimpan butiran premis, langkah tindakan, senarai semak kelulusan, draf perjanjian, pengakuan tandatangan, pengakuan mati setem, senarai kontrak dan laporan Ibu Pejabat.
 
 Sistem **merekod** bahawa tindakan luar telah dibuat. Kelulusan MOF, Kementerian Ekonomi, BPH, tandatangan fizikal TKPP, muat naik ProMIS dan proses LHDN tetap dilakukan di luar sistem. Pengguna menanda item yang berkaitan selepas tindakan itu selesai.
 
@@ -308,7 +308,7 @@ Senarai ini mengira kontrak mengikut status kerja semasa. Label yang dipaparkan,
 12. Tandatangan Penyewa (AADK)
 13. Tindakan Mati Setem
 
-Angka bertambah atau berkurang apabila senarai semak, draf dan pengakuan dikemaskini. **Belum Terima Permohonan** mengira kontrak aktif yang berbaki bawah 8 bulan dan permohonan susulannya belum dihantar ke Ibu Pejabat.
+Angka bertambah atau berkurang apabila senarai semak, draf dan pengakuan dikemaskini. **Belum Terima Permohonan** mengira kontrak aktif yang berbaki bawah 8 bulan dan permohonan susulannya belum dihantar ke Ibu Pejabat. Klik mana-mana baris untuk membuka senarai projek yang dikira pada status itu. Angka di hujung baris kekal.
 
 ### Senarai amaran tamat kontrak
 
@@ -577,10 +577,10 @@ Pada status **Semakan PUU**, Ibu Pejabat mempunyai dua tindakan:
 
 | Butang | Kesan |
 | --- | --- |
-| Luluskan | Semakan diluluskan. Status menjadi **Draf Perjanjian dikembalikan ke Pentadbir Negeri untuk dapatkan Tandatangan Pemilik Premis**. Negeri menyediakan dokumen perjanjian |
+| Luluskan | Semakan diluluskan. Pengesahan meminta muat naik dokumen yang telah lulus (PDF, maksimum 40 MB). Status menjadi **Draf Perjanjian dikembalikan ke Pentadbir Negeri untuk dapatkan Tandatangan Pemilik Premis**. Dokumen lulus dipaparkan dalam sejarah muat naik. Negeri menyediakan dokumen perjanjian |
 | Semak Semula | Draf dikembalikan kepada Negeri. Pengesahan meminta muat naik dokumen pindaan PUU (PDF, maksimum 40 MB). Mesej menyatakan draf perjanjian dikembalikan oleh PUU untuk pindaan lanjut. Status menjadi **Kuiri PUU**. Dokumen pindaan dipaparkan dalam sejarah muat naik. Negeri memuat naik PDF baharu |
 
-**Luluskan** meminta pengesahan. **Semak Semula** membuka pengesahan yang mengandungi ruang muat naik PDF. **Ya, Semak Semula** hanya diteruskan selepas dokumen pindaan dipilih.
+**Luluskan** dan **Semak Semula** membuka pengesahan yang mengandungi ruang muat naik PDF dengan had saiz yang sama. **Ya, Luluskan** hanya diteruskan selepas dokumen yang telah lulus dipilih. **Ya, Semak Semula** hanya diteruskan selepas dokumen pindaan dipilih.
 
 Jika status ialah **Pindaan Berdasarkan PUU**, Ibu Pejabat menekan **Selesai** selepas pindaan selesai. Permohonan diteruskan ke draf lulus.
 
@@ -605,13 +605,14 @@ Selepas empat pengakuan lengkap, tekan butang itu. Status menjadi **Dokumen Perj
 
 ## 18. Pengesahan dan tandatangan Ibu Pejabat
 
-Ibu Pejabat membuka permohonan yang telah dikembalikan negeri. Pada **Pengesahan & Tandatangan**, tandakan ketiga-tiga perkara sebelum menghantar untuk mati setem:
+Ibu Pejabat membuka permohonan yang telah dikembalikan negeri. Pada **Tindakan Ibu Pejabat**, tandakan empat perkara sebelum menghantar untuk mati setem:
 
-1. Cawangan Pembangunan AADK menerima dokumen perjanjian dan mengemukakan kepada TKPP AADK untuk tandatangan bagi pihak AADK/Kerajaan Malaysia.
-2. Perjanjian ditandatangani TKPP AADK dikembalikan kepada AADK Negeri untuk dimatikan setem dan edaran kepada pemilik premis.
-3. 1 salinan perjanjian dihantar ke Cawangan Pembangunan AADK untuk dimuat naik ke dalam Sistem ProMIS dan rekod fail Cawangan Pembangunan.
+1. Cawangan Pembangunan terima Perjanjian yang telah ditandatangani oleh Pemilik Premis.
+2. Perjanjian dihantar ke Pejabat PKP untuk tandatangan Saksi.
+3. Perjanjian dihantar ke Pejabat TKPP untuk tandatangan Penyewa.
+4. Perjanjian dikembalikan ke AADK Negeri untuk tindakan mati setem dan edaran kepada Pemilik Premis.
 
-Tanda disimpan secara automatik. Penghantaran disekat sehingga tiga pengakuan lengkap. Tekan **Hantar ke Negeri**. Status menjadi **Menunggu Mati Setem**. Negeri menerima pemakluman.
+Tarikh di sebelah kanan setiap kotak diisi dengan tarikh tanda dan boleh diubah. Tanda disimpan secara automatik. Penghantaran disekat sehingga empat pengakuan lengkap. Tekan **Hantar ke Negeri**. Status menjadi **Menunggu Mati Setem**. Negeri menerima pemakluman.
 
 ---
 
@@ -621,8 +622,9 @@ Negeri membuka permohonan berstatus **Menunggu Mati Setem** dan menandakan:
 
 1. 3 Salinan Dokumen Perjanjian telah dimatikan setem di LHDN.
 2. 1 Salinan Dokumen Perjanjian telah diedar kepada Pemilik Premis.
+3. Salinan dihantar ke Cawangan Pembangunan melalui Pos/Kourier.
 
-Satu pengakuan tidak mencukupi. Selepas kedua-duanya ditanda, tekan **Selesai**.
+Tarikh di sebelah kanan setiap kotak diisi dengan tarikh tanda dan boleh diubah. Nyah tanda memadam tarikh itu. Satu pengakuan tidak mencukupi. Selepas ketiga-tiganya ditanda, tekan **Selesai**.
 
 Permohonan keluar daripada senarai kerja aktif dan muncul dalam **Senarai Kontrak Sewaan**. Mesej kejayaan dipaparkan. Papan pemuka dan laporan Ibu Pejabat mengira kontrak baharu itu. Pemakluman selesai dihantar kepada pihak yang ditetapkan.
 
@@ -748,10 +750,10 @@ Di atas jadual, lima kad ringkasan dan pecahan **Status Tindakan** dipaparkan ba
 | Ringkasan Keseluruhan | Gabungan permohonan yang masih berjalan dan kontrak aktif, disusun mengikut negeri dan nama premis |
 | Senarai Permohonan | Permohonan yang belum menjadi kontrak berkuat kuasa |
 | Senarai Kontrak Aktif | Kontrak yang diluluskan, belum diganti dan belum tamat, disusun mengikut nama premis |
-| Laporan Kontrak mengikut Negeri | Jadual lebar: negeri, PTJ, alamat, jenis langganan, tarikh mula dan tamat, baki hari, keluasan, kadar sewa, pemilik, kategori, status permohonan, kronologi proses Cawangan Pembangunan, rumusan dan tindakan |
+| Laporan Kontrak mengikut Negeri | Jadual lebar: negeri, PTJ, alamat, jenis bangunan, tarikh mula dan tamat, baki bulan, keluasan, kadar sewa, pemilik, kategori, status permohonan, kronologi proses Cawangan Pembangunan, rumusan dan tindakan |
 | Laporan Status Sewaan | Tajuk menggunakan tarikh semasa, contoh "setakat" tarikh hari itu. Rekod dikumpulkan mengikut Pertimbangan BPH, Semakan PUU, Pertimbangan MOF, Pertimbangan KE, Semakan Ibu Pejabat dan Tindakan PTJ. Bahagian Tindakan PTJ disusun mengikut baki bulan paling rendah dahulu |
 
-Pada laporan kontrak mengikut negeri, baki hari kritikal diwarnakan merah dan baki amaran diwarnakan kuning. Status yang telah diterima diwarnakan hijau.
+Pada laporan kontrak mengikut negeri, baki bulan kritikal diwarnakan merah dan baki amaran diwarnakan kuning. Status yang telah diterima diwarnakan hijau.
 
 Jika tiada rekod bagi penapis itu, jadual memaparkan **Tiada rekod untuk laporan ini.**
 
@@ -848,9 +850,9 @@ Arahan berjadual dihantar pada jam 9.00 pagi waktu Malaysia. Penerima negeri ial
 
 | Baki tempoh | Subjek emel | Kekerapan | Berhenti apabila |
 | --- | --- | --- | --- |
-| Bawah 8 bulan hingga 5 bulan | E-Sewaan AADK: Peringatan Kontrak Bawah 8 Bulan | 3 kali dalam 3 hari | Baki mencecah 5 bulan, atau 3 penghantaran selesai |
-| Bawah 5 bulan hingga 3 bulan | E-Sewaan AADK: Peringatan Tegas Kontrak Bawah 5 Bulan | Setiap Isnin | Baki mencecah 3 bulan |
-| 3 bulan atau kurang | E-Sewaan AADK: AMARAN Kontrak Baki 3 Bulan | Setiap Isnin dan Rabu, dengan salinan kepada Ibu Pejabat dan emel jawatan | Permohonan dihantar ke Ibu Pejabat |
+| Bawah 8 bulan hingga 5 bulan | SPEKTRA: Peringatan Kontrak Bawah 8 Bulan | 3 kali dalam 3 hari | Baki mencecah 5 bulan, atau 3 penghantaran selesai |
+| Bawah 5 bulan hingga 3 bulan | SPEKTRA: Peringatan Tegas Kontrak Bawah 5 Bulan | Setiap Isnin | Baki mencecah 3 bulan |
+| 3 bulan atau kurang | SPEKTRA: AMARAN Kontrak Baki 3 Bulan | Setiap Isnin dan Rabu, dengan salinan kepada Ibu Pejabat dan emel jawatan | Permohonan dihantar ke Ibu Pejabat |
 
 Emel amaran 3 bulan meminta negeri melengkapkan permohonan lanjutan atau pindah, kemudian menekan **Hantar ke Ibu Pejabat** dan mengesahkan **Ya, Hantar**. Selepas permohonan dihantar, peringatan bagi kontrak itu berhenti.
 
@@ -895,7 +897,7 @@ Medan wajib yang kosong dipaparkan mesej di bawah medan. Betulkan nilai itu dan 
 | MOF | Kementerian Kewangan |
 | Mati setem | Peringkat akhir sebelum kontrak masuk ke senarai kontrak |
 | Negeri | Peranan pentadbir yang hanya mengurus negeri sendiri |
-| ProMIS | Sistem luar tempat salinan perjanjian dimuat naik. E-Sewaan merekod pengakuan muat naik |
+| ProMIS | Sistem luar tempat salinan perjanjian dimuat naik. SPEKTRA merekod pengakuan muat naik |
 | PTJ | Pusat Tanggungjawab. Dalam borang, nama premis diisi pada medan Nama Premis |
 | PUU | Semakan perundangan ke atas draf perjanjian |
 | Remark | Catatan wajib bagi permohonan pindah dan lanjutan sebelum dihantar |
@@ -905,4 +907,4 @@ Medan wajib yang kosong dipaparkan mesej di bawah medan. Betulkan nilai itu dan 
 
 ---
 
-*Tamat dokumen AADK/CP/E-SEWAAN/MANUAL/001, versi 1.0.*
+*Tamat dokumen AADK/CP/SPEKTRA/MANUAL/001, versi 1.0.*

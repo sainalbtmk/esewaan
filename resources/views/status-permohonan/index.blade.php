@@ -11,7 +11,7 @@
 @section('header_subtitle', $isAdminHq ? 'Semak dan sahkan permohonan yang dihantar oleh pentadbir negeri' : 'Pantau status permohonan dan lengkapkan tindakan')
 
 @section('content')
-<div class="space-y-4" id="status-permohonan-page" data-status-url="{{ route('status-permohonan.index') }}" data-sync-url="{{ route('status-permohonan.sync') }}" data-current-tab="{{ $tab }}">
+<div class="space-y-4" id="status-permohonan-page" data-status-url="{{ route('status-permohonan.index') }}" data-sync-url="{{ route('status-permohonan.sync') }}" data-current-tab="{{ $tab }}" data-status-tindakan="{{ $statusTindakan }}">
     @if($isAdminHq)
         <div class="glass-tabs">
             <button
@@ -77,6 +77,7 @@
     const loading = document.getElementById('status-permohonan-search-loading');
     const baseUrl = page.dataset.statusUrl;
     const syncUrl = page.dataset.syncUrl;
+    const statusTindakan = page.dataset.statusTindakan || '';
     let currentTab = page.dataset.currentTab || 'active';
     let currentPage = Number(new URL(window.location.href).searchParams.get('page') || 1);
 
@@ -89,6 +90,7 @@
         const params = new URLSearchParams();
         if (searchInput?.value.trim()) params.set('search', searchInput.value.trim());
         if (currentTab === 'history') params.set('tab', 'history');
+        if (statusTindakan && currentTab !== 'history') params.set('status_tindakan', statusTindakan);
 
         return params;
     }
@@ -136,6 +138,7 @@
         if (searchInput?.value.trim()) params.set('search', searchInput.value.trim());
         if (currentPage > 1) params.set('page', String(currentPage));
         if (currentTab === 'history') params.set('tab', 'history');
+        if (statusTindakan && currentTab !== 'history') params.set('status_tindakan', statusTindakan);
 
         if (! silent) {
             setLoading(true);

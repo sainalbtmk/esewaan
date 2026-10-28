@@ -32,6 +32,7 @@ use App\Support\HqJrpChecklist;
 use App\Support\NegeriDraftAcknowledgements;
 use App\Support\NegeriMatiSetemAcknowledgements;
 use App\Support\RentalContractListSearch;
+use App\Support\StatusTindakan;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -61,14 +62,18 @@ class StatusPermohonanController extends Controller
             $tab = 'active';
         }
 
+        $statusTindakan = $tab === 'active' ? StatusTindakan::keyFrom($request->input('status_tindakan')) : null;
+
         $contracts = $tab === 'history'
             ? $this->historyQuery($user, $search)->paginate(15)->withQueryString()
-            : $this->contractsQuery($user, $search)->paginate(15)->withQueryString();
+            : $this->contractsQuery($user, $search, $statusTindakan)->paginate(15)->withQueryString();
 
         $payload = [
             'contracts' => $contracts,
             'search' => $search,
             'tab' => $tab,
+            'statusTindakan' => $statusTindakan,
+            'statusTindakanLabel' => $statusTindakan !== null ? StatusTindakan::label($statusTindakan) : null,
         ];
 
         if ($this->wantsTablePartial($request)) {
@@ -94,7 +99,12 @@ class StatusPermohonanController extends Controller
         }
 
         return response()->json([
-            'fingerprint' => $this->listFingerprint($user, $search, $tab),
+            'fingerprint' => $this->listFingerprint(
+                $user,
+                $search,
+                $tab,
+                $tab === 'active' ? StatusTindakan::keyFrom($request->input('status_tindakan')) : null,
+            ),
         ]);
     }
 
@@ -199,6 +209,19 @@ class StatusPermohonanController extends Controller
         $contract->loadMissing(['premise', 'submittedBy', 'adminNegeriUser']);
         $hqUser = $request->user();
 
+        $file = $request->file('document');
+        $path = ContractDocumentStorage::store('contract-documents/'.$contract->id, $file);
+        $safeName = $this->sanitizeFilename($file->getClientOriginalName());
+
+        ContractDocument::query()->create([
+            'contract_id' => $contract->id,
+            'nama_fail' => $safeName,
+            'path' => $path,
+            'jenis' => ContractDocument::JENIS_LULUS_PUU,
+            'semakan_round' => $contract->semakan_count,
+            'user_id' => $hqUser->id,
+        ]);
+
         ContractDocument::markSemakanOutcome($contract, ContractDocument::SEMAKAN_DILULUSKAN);
 
         $contract->commit([
@@ -208,7 +231,7 @@ class StatusPermohonanController extends Controller
         ActivityLogger::log(
             $hqUser,
             'puu_review_approved',
-            'Semakan PUU premis '.($contract->premise?->nama_ptj ?? '–').' diluluskan ('.$contract->semakanLabel().').',
+            'Semakan PUU premis '.($contract->premise?->nama_ptj ?? '–').' diluluskan ('.$contract->semakanLabel().'). Dokumen lulus PUU '.$safeName.' dimuat naik.',
             ['contract_id' => $contract->id, 'semakan_count' => $contract->semakan_count],
         );
 
@@ -629,11 +652,11 @@ class StatusPermohonanController extends Controller
             ->with('success', $message);
     }
 
-    private function listFingerprint(User $user, string $search, string $tab): string
+    private function listFingerprint(User $user, string $search, string $tab, ?string $statusTindakan = null): string
     {
         $query = $tab === 'history'
             ? $this->historyQuery($user, $search)
-            : $this->contractsQuery($user, $search);
+            : $this->contractsQuery($user, $search, $statusTindakan);
 
         $table = (new RentalContract)->getTable();
 
@@ -668,7 +691,7 @@ class StatusPermohonanController extends Controller
     /**
      * @return Builder<RentalContract>
      */
-    private function contractsQuery(User $user, string $search): Builder
+    private function contractsQuery(User $user, string $search, ?string $statusTindakan = null): Builder
     {
         return RentalContract::query()
             ->with([
@@ -687,6 +710,11 @@ class StatusPermohonanController extends Controller
             ->tap(fn (Builder $query) => RentalContractListSearch::apply($query, $search, [
                 'include_peringkat_proses' => true,
             ]))
+            ->tap(fn (Builder $query) => StatusTindakan::applyFilter(
+                $query,
+                $statusTindakan,
+                $user->isAdminNegeri() ? $user->negeri : null,
+            ))
             ->orderByDesc((new RentalContract)->getTable().'.created_at')
             ->orderByDesc((new RentalContract)->getTable().'.id');
     }

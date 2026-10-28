@@ -2,7 +2,7 @@
 <html lang="ms">
 <head>
     <meta charset="utf-8">
-    <title>Laporan E-Sewaan</title>
+    <title>Laporan SPEKTRA</title>
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #0f172a; }
         h1 { font-size: 18px; margin: 0 0 4px; }
@@ -31,6 +31,9 @@
     </style>
 </head>
 <body>
+    @if (is_file(public_path('images/spektra-logo.jpg')))
+        <img src="{{ str_replace('\\', '/', public_path('images/spektra-logo.jpg')) }}" alt="SPEKTRA" style="height: 62px; margin: 0 0 12px;">
+    @endif
 @php
     $summary = $report['summary'];
     $rows = $report['rows'];
@@ -38,17 +41,17 @@
 
     <h1>
         @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
-            {{ \App\Support\ContractNegeriReport::title($report['negeri']) }}
+            {{ \App\Support\ContractNegeriReport::title($report['negeri'], $report['daerah'] ?? null) }}
         @elseif(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_STATUS_SEWAAN)
             {{ \App\Support\RentalStatusReport::title() }}
         @else
-            Laporan E-Sewaan AADK
+            Laporan SPEKTRA
         @endif
     </h1>
     <p class="meta">
         {{ $report['jenisLabel'] }}
         · Dijana pada {{ $report['generatedAt'] }}
-        · Skop: {{ filled($report['negeri']) ? $report['negeri'] : 'Semua negeri' }}
+        · Skop: {{ $report['scopeLabel'] }}
         @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
             · Laporan secara individu beserta kronologi
         @endif
@@ -101,11 +104,11 @@
         </tbody>
     </table>
 
-    <h2>Pecahan Mengikut Negeri</h2>
+    <h2>{{ ($report['breakdownMode'] ?? 'negeri') === 'daerah' ? 'Pecahan Mengikut Daerah' : 'Pecahan Mengikut Negeri' }}</h2>
     <table class="data">
         <thead>
             <tr>
-                <th>Negeri</th>
+                <th>{{ ($report['breakdownMode'] ?? 'negeri') === 'daerah' ? 'Daerah' : 'Negeri' }}</th>
                 <th>Permohonan</th>
                 <th>Kontrak Aktif</th>
             </tr>
@@ -113,7 +116,7 @@
         <tbody>
             @forelse($report['negeriBreakdown'] as $row)
                 <tr>
-                    <td>{{ $row['negeri'] }}</td>
+                    <td>{{ $row['label'] }}</td>
                     <td>{{ number_format($row['permohonan']) }}</td>
                     <td>{{ number_format($row['kontrak_aktif']) }}</td>
                 </tr>
@@ -127,7 +130,7 @@
 
     <h2>
         @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
-            {{ \App\Support\ContractNegeriReport::title($report['negeri']) }}
+            {{ \App\Support\ContractNegeriReport::title($report['negeri'], $report['daerah'] ?? null) }}
         @elseif(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_STATUS_SEWAAN)
             {{ \App\Support\RentalStatusReport::title() }}
         @else
@@ -146,6 +149,7 @@
                 <th>No.</th>
                 <th>Premis</th>
                 <th>Negeri</th>
+                <th>Daerah</th>
                 <th>Kategori</th>
                 <th>Status</th>
                 <th>Tarikh Tamat</th>
@@ -157,6 +161,7 @@
                     <td>{{ $index + 1 }}</td>
                     <td>{{ $contract->premise?->nama_ptj ?? '–' }}</td>
                     <td>{{ $contract->premise?->negeri ?? '–' }}</td>
+                    <td>{{ $contract->premise?->daerah ?: '–' }}</td>
                     <td>{{ \App\Support\ApplicationCategories::label($contract->kategori_permohonan) }}</td>
                     <td>{{ $contract->workflowLabel() }}</td>
                     <td>
@@ -168,7 +173,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="muted">Tiada rekod untuk laporan ini.</td>
+                    <td colspan="7" class="muted">Tiada rekod untuk laporan ini.</td>
                 </tr>
             @endforelse
         </tbody>

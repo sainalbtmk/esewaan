@@ -37,6 +37,9 @@ class AutosaveNegeriMatiSetemAcknowledgementsRequest extends FormRequest
             $rules["acknowledgements.{$key}"] = ['sometimes', 'boolean'];
         }
 
+        $rules['acknowledgements.dates'] = ['sometimes', 'array'];
+        $rules['acknowledgements.dates.*'] = ['nullable', 'date_format:Y-m-d'];
+
         return $rules;
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\RentalContract;
+use App\Support\HqDraftAcknowledgements;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SignAgreementRequest extends FormRequest
@@ -22,11 +23,16 @@ class SignAgreementRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'terima_dokumen_acknowledged' => ['accepted'],
-            'perjanjian_ditandatangani_acknowledged' => ['accepted'],
-            'salinan_promis_acknowledged' => ['accepted'],
+        $rules = [
+            'dates' => ['sometimes', 'array'],
+            'dates.*' => ['nullable', 'date_format:Y-m-d'],
         ];
+
+        foreach (HqDraftAcknowledgements::keys() as $key) {
+            $rules[$key] = ['accepted'];
+        }
+
+        return $rules;
     }
 
     /**
@@ -35,11 +41,14 @@ class SignAgreementRequest extends FormRequest
     public function messages(): array
     {
         $message = 'Sila tanda kesemua kotak pengesahan sebelum menghantar kepada Negeri.';
-
-        return [
-            'terima_dokumen_acknowledged.accepted' => $message,
-            'perjanjian_ditandatangani_acknowledged.accepted' => $message,
-            'salinan_promis_acknowledged.accepted' => $message,
+        $messages = [
+            'dates.*.date_format' => 'Tarikh tidak sah.',
         ];
+
+        foreach (HqDraftAcknowledgements::keys() as $key) {
+            $messages[$key.'.accepted'] = $message;
+        }
+
+        return $messages;
     }
 }

@@ -5,6 +5,7 @@ use App\Models\RentalContract;
 use App\Models\User;
 use App\Support\AdminProceedSteps;
 use App\Support\ApplicationCategories;
+use App\Support\RentalStatusReport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -114,9 +115,38 @@ test('admin negeri can start a lanjutan from an existing contract', function () 
         ->get(route('application.edit', $child))
         ->assertSuccessful()
         ->assertSee('Maklumat Baharu')
+        ->assertSee('Baki Bulan')
+        ->assertSee(RentalStatusReport::bakiBulan($parent->fresh()).' bulan')
         ->assertSee('value="150.50"', false)
         ->assertSee('Dikunci mengikut kontrak sedia ada.')
         ->assertSee($parent->premise->nama_ptj);
+});
+
+test('follow-up form shows remaining months from the existing contract end date', function () {
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Selangor']);
+    $parent = createApprovedParentContract('Selangor', 1800);
+    $parent->update([
+        'tarikh_mula' => now()->subYears(2)->toDateString(),
+        'tarikh_tamat' => now()->addMonths(2)->toDateString(),
+        'tarikh_mula_tawaran' => null,
+        'sah_sehingga' => null,
+    ]);
+
+    $this->actingAs($admin)->post(route('kontrak-sewaan.follow-up', $parent), [
+        'kategori_permohonan' => ApplicationCategories::LANJUTAN,
+    ]);
+
+    $child = RentalContract::query()->where('parent_contract_id', $parent->id)->firstOrFail();
+    $bakiBulan = RentalStatusReport::bakiBulan($parent->fresh());
+
+    expect($bakiBulan)->toBe(2);
+
+    $this->actingAs($admin)
+        ->get(route('application.edit', $child))
+        ->assertSuccessful()
+        ->assertSee('Maklumat Kontrak Sedia Ada')
+        ->assertSee('Baki Bulan')
+        ->assertSee($bakiBulan.' bulan');
 });
 
 test('admin negeri can start a pindah from an existing contract', function () {
@@ -431,6 +461,7 @@ test('remark is required when updating a follow-up application', function () {
         ->from(route('application.edit', $child))
         ->put(route('application.update', $child), [
             'negeri' => 'Johor',
+            'daerah' => 'Johor Bahru',
             'nama_ptj' => 'Premis Baharu Pindah',
             'alamat_penuh' => 'Alamat baharu pindah',
             'nama_pemilik' => 'Pemilik Baharu',
@@ -527,6 +558,7 @@ test('remark is saved when updating a follow-up application', function () {
 
     $this->actingAs($admin)->put(route('application.update', $child), [
         'negeri' => 'Johor',
+        'daerah' => 'Muar',
         'nama_ptj' => 'Premis Baharu Pindah',
         'alamat_penuh' => 'Alamat baharu pindah',
         'nama_pemilik' => 'Pemilik Baharu',

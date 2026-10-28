@@ -204,7 +204,7 @@ test('firm reminder emails negeri admins every monday between five and three mon
             && $mail->hasTo($other->email)
             && $mail->contracts->count() === 2
             && ! $mail->hasCc('ruslin@aadk.gov.my')
-            && $mail->envelope()->subject === 'E-Sewaan AADK: Peringatan Tegas Kontrak Bawah 5 Bulan';
+            && $mail->envelope()->subject === 'SPEKTRA: Peringatan Tegas Kontrak Bawah 5 Bulan';
     });
 });
 
@@ -275,7 +275,7 @@ test('three month warning emails negeri admins and copies headquarters on monday
             && ! $mail->hasTo($hq->email)
             && ! $mail->hasTo($otherNegeri->email)
             && $copiesHeadquarters
-            && $mail->envelope()->subject === 'E-Sewaan AADK: AMARAN Kontrak Baki 3 Bulan';
+            && $mail->envelope()->subject === 'SPEKTRA: AMARAN Kontrak Baki 3 Bulan';
     });
 })->with([
     'isnin' => '2026-10-19 02:00:00',

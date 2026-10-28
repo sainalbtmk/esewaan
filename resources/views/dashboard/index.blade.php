@@ -212,7 +212,7 @@
         </div>
         <div class="divide-y divide-slate-200/50">
             @foreach($dalamTindakanByStatus as $row)
-                <div class="flex items-center gap-3 px-5 py-3.5">
+                <a href="{{ \App\Support\StatusTindakan::listUrl($row['key']) }}" class="glass-row-hover flex items-center gap-3 px-5 py-3.5">
                     <div class="h-2 w-2 flex-shrink-0 rounded-full {{ $row['count'] > 0 ? 'bg-indigo-500' : 'bg-slate-300' }}"></div>
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm font-medium text-gray-900">{{ $row['status'] }}</p>
@@ -221,7 +221,7 @@
                         <p class="text-sm font-semibold {{ $row['count'] > 0 ? 'text-indigo-700' : 'text-slate-400' }}">{{ number_format($row['count']) }}</p>
                         <p class="text-xs text-gray-400">kontrak</p>
                     </div>
-                </div>
+                </a>
             @endforeach
         </div>
     </div>

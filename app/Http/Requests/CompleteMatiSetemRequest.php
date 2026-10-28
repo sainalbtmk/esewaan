@@ -32,6 +32,9 @@ class CompleteMatiSetemRequest extends FormRequest
         return [
             NegeriMatiSetemAcknowledgements::MATI_SETEM_LHDN => ['accepted'],
             NegeriMatiSetemAcknowledgements::EDARAN_PEMILIK => ['accepted'],
+            NegeriMatiSetemAcknowledgements::SALINAN_DIHANTAR_CP => ['accepted'],
+            'dates' => ['sometimes', 'array'],
+            'dates.*' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
 
@@ -43,6 +46,8 @@ class CompleteMatiSetemRequest extends FormRequest
         return [
             NegeriMatiSetemAcknowledgements::MATI_SETEM_LHDN.'.accepted' => 'Sila sahkan 3 salinan dokumen telah dimatikan setem di LHDN sebelum menekan Selesai.',
             NegeriMatiSetemAcknowledgements::EDARAN_PEMILIK.'.accepted' => 'Sila sahkan 1 salinan dokumen telah diedar kepada Pemilik Premis sebelum menekan Selesai.',
+            NegeriMatiSetemAcknowledgements::SALINAN_DIHANTAR_CP.'.accepted' => 'Sila sahkan salinan telah dihantar ke Cawangan Pembangunan melalui Pos/Kourier sebelum menekan Selesai.',
+            'dates.*.date_format' => 'Tarikh tidak sah.',
         ];
     }
 }

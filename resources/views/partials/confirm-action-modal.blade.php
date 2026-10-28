@@ -26,7 +26,7 @@
                     </dl>
                 </div>
                 <div id="confirm-action-upload-wrap" class="mt-4 hidden">
-                    <label for="confirm-action-upload" class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    <label id="confirm-action-upload-label" for="confirm-action-upload" class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                         Dokumen pindaan PUU (PDF) *
                     </label>
                     <p class="mb-2 text-xs text-slate-500">

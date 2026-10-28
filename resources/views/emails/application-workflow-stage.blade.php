@@ -46,6 +46,6 @@
         <a href="{{ $payload['cta_url'] }}">{{ $payload['cta_label'] }}</a>
     </p>
 
-    <p>Ini adalah notifikasi automatik daripada Sistem E-Sewaan AADK.</p>
+    <p>Ini adalah notifikasi automatik daripada SPEKTRA.</p>
 </body>
 </html>

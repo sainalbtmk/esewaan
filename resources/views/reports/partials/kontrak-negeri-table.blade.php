@@ -8,12 +8,13 @@
             <tr>
                 <th class="px-2 py-2 font-semibold">No</th>
                 <th class="px-2 py-2 font-semibold">Negeri</th>
+                <th class="px-2 py-2 font-semibold">Daerah</th>
                 <th class="px-2 py-2 font-semibold">PTJ</th>
                 <th class="min-w-40 px-2 py-2 font-semibold">Alamat</th>
-                <th class="px-2 py-2 font-semibold">Jenis Langganan</th>
+                <th class="px-2 py-2 font-semibold">Jenis Bangunan</th>
                 <th class="px-2 py-2 font-semibold">Mula</th>
                 <th class="px-2 py-2 font-semibold">Tamat</th>
-                <th class="px-2 py-2 text-center font-semibold">Baki Hari</th>
+                <th class="px-2 py-2 text-center font-semibold">Baki Bulan</th>
                 <th class="px-2 py-2 text-right font-semibold">Keluasan (mp)</th>
                 <th class="px-2 py-2 text-right font-semibold">Kadar Sewa</th>
                 <th class="px-2 py-2 font-semibold">Pemilik</th>
@@ -30,12 +31,13 @@
                     $kronologi = $contract->laporan_kronologi ?? [];
                     $kritikal = ContractNegeriReport::isBakiHariKritikal($contract);
                     $amaran = ContractNegeriReport::isBakiHariAmaran($contract);
-                    $bakiHari = ContractNegeriReport::bakiHari($contract);
+                    $bakiBulan = ContractNegeriReport::bakiBulan($contract);
                     $diterima = ContractNegeriReport::isStatusDiterima($contract);
                 @endphp
                 <tr class="border-t border-slate-200 align-top odd:bg-white even:bg-slate-50/70">
                     <td class="px-2 py-2 text-slate-500">{{ $index + 1 }}</td>
                     <td class="px-2 py-2 font-medium uppercase text-slate-800">{{ $contract->premise?->negeri ?? '–' }}</td>
+                    <td class="px-2 py-2 text-slate-800">{{ $contract->premise?->daerah ?: '–' }}</td>
                     <td class="px-2 py-2 font-medium text-slate-900">{{ $contract->premise?->nama_ptj ?? '–' }}</td>
                     <td class="whitespace-pre-line px-2 py-2 text-slate-700">{{ $contract->premise?->alamat_penuh ?: '–' }}</td>
                     <td class="px-2 py-2 text-slate-700">{{ ContractNegeriReport::jenisLangganan($contract) }}</td>
@@ -46,7 +48,7 @@
                         'bg-red-600 font-bold text-white' => $kritikal,
                         'bg-amber-100 font-semibold text-amber-900' => $amaran,
                         'font-medium text-slate-800' => ! $kritikal && ! $amaran,
-                    ])>{{ $bakiHari === null ? '–' : number_format($bakiHari) }}</td>
+                    ])>{{ $bakiBulan === null ? '–' : number_format($bakiBulan) }}</td>
                     <td class="px-2 py-2 text-right text-slate-700">{{ ContractNegeriReport::keluasan($contract) }}</td>
                     <td class="whitespace-nowrap px-2 py-2 text-right text-slate-700">{{ ContractNegeriReport::kadarSewa($contract) }}</td>
                     <td class="px-2 py-2 text-slate-700">{{ $contract->premise?->nama_pemilik ?: '–' }}</td>
@@ -68,7 +70,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="16" class="px-4 py-8 text-center text-sm text-slate-500">Tiada rekod untuk laporan ini.</td>
+                    <td colspan="17" class="px-4 py-8 text-center text-sm text-slate-500">Tiada rekod untuk laporan ini.</td>
                 </tr>
             @endforelse
         </tbody>

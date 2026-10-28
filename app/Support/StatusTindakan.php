@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\ContractDocument;
 use App\Models\RentalContract;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class StatusTindakan
@@ -114,10 +115,10 @@ class StatusTindakan
     /**
      * @return list<array{key: string, status: string, count: int}>
      */
-    public static function breakdownWithCounts(?string $negeri = null): array
+    public static function breakdownWithCounts(?string $negeri = null, ?string $daerah = null): array
     {
-        $sentContracts = self::sentToHqContracts($negeri);
-        $underEightMonthsCount = self::underEightMonthsActiveCount($negeri);
+        $sentContracts = self::sentToHqContracts($negeri, $daerah);
+        $underEightMonthsCount = self::underEightMonthsActiveCount($negeri, $daerah);
 
         return collect(self::definitions())
             ->map(function (array $row) use ($sentContracts, $underEightMonthsCount): array {
@@ -137,11 +138,81 @@ class StatusTindakan
             ->all();
     }
 
+    public static function label(string $key): ?string
+    {
+        foreach (self::definitions() as $row) {
+            if ($row['key'] === $key) {
+                return $row['label'];
+            }
+        }
+
+        return null;
+    }
+
+    public static function keyFrom(mixed $value): ?string
+    {
+        return is_string($value) && self::label($value) !== null ? $value : null;
+    }
+
+    public static function listUrl(string $key): string
+    {
+        $parameters = ['status_tindakan' => $key];
+
+        if ($key === self::BARU_TERIMA_PERMOHONAN) {
+            return route('kontrak-sewaan.index', $parameters);
+        }
+
+        return route('status-permohonan.index', $parameters);
+    }
+
+    /**
+     * @param  Builder<RentalContract>  $query
+     */
+    public static function applyFilter(Builder $query, ?string $key, ?string $negeri = null): void
+    {
+        if (! is_string($key) || self::label($key) === null) {
+            return;
+        }
+
+        $query->whereIn($query->getModel()->getQualifiedKeyName(), self::matchingIds($key, $negeri));
+    }
+
+    /**
+     * @return list<int>
+     */
+    public static function matchingIds(string $key, ?string $negeri = null): array
+    {
+        if ($key === self::BARU_TERIMA_PERMOHONAN) {
+            return self::underEightMonthsContracts($negeri)
+                ->pluck('id')
+                ->map(fn (mixed $id): int => (int) $id)
+                ->all();
+        }
+
+        $contracts = self::sentToHqContracts($negeri);
+        $matched = $key === self::KUIRI_PUU
+            ? $contracts->filter(fn (RentalContract $contract): bool => self::isKuiriPuu($contract))
+            : $contracts->reject(fn (RentalContract $contract): bool => self::isCleared($contract, $key));
+
+        return $matched
+            ->pluck('id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
+    }
+
     /**
      * Active HQ-approved contracts with remaining term under 8 months
      * whose follow-up has not yet been sent to HQ for verification.
      */
-    public static function underEightMonthsActiveCount(?string $negeri = null): int
+    public static function underEightMonthsActiveCount(?string $negeri = null, ?string $daerah = null): int
+    {
+        return self::underEightMonthsContracts($negeri, $daerah)->count();
+    }
+
+    /**
+     * @return Collection<int, RentalContract>
+     */
+    private static function underEightMonthsContracts(?string $negeri, ?string $daerah = null): Collection
     {
         return RentalContract::query()
             ->hqApproved()
@@ -155,32 +226,46 @@ class StatusTindakan
                     RentalContract::WORKFLOW_MENUNGGU_PROCEED_NEGERI,
                 ),
             )
-            ->when(
-                filled($negeri),
-                fn ($query) => $query->whereHas('premise', fn ($premiseQuery) => $premiseQuery->where('negeri', $negeri))
-            )
+            ->tap(fn (Builder $query) => self::scopePremise($query, $negeri, $daerah))
             ->get()
-            ->filter->isContractEndWithinEightMonths()
-            ->count();
+            ->filter(fn (RentalContract $contract): bool => $contract->isContractEndWithinEightMonths())
+            ->values();
     }
 
     /**
      * @return Collection<int, RentalContract>
      */
-    private static function sentToHqContracts(?string $negeri): Collection
+    private static function sentToHqContracts(?string $negeri, ?string $daerah = null): Collection
     {
         return RentalContract::query()
             ->notSuperseded()
             ->whereIn('workflow_tahap', self::sentToHqWorkflows())
-            ->when(
-                filled($negeri),
-                fn ($query) => $query->whereHas('premise', fn ($premiseQuery) => $premiseQuery->where('negeri', $negeri))
-            )
+            ->tap(fn (Builder $query) => self::scopePremise($query, $negeri, $daerah))
             ->with(['documents' => function ($query): void {
                 $query->select(['id', 'contract_id', 'jenis', 'semakan_status'])
                     ->where('jenis', ContractDocument::JENIS_DRAF_PERJANJIAN);
             }])
             ->get();
+    }
+
+    /**
+     * @param  Builder<RentalContract>  $query
+     */
+    private static function scopePremise(Builder $query, ?string $negeri, ?string $daerah): void
+    {
+        if (! filled($negeri) && ! filled($daerah)) {
+            return;
+        }
+
+        $query->whereHas('premise', function (Builder $premiseQuery) use ($negeri, $daerah): void {
+            if (filled($negeri)) {
+                $premiseQuery->where('negeri', $negeri);
+            }
+
+            if (filled($daerah)) {
+                $premiseQuery->where('daerah', $daerah);
+            }
+        });
     }
 
     private static function isCleared(RentalContract $contract, string $statusKey): bool
@@ -198,6 +283,9 @@ class StatusTindakan
                 NegeriDraftAcknowledgements::DOKUMEN_DITANDATANGANI,
             ),
             self::TANDATANGAN_PENYEWA_AADK => self::acknowledgementChecked(
+                $contract->hq_draft_acknowledgements,
+                HqDraftAcknowledgements::DIKEMBALIKAN_NEGERI,
+            ) || self::acknowledgementChecked(
                 $contract->hq_draft_acknowledgements,
                 HqDraftAcknowledgements::PERJANJIAN_DITANDATANGANI,
             ),

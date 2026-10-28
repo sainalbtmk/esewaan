@@ -13,7 +13,7 @@
 <div class="space-y-6">
     <form method="GET" action="{{ route('reports.index') }}" class="glass-card p-4 lg:p-5">
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-end">
-            <div class="lg:col-span-4">
+            <div class="lg:col-span-3">
                 <label for="jenis" class="mb-1 block text-sm font-medium text-slate-700">Jenis Laporan</label>
                 <select name="jenis" id="jenis" class="glass-input w-full rounded-xl px-3 py-2.5 text-sm">
                     @foreach($jenisList as $value => $label)
@@ -21,7 +21,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="lg:col-span-4">
+            <div class="lg:col-span-3">
                 <label for="negeri" class="mb-1 block text-sm font-medium text-slate-700">Negeri</label>
                 <select name="negeri" id="negeri" class="glass-input w-full rounded-xl px-3 py-2.5 text-sm">
                     <option value="">Semua negeri</option>
@@ -29,9 +29,19 @@
                         <option value="{{ $value }}" @selected(($filters['negeri'] ?? '') === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
-                <p class="mt-1 text-xs text-slate-500">Laporan mengikut negeri dijana berdasarkan negeri yang dipilih.</p>
+                <p class="mt-1 text-xs text-slate-500">Pilih negeri dahulu untuk tapis sehingga daerah.</p>
             </div>
-            <div class="flex flex-col gap-2 sm:flex-row lg:col-span-4">
+            <div id="daerah-field" @class(['lg:col-span-3', 'hidden' => blank($filters['negeri'] ?? null)])>
+                <label for="daerah" class="mb-1 block text-sm font-medium text-slate-700">Daerah</label>
+                <select name="daerah" id="daerah" class="glass-input w-full rounded-xl px-3 py-2.5 text-sm">
+                    <option value="">Semua daerah</option>
+                    @foreach(($daerahByNegeri[$filters['negeri'] ?? ''] ?? []) as $daerah)
+                        <option value="{{ $daerah }}" @selected(($filters['daerah'] ?? '') === $daerah)>{{ $daerah }}</option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-slate-500">Senarai daerah AADK bagi negeri yang dipilih.</p>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row lg:col-span-3">
                 <button type="submit" class="glass-btn-primary inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium">
                     <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -39,7 +49,7 @@
                     Papar Laporan
                 </button>
                 <a
-                    href="{{ route('reports.pdf', array_filter(['jenis' => $filters['jenis'] ?? null, 'negeri' => $filters['negeri'] ?? null])) }}"
+                    href="{{ route('reports.pdf', array_filter(['jenis' => $filters['jenis'] ?? null, 'negeri' => $filters['negeri'] ?? null, 'daerah' => $filters['daerah'] ?? null])) }}"
                     class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2"
                 >
                     <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -91,13 +101,15 @@
         </section>
 
         <section class="glass-card overflow-hidden p-5">
-            <h2 class="text-sm font-semibold text-slate-900">Pecahan Mengikut Negeri</h2>
+            <h2 class="text-sm font-semibold text-slate-900">
+                {{ ($report['breakdownMode'] ?? 'negeri') === 'daerah' ? 'Pecahan Mengikut Daerah' : 'Pecahan Mengikut Negeri' }}
+            </h2>
             <p class="mt-0.5 text-xs text-slate-500">Permohonan berbanding kontrak aktif</p>
             <div class="mt-4 overflow-x-auto">
                 <table class="min-w-full text-left text-sm">
                     <thead>
                         <tr class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                            <th class="px-2 py-2 font-semibold">Negeri</th>
+                            <th class="px-2 py-2 font-semibold">{{ ($report['breakdownMode'] ?? 'negeri') === 'daerah' ? 'Daerah' : 'Negeri' }}</th>
                             <th class="px-2 py-2 font-semibold">Permohonan</th>
                             <th class="px-2 py-2 font-semibold">Kontrak Aktif</th>
                         </tr>
@@ -105,7 +117,7 @@
                     <tbody>
                         @forelse($report['negeriBreakdown'] as $row)
                             <tr class="border-b border-slate-100">
-                                <td class="px-2 py-2 text-slate-800">{{ $row['negeri'] }}</td>
+                                <td class="px-2 py-2 text-slate-800">{{ $row['label'] }}</td>
                                 <td class="px-2 py-2 text-slate-700">{{ number_format($row['permohonan']) }}</td>
                                 <td class="px-2 py-2 text-slate-700">{{ number_format($row['kontrak_aktif']) }}</td>
                             </tr>
@@ -124,7 +136,7 @@
         <div class="border-b border-slate-200/80 px-5 py-4">
             <h2 class="text-sm font-semibold text-slate-900">
                 @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
-                    {{ \App\Support\ContractNegeriReport::title($report['negeri']) }}
+                    {{ \App\Support\ContractNegeriReport::title($report['negeri'], $report['daerah'] ?? null) }}
                 @elseif(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_STATUS_SEWAAN)
                     {{ \App\Support\RentalStatusReport::title() }}
                 @else
@@ -136,11 +148,7 @@
             @endif
             <p class="mt-0.5 text-xs text-slate-500">
                 Dijana pada {{ $report['generatedAt'] }}
-                @if(filled($report['negeri']))
-                    · Skop: {{ $report['negeri'] }}
-                @else
-                    · Skop: Semua negeri
-                @endif
+                · Skop: {{ $report['scopeLabel'] }}
                 · {{ number_format($rows->count()) }} rekod
                 @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
                     · Laporan secara individu beserta kronologi
@@ -159,6 +167,7 @@
                             <th class="px-4 py-3 font-semibold">No.</th>
                             <th class="px-4 py-3 font-semibold">Premis</th>
                             <th class="px-4 py-3 font-semibold">Negeri</th>
+                            <th class="px-4 py-3 font-semibold">Daerah</th>
                             <th class="px-4 py-3 font-semibold">Kategori</th>
                             <th class="px-4 py-3 font-semibold">Status</th>
                             <th class="px-4 py-3 font-semibold">Tarikh Tamat</th>
@@ -170,6 +179,7 @@
                                 <td class="px-4 py-3 text-slate-500">{{ $index + 1 }}</td>
                                 <td class="px-4 py-3 font-medium text-slate-900">{{ $contract->premise?->nama_ptj ?? '–' }}</td>
                                 <td class="px-4 py-3 text-slate-700">{{ $contract->premise?->negeri ?? '–' }}</td>
+                                <td class="px-4 py-3 text-slate-700">{{ $contract->premise?->daerah ?: '–' }}</td>
                                 <td class="px-4 py-3 text-slate-700">{{ \App\Support\ApplicationCategories::label($contract->kategori_permohonan) }}</td>
                                 <td class="px-4 py-3 text-slate-700">{{ $contract->workflowLabel() }}</td>
                                 <td class="px-4 py-3 text-slate-700">
@@ -181,7 +191,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-4 py-8 text-center text-slate-500">Tiada rekod untuk laporan ini.</td>
+                                <td colspan="7" class="px-4 py-8 text-center text-slate-500">Tiada rekod untuk laporan ini.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -191,3 +201,46 @@
     </section>
 </div>
 @endsection
+
+@push('scripts')
+<script type="application/json" id="aadk-daerah-data">@json($daerahByNegeri)</script>
+<script>
+(function () {
+    const negeriSelect = document.getElementById('negeri');
+    const daerahField = document.getElementById('daerah-field');
+    const daerahSelect = document.getElementById('daerah');
+    const dataElement = document.getElementById('aadk-daerah-data');
+
+    if (!negeriSelect || !daerahField || !daerahSelect || !dataElement) {
+        return;
+    }
+
+    const daerahByNegeri = JSON.parse(dataElement.textContent || '{}');
+
+    function fillDaerah(negeri, selected) {
+        const options = daerahByNegeri[negeri] || [];
+        daerahSelect.replaceChildren();
+
+        const allOption = document.createElement('option');
+        allOption.value = '';
+        allOption.textContent = 'Semua daerah';
+        daerahSelect.appendChild(allOption);
+
+        options.forEach(function (name) {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            option.selected = name === selected;
+            daerahSelect.appendChild(option);
+        });
+    }
+
+    negeriSelect.addEventListener('change', function () {
+        const negeri = negeriSelect.value;
+        const show = negeri !== '';
+        daerahField.classList.toggle('hidden', !show);
+        fillDaerah(negeri, '');
+    });
+})();
+</script>
+@endpush

@@ -22,7 +22,7 @@ class ApplicationSubmittedToHqNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'E-Sewaan AADK: Permohonan Baharu Menunggu Semakan Ibu Pejabat',
+            subject: 'SPEKTRA: Permohonan Baharu Menunggu Semakan Ibu Pejabat',
         );
     }
 

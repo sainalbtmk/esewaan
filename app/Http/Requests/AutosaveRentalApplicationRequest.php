@@ -32,6 +32,15 @@ class AutosaveRentalApplicationRequest extends FormRequest
     {
         return [
             'negeri' => ['sometimes', 'string', 'max:100'],
+            'daerah' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:100',
+                Rule::exists('aadk_daerah', 'daerah')->where(
+                    fn ($query) => $query->where('negeri', (string) $this->input('negeri', $this->route('contract')?->premise?->negeri)),
+                ),
+            ],
             'nama_ptj' => ['sometimes', 'string', 'max:255'],
             'alamat_penuh' => ['sometimes', 'string', 'max:65535'],
             'nama_pemilik' => ['sometimes', 'string', 'max:255'],

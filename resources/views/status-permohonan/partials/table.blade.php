@@ -1,6 +1,12 @@
 @php
     $search = $search ?? '';
 @endphp
+@if(filled($statusTindakanLabel ?? null))
+    <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+        <p>Senarai projek bagi status <span class="font-semibold">{{ $statusTindakanLabel }}</span>.</p>
+        <a href="{{ route('status-permohonan.index') }}" class="font-medium underline">Paparkan semua</a>
+    </div>
+@endif
 <p id="status-permohonan-count" class="text-sm text-slate-600">
     Menunjukkan <strong class="text-slate-800">{{ $contracts->count() }}</strong> daripada <strong class="text-slate-800">{{ $contracts->total() }}</strong> permohonan
 </p>

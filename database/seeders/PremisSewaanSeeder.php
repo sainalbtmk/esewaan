@@ -11,6 +11,7 @@ use App\Support\MalaysianStates;
 use App\Support\PremiseStatuses;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 use RuntimeException;
 
 class PremisSewaanSeeder extends Seeder
@@ -113,35 +114,48 @@ class PremisSewaanSeeder extends Seeder
      */
     private function states(): array
     {
+        /** @var Collection<string, Collection<int, array{daerah: string}>> $catalog */
+        $catalog = collect(require database_path('data/aadk_daerah.php'))->groupBy('negeri');
+
         $states = [
-            'Johor' => ['code' => 'JHR', 'lat' => 1.4927, 'long' => 103.7414, 'daerah' => ['Johor Bahru', 'Batu Pahat', 'Muar', 'Kluang', 'Kota Tinggi']],
-            'Kedah' => ['code' => 'KDH', 'lat' => 6.1184, 'long' => 100.3685, 'daerah' => ['Kota Setar', 'Kuala Muda', 'Kulim', 'Langkawi', 'Kubang Pasu']],
-            'Kelantan' => ['code' => 'KTN', 'lat' => 6.1254, 'long' => 102.2381, 'daerah' => ['Kota Bharu', 'Pasir Mas', 'Tanah Merah', 'Kuala Krai', 'Tumpat']],
-            'Melaka' => ['code' => 'MLK', 'lat' => 2.1896, 'long' => 102.2501, 'daerah' => ['Melaka Tengah', 'Alor Gajah', 'Jasin', 'Masjid Tanah', 'Bandaraya Melaka']],
-            'Negeri Sembilan' => ['code' => 'NSN', 'lat' => 2.7258, 'long' => 101.9424, 'daerah' => ['Seremban', 'Port Dickson', 'Jempol', 'Tampin', 'Kuala Pilah']],
-            'Pahang' => ['code' => 'PHG', 'lat' => 3.8077, 'long' => 103.3260, 'daerah' => ['Kuantan', 'Temerloh', 'Bentong', 'Jerantut', 'Pekan']],
-            'Perak' => ['code' => 'PRK', 'lat' => 4.5975, 'long' => 101.0901, 'daerah' => ['Kinta', 'Larut Matang', 'Hilir Perak', 'Kampar', 'Manjung']],
-            'Perlis' => ['code' => 'PLS', 'lat' => 6.4449, 'long' => 100.2048, 'daerah' => ['Kangar', 'Arau', 'Padang Besar', 'Kuala Perlis', 'Beseri']],
-            'Pulau Pinang' => ['code' => 'PNG', 'lat' => 5.4141, 'long' => 100.3288, 'daerah' => ['Timur Laut', 'Barat Daya', 'Seberang Perai Tengah', 'Seberang Perai Utara', 'Seberang Perai Selatan']],
-            'Sabah' => ['code' => 'SBH', 'lat' => 5.9804, 'long' => 116.0735, 'daerah' => ['Kota Kinabalu', 'Sandakan', 'Tawau', 'Lahad Datu', 'Keningau']],
-            'Sarawak' => ['code' => 'SWK', 'lat' => 1.5533, 'long' => 110.3592, 'daerah' => ['Kuching', 'Miri', 'Sibu', 'Bintulu', 'Sri Aman']],
-            'Selangor' => ['code' => 'SGR', 'lat' => 3.0738, 'long' => 101.5183, 'daerah' => ['Petaling', 'Klang', 'Hulu Langat', 'Gombak', 'Sepang']],
-            'Terengganu' => ['code' => 'TRG', 'lat' => 5.3117, 'long' => 103.1324, 'daerah' => ['Kuala Terengganu', 'Kemaman', 'Dungun', 'Besut', 'Marang']],
-            'W.P. Kuala Lumpur' => ['code' => 'WPKL', 'lat' => 3.1390, 'long' => 101.6869, 'daerah' => ['Cheras', 'Kepong', 'Setapak', 'Wangsa Maju', 'Bukit Bintang']],
-            'W.P. Labuan' => ['code' => 'WPL', 'lat' => 5.2831, 'long' => 115.2308, 'daerah' => ['Victoria', 'Ranca-Ranca', 'Layang-Layangan', 'Sungai Keling', 'Patau-Patau']],
-            'W.P. Putrajaya' => ['code' => 'WPP', 'lat' => 2.9264, 'long' => 101.6964, 'daerah' => ['Presint 1', 'Presint 2', 'Presint 3', 'Presint 4', 'Presint 5']],
+            'Johor' => ['code' => 'JHR', 'lat' => 1.4927, 'long' => 103.7414],
+            'Kedah' => ['code' => 'KDH', 'lat' => 6.1184, 'long' => 100.3685],
+            'Kelantan' => ['code' => 'KTN', 'lat' => 6.1254, 'long' => 102.2381],
+            'Melaka' => ['code' => 'MLK', 'lat' => 2.1896, 'long' => 102.2501],
+            'Negeri Sembilan' => ['code' => 'NSN', 'lat' => 2.7258, 'long' => 101.9424],
+            'Pahang' => ['code' => 'PHG', 'lat' => 3.8077, 'long' => 103.3260],
+            'Perak' => ['code' => 'PRK', 'lat' => 4.5975, 'long' => 101.0901],
+            'Perlis' => ['code' => 'PLS', 'lat' => 6.4449, 'long' => 100.2048],
+            'Pulau Pinang' => ['code' => 'PNG', 'lat' => 5.4141, 'long' => 100.3288],
+            'Sabah' => ['code' => 'SBH', 'lat' => 5.9804, 'long' => 116.0735],
+            'Sarawak' => ['code' => 'SWK', 'lat' => 1.5533, 'long' => 110.3592],
+            'Selangor' => ['code' => 'SGR', 'lat' => 3.0738, 'long' => 101.5183],
+            'Terengganu' => ['code' => 'TRG', 'lat' => 5.3117, 'long' => 103.1324],
+            'W.P. Kuala Lumpur' => ['code' => 'WPKL', 'lat' => 3.1390, 'long' => 101.6869],
+            'W.P. Labuan' => ['code' => 'WPL', 'lat' => 5.2831, 'long' => 115.2308],
+            'W.P. Putrajaya' => ['code' => 'WPP', 'lat' => 2.9264, 'long' => 101.6964],
         ];
 
         $missing = array_values(array_diff(MalaysianStates::values(), array_keys($states)));
 
         if ($missing !== []) {
-            throw new RuntimeException('Daerah dummy belum ditetapkan untuk: '.implode(', ', $missing));
+            throw new RuntimeException('Koordinat dummy belum ditetapkan untuk: '.implode(', ', $missing));
         }
 
         foreach ($states as $negeri => $state) {
-            if (count($state['daerah']) !== count(self::SAMPLES)) {
-                throw new RuntimeException('Bilangan daerah untuk '.$negeri.' tidak sepadan dengan bilangan sampel.');
+            $daerah = $catalog->get($negeri, collect())->pluck('daerah')->values()->all();
+
+            if ($daerah === []) {
+                throw new RuntimeException('Daerah AADK belum ditetapkan untuk: '.$negeri);
             }
+
+            $picked = [];
+
+            for ($index = 0; $index < count(self::SAMPLES); $index++) {
+                $picked[] = $daerah[$index % count($daerah)];
+            }
+
+            $states[$negeri]['daerah'] = $picked;
         }
 
         return $states;

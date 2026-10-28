@@ -373,6 +373,8 @@
                                         data-confirm-button="Ya, Semak Semula"
                                         data-confirm-tone="danger"
                                         data-confirm-upload="true"
+                                        data-confirm-upload-label="Dokumen pindaan PUU (PDF) *"
+                                        data-confirm-upload-missing="Sila muat naik dokumen pindaan PUU dalam format PDF."
                                     >
                                         Semak Semula
                                     </button>
@@ -381,6 +383,7 @@
                                     id="approve-puu-form"
                                     method="POST"
                                     action="{{ route('status-permohonan.approve-puu', $contract) }}"
+                                    enctype="multipart/form-data"
                                     class="inline"
                                 >
                                     @csrf
@@ -392,6 +395,9 @@
                                         data-confirm-form="approve-puu-form"
                                         data-confirm-button="Ya, Luluskan"
                                         data-confirm-tone="success"
+                                        data-confirm-upload="true"
+                                        data-confirm-upload-label="Dokumen yang telah lulus (PDF) *"
+                                        data-confirm-upload-missing="Sila muat naik dokumen yang telah lulus dalam format PDF."
                                     >
                                         Luluskan
                                     </button>
@@ -580,32 +586,52 @@
                             $savedHqAcknowledgements = is_array($contract->hq_draft_acknowledgements)
                                 ? $contract->hq_draft_acknowledgements
                                 : [];
+                            $savedHqAcknowledgementDates = is_array($savedHqAcknowledgements['dates'] ?? null)
+                                ? $savedHqAcknowledgements['dates']
+                                : [];
                         @endphp
                         <div class="space-y-3">
                             @foreach(\App\Support\HqDraftAcknowledgements::labels() as $acknowledgementKey => $acknowledgementLabel)
-                                <label class="flex items-start gap-3 text-sm text-slate-700">
-                                    <input
-                                        type="checkbox"
-                                        name="{{ $acknowledgementKey }}"
-                                        value="1"
-                                        class="hq-draft-ack mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                        data-ack-key="{{ $acknowledgementKey }}"
-                                        @checked(filter_var(old($acknowledgementKey, $savedHqAcknowledgements[$acknowledgementKey] ?? false), FILTER_VALIDATE_BOOLEAN))
-                                    >
-                                    <span>{{ $acknowledgementLabel }}</span>
-                                </label>
+                                @php
+                                    $hqAcknowledgementChecked = filter_var(old($acknowledgementKey, $savedHqAcknowledgements[$acknowledgementKey] ?? false), FILTER_VALIDATE_BOOLEAN);
+                                    $hqAcknowledgementDate = old('dates.'.$acknowledgementKey, $savedHqAcknowledgementDates[$acknowledgementKey] ?? '');
+                                @endphp
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <label class="flex min-w-0 items-start gap-3 text-sm text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            name="{{ $acknowledgementKey }}"
+                                            value="1"
+                                            class="hq-draft-ack mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                            data-ack-key="{{ $acknowledgementKey }}"
+                                            @checked($hqAcknowledgementChecked)
+                                        >
+                                        <span>{{ $acknowledgementLabel }}</span>
+                                    </label>
+                                    <div class="hq-draft-date-wrap ml-7 sm:ml-0 {{ $hqAcknowledgementChecked ? '' : 'hidden' }}">
+                                        <label class="sr-only" for="hq-draft-date-{{ $acknowledgementKey }}">Tarikh {{ $acknowledgementLabel }}</label>
+                                        <input
+                                            type="date"
+                                            id="hq-draft-date-{{ $acknowledgementKey }}"
+                                            name="dates[{{ $acknowledgementKey }}]"
+                                            value="{{ $hqAcknowledgementDate }}"
+                                            data-ack-date-for="{{ $acknowledgementKey }}"
+                                            class="hq-draft-date glass-input w-full rounded-lg px-2.5 py-1.5 text-sm sm:w-40"
+                                            @disabled(! $hqAcknowledgementChecked)
+                                        >
+                                    </div>
+                                </div>
                             @endforeach
                         </div>
 
-                        @error('terima_dokumen_acknowledged')
-                            <p class="text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        @error('perjanjian_ditandatangani_acknowledged')
-                            <p class="text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        @error('salinan_promis_acknowledged')
-                            <p class="text-xs text-red-600">{{ $message }}</p>
-                        @enderror
+                        @foreach(\App\Support\HqDraftAcknowledgements::keys() as $acknowledgementKey)
+                            @error($acknowledgementKey)
+                                <p class="text-xs text-red-600">{{ $message }}</p>
+                            @enderror
+                            @error('dates.'.$acknowledgementKey)
+                                <p class="text-xs text-red-600">{{ $message }}</p>
+                            @enderror
+                        @endforeach
 
                         <div class="flex flex-wrap items-center justify-end gap-3">
                             <p id="hq-draft-save-status" class="mr-auto hidden text-xs text-slate-500" aria-live="polite"></p>
@@ -641,6 +667,14 @@
                                 Peringkat ini belum bermula.
                             @endif
                         </p>
+                        @if($currentStepIndex > 5)
+                            <div class="glass-subtle mt-4 rounded-xl border border-slate-200/60 p-4">
+                                @include('status-permohonan.partials.hq-draft-acknowledgements-readonly', [
+                                    'contract' => $contract,
+                                    'acknowledgementsCompleted' => true,
+                                ])
+                            </div>
+                        @endif
                     </div>
                 </section>
             @endif
@@ -666,20 +700,41 @@
                             $savedMatiSetemAcknowledgements = is_array($contract->negeri_mati_setem_acknowledgements)
                                 ? $contract->negeri_mati_setem_acknowledgements
                                 : [];
+                            $savedMatiSetemDates = is_array($savedMatiSetemAcknowledgements['dates'] ?? null)
+                                ? $savedMatiSetemAcknowledgements['dates']
+                                : [];
                         @endphp
                         <div class="space-y-3">
                             @foreach(\App\Support\NegeriMatiSetemAcknowledgements::labels() as $acknowledgementKey => $acknowledgementLabel)
-                                <label class="flex items-start gap-3 text-sm text-slate-700">
-                                    <input
-                                        type="checkbox"
-                                        name="{{ $acknowledgementKey }}"
-                                        value="1"
-                                        class="negeri-mati-setem-ack mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                        data-ack-key="{{ $acknowledgementKey }}"
-                                        @checked(filter_var(old($acknowledgementKey, $savedMatiSetemAcknowledgements[$acknowledgementKey] ?? false), FILTER_VALIDATE_BOOLEAN))
-                                    >
-                                    <span>{{ $acknowledgementLabel }}</span>
-                                </label>
+                                @php
+                                    $matiSetemChecked = filter_var(old($acknowledgementKey, $savedMatiSetemAcknowledgements[$acknowledgementKey] ?? false), FILTER_VALIDATE_BOOLEAN);
+                                    $matiSetemDate = old('dates.'.$acknowledgementKey, $savedMatiSetemDates[$acknowledgementKey] ?? '');
+                                @endphp
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <label class="flex min-w-0 items-start gap-3 text-sm text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            name="{{ $acknowledgementKey }}"
+                                            value="1"
+                                            class="negeri-mati-setem-ack mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                            data-ack-key="{{ $acknowledgementKey }}"
+                                            @checked($matiSetemChecked)
+                                        >
+                                        <span>{{ $acknowledgementLabel }}</span>
+                                    </label>
+                                    <div class="negeri-mati-setem-date-wrap ml-7 sm:ml-0 {{ $matiSetemChecked ? '' : 'hidden' }}">
+                                        <label class="sr-only" for="negeri-mati-setem-date-{{ $acknowledgementKey }}">Tarikh {{ $acknowledgementLabel }}</label>
+                                        <input
+                                            type="date"
+                                            id="negeri-mati-setem-date-{{ $acknowledgementKey }}"
+                                            name="dates[{{ $acknowledgementKey }}]"
+                                            value="{{ $matiSetemDate }}"
+                                            data-ack-date-for="{{ $acknowledgementKey }}"
+                                            class="negeri-mati-setem-date glass-input w-full rounded-lg px-2.5 py-1.5 text-sm sm:w-40"
+                                            @disabled(! $matiSetemChecked)
+                                        >
+                                    </div>
+                                </div>
                             @endforeach
                         </div>
 
@@ -689,6 +744,14 @@
                         @error('edaran_pemilik_acknowledged')
                             <p class="text-xs text-red-600">{{ $message }}</p>
                         @enderror
+                        @error('salinan_dihantar_cawangan_pembangunan_acknowledged')
+                            <p class="text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                        @foreach(\App\Support\NegeriMatiSetemAcknowledgements::keys() as $acknowledgementKey)
+                            @error('dates.'.$acknowledgementKey)
+                                <p class="text-xs text-red-600">{{ $message }}</p>
+                            @enderror
+                        @endforeach
 
                         <div class="flex flex-wrap items-center justify-end gap-3">
                             <p id="negeri-mati-setem-save-status" class="mr-auto hidden text-xs text-slate-500" aria-live="polite"></p>
@@ -772,12 +835,16 @@
     const modalCancel = document.getElementById('confirm-action-cancel');
     const modalIcon = document.getElementById('confirm-action-icon');
     const modalUploadWrap = document.getElementById('confirm-action-upload-wrap');
+    const modalUploadLabel = document.getElementById('confirm-action-upload-label');
     const modalUpload = document.getElementById('confirm-action-upload');
     const modalUploadError = document.getElementById('confirm-action-upload-error');
     const uploadMaxBytes = {{ (int) (\App\Support\UploadLimits::effectiveDraftMaxKilobytes() * 1024) }};
     const uploadHumanLimit = @json(\App\Support\UploadLimits::humanDraftLimit());
+    const defaultUploadLabel = 'Dokumen pindaan PUU (PDF) *';
+    const defaultUploadMissing = 'Sila muat naik dokumen pindaan PUU dalam format PDF.';
     let pendingForm = null;
     let pendingUpload = false;
+    let uploadMissingMessage = defaultUploadMissing;
 
     const iconTemplates = {
         success: '<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>',
@@ -786,7 +853,11 @@
 
     function resetConfirmUpload() {
         pendingUpload = false;
+        uploadMissingMessage = defaultUploadMissing;
         modalUploadWrap?.classList.add('hidden');
+        if (modalUploadLabel) {
+            modalUploadLabel.textContent = defaultUploadLabel;
+        }
         if (modalUpload) {
             modalUpload.value = '';
             modalUpload.removeAttribute('form');
@@ -812,7 +883,7 @@
 
         const file = modalUpload?.files?.[0];
         if (!file) {
-            showUploadError('Sila muat naik dokumen pindaan PUU dalam format PDF.');
+            showUploadError(uploadMissingMessage);
             modalUpload?.focus();
             return false;
         }
@@ -893,8 +964,16 @@
             resetConfirmUpload();
             pendingUpload = trigger.dataset.confirmUpload === 'true';
             if (pendingUpload && modalUploadWrap && modalUpload) {
+                const uploadLabel = (trigger.dataset.confirmUploadLabel || '').trim();
+                const uploadMissing = (trigger.dataset.confirmUploadMissing || '').trim();
                 modalUploadWrap.classList.remove('hidden');
                 modalUpload.setAttribute('form', form.id);
+                if (modalUploadLabel && uploadLabel !== '') {
+                    modalUploadLabel.textContent = uploadLabel;
+                }
+                if (uploadMissing !== '') {
+                    uploadMissingMessage = uploadMissing;
+                }
             }
             modal.classList.remove('hidden');
             document.body.classList.add('overflow-hidden');
@@ -1132,6 +1211,40 @@
         status.classList.remove('hidden');
     }
 
+    function todayDateValue() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    }
+
+    function dateInputFor(key) {
+        return form.querySelector(`.hq-draft-date[data-ack-date-for="${key}"]`);
+    }
+
+    function syncAcknowledgementDate(checkbox, autoSetToday = false) {
+        const dateInput = dateInputFor(checkbox.dataset.ackKey);
+        const dateWrap = dateInput?.closest('.hq-draft-date-wrap');
+
+        if (!dateInput || !dateWrap) {
+            return;
+        }
+
+        dateWrap.classList.toggle('hidden', !checkbox.checked);
+        dateInput.disabled = !checkbox.checked;
+
+        if (!checkbox.checked) {
+            dateInput.value = '';
+            return;
+        }
+
+        if (autoSetToday || !dateInput.value) {
+            dateInput.value = todayDateValue();
+        }
+    }
+
     function collectFormData() {
         const formData = new FormData();
         formData.append('_method', 'PATCH');
@@ -1139,6 +1252,11 @@
 
         form.querySelectorAll('.hq-draft-ack').forEach((checkbox) => {
             formData.append(`acknowledgements[${checkbox.dataset.ackKey}]`, checkbox.checked ? '1' : '0');
+
+            const dateInput = dateInputFor(checkbox.dataset.ackKey);
+            if (checkbox.checked && dateInput?.value) {
+                formData.append(`acknowledgements[dates][${checkbox.dataset.ackKey}]`, dateInput.value);
+            }
         });
 
         return formData;
@@ -1201,6 +1319,16 @@
 
     form.querySelectorAll('.hq-draft-ack').forEach((checkbox) => {
         checkbox.addEventListener('change', () => {
+            syncAcknowledgementDate(checkbox, true);
+            clearTimeout(autosaveTimer);
+            autosaveTimer = window.setTimeout(() => {
+                saveProgress();
+            }, AUTOSAVE_DEBOUNCE_MS);
+        });
+    });
+
+    form.querySelectorAll('.hq-draft-date').forEach((dateInput) => {
+        dateInput.addEventListener('change', () => {
             clearTimeout(autosaveTimer);
             autosaveTimer = window.setTimeout(() => {
                 saveProgress();
@@ -1237,6 +1365,40 @@
         status.classList.remove('hidden');
     }
 
+    function todayDateValue() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    }
+
+    function dateInputFor(key) {
+        return form.querySelector(`.negeri-mati-setem-date[data-ack-date-for="${key}"]`);
+    }
+
+    function syncAcknowledgementDate(checkbox, autoSetToday = false) {
+        const dateInput = dateInputFor(checkbox.dataset.ackKey);
+        const dateWrap = dateInput?.closest('.negeri-mati-setem-date-wrap');
+
+        if (!dateInput || !dateWrap) {
+            return;
+        }
+
+        dateWrap.classList.toggle('hidden', !checkbox.checked);
+        dateInput.disabled = !checkbox.checked;
+
+        if (!checkbox.checked) {
+            dateInput.value = '';
+            return;
+        }
+
+        if (autoSetToday || !dateInput.value) {
+            dateInput.value = todayDateValue();
+        }
+    }
+
     function collectFormData() {
         const formData = new FormData();
         formData.append('_method', 'PATCH');
@@ -1244,6 +1406,11 @@
 
         form.querySelectorAll('.negeri-mati-setem-ack').forEach((checkbox) => {
             formData.append(`acknowledgements[${checkbox.dataset.ackKey}]`, checkbox.checked ? '1' : '0');
+
+            const dateInput = dateInputFor(checkbox.dataset.ackKey);
+            if (checkbox.checked && dateInput?.value) {
+                formData.append(`acknowledgements[dates][${checkbox.dataset.ackKey}]`, dateInput.value);
+            }
         });
 
         return formData;
@@ -1306,6 +1473,16 @@
 
     form.querySelectorAll('.negeri-mati-setem-ack').forEach((checkbox) => {
         checkbox.addEventListener('change', () => {
+            syncAcknowledgementDate(checkbox, true);
+            clearTimeout(autosaveTimer);
+            autosaveTimer = window.setTimeout(() => {
+                saveProgress();
+            }, AUTOSAVE_DEBOUNCE_MS);
+        });
+    });
+
+    form.querySelectorAll('.negeri-mati-setem-date').forEach((dateInput) => {
+        dateInput.addEventListener('change', () => {
             clearTimeout(autosaveTimer);
             autosaveTimer = window.setTimeout(() => {
                 saveProgress();

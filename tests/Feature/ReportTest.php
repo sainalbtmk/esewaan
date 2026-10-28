@@ -8,6 +8,7 @@ use App\Services\ActivityLogger;
 use App\Services\HqReportService;
 use App\Support\ApplicationCategories;
 use App\Support\BuildingTypes;
+use App\Support\ContractNegeriReport;
 use App\Support\HqJrpChecklist;
 use App\Support\RentalStatusReport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -143,7 +144,7 @@ test('admin hq can generate laporan kontrak mengikut negeri', function () {
     $superseded->premise->update(['nama_ptj' => 'Premis Diganti Kelantan']);
     $superseded->update(['superseded_at' => now()]);
 
-    $bakiHari = (string) $kelantan->fresh()->daysUntilContractEnd();
+    $bakiBulan = (string) ContractNegeriReport::bakiBulan($kelantan->fresh());
 
     $response = $this->actingAs($admin)
         ->get(route('reports.index', [
@@ -158,6 +159,10 @@ test('admin hq can generate laporan kontrak mengikut negeri', function () {
         ->assertSee('Perincian Proses Cawangan Pembangunan')
         ->assertSee('AADK Negeri Kelantan')
         ->assertSee('Tingkat 1, Menara Perbadanan, Kota Bharu')
+        ->assertSee('Jenis Bangunan')
+        ->assertSee('Baki Bulan')
+        ->assertDontSee('Jenis Langganan')
+        ->assertDontSee('Baki Hari')
         ->assertSee('Kompleks kerajaan')
         ->assertSee('RM28,597.14')
         ->assertSee('1,219')
@@ -166,7 +171,7 @@ test('admin hq can generate laporan kontrak mengikut negeri', function () {
         ->assertSee('Terima')
         ->assertSee('Semakan PUU')
         ->assertSee('PUU')
-        ->assertSee($bakiHari)
+        ->assertSee($bakiBulan)
         ->assertSee('bg-red-600', false)
         ->assertSee('Emel penjelasan pengabaian permohonan pelanjutan telah dihantar kepada AADK Negeri.')
         ->assertSee('14/01/2026 – '.HqJrpChecklist::definitions()[HqJrpChecklist::AADK_SUBMIT_BPH])
@@ -284,7 +289,8 @@ test('admin hq can generate laporan status sewaan grouped by current stage', fun
         ->assertSee('PINDAH')
         ->assertSee('AADK PUU Kelantan')
         ->assertSee('AADK MOF Kelantan')
-        ->assertSee('PELANJUTAN')
+        ->assertSee('LANJUTAN')
+        ->assertDontSee('PELANJUTAN')
         ->assertSee('Pertimbangan MOF')
         ->assertSee((string) RentalStatusReport::bakiBulan($mof->fresh()))
         ->assertSee('text-red-600', false)
@@ -345,6 +351,101 @@ test('laporan status sewaan sorts tindakan ptj by remaining months from lowest',
             $sooner->id,
             $later->id,
         ]);
+});
+
+test('report shows hq approved contracts with remaining months below zero', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+
+    $overdue = createReportContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
+        'Selangor',
+        now()->subMonths(2)->startOfDay()->toDateString(),
+    );
+    $overdue->premise->update([
+        'nama_ptj' => 'AADK Daerah Sabak Bernam',
+        'daerah' => 'Sabak Bernam',
+    ]);
+
+    $followedUp = createReportContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
+        'Selangor',
+        now()->subMonth()->startOfDay()->toDateString(),
+    );
+    $followedUp->premise->update([
+        'nama_ptj' => 'AADK Daerah Klang Tamat',
+        'daerah' => 'Klang',
+    ]);
+    createReportContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ,
+        'Selangor',
+    )->update(['parent_contract_id' => $followedUp->id]);
+
+    $active = createReportContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
+        'Selangor',
+        now()->addMonths(4)->toDateString(),
+    );
+    $active->premise->update([
+        'nama_ptj' => 'AADK Daerah Petaling Aktif',
+        'daerah' => 'Petaling',
+    ]);
+
+    $overdue->refresh();
+    $baki = RentalStatusReport::bakiBulan($overdue);
+
+    expect($baki)->toBeLessThan(0)
+        ->and(RentalStatusReport::placement($overdue->load('premise'))['section'] ?? null)
+        ->toBe(RentalStatusReport::SECTION_PTJ)
+        ->and(RentalStatusReport::placement($followedUp->fresh()))
+        ->toBeNull();
+
+    $ringkasan = $this->actingAs($admin)
+        ->get(route('reports.index', [
+            'jenis' => HqReportService::TYPE_RINGKASAN,
+            'negeri' => 'Selangor',
+            'daerah' => 'Sabak Bernam',
+        ]));
+
+    $ringkasan->assertSuccessful()
+        ->assertSee('Skop: Selangor · Daerah Sabak Bernam')
+        ->assertSee('AADK Daerah Sabak Bernam');
+
+    expect($ringkasan->viewData('report')['summary']['kontrakAktif'])->toBe(0)
+        ->and($ringkasan->viewData('report')['summary']['kontrakTigaBulan'])->toBe(1)
+        ->and($ringkasan->viewData('report')['summary']['kontrakLapanBulan'])->toBe(0)
+        ->and($ringkasan->viewData('report')['rows']->pluck('id')->all())->toBe([$overdue->id]);
+
+    $status = $this->actingAs($admin)
+        ->get(route('reports.index', [
+            'jenis' => HqReportService::TYPE_STATUS_SEWAAN,
+            'negeri' => 'Selangor',
+            'daerah' => 'Sabak Bernam',
+        ]));
+
+    $status->assertSuccessful()
+        ->assertSee('Tindakan PTJ (1)')
+        ->assertSee('AADK Daerah Sabak Bernam')
+        ->assertSee('Belum Terima Permohonan')
+        ->assertSee((string) $baki)
+        ->assertSee('text-red-600', false);
+
+    $groups = collect($status->viewData('report')['statusGroups']);
+
+    expect($groups->firstWhere('key', RentalStatusReport::SECTION_PTJ)['rows']->pluck('id')->all())
+        ->toBe([$overdue->id]);
+
+    $aktif = $this->actingAs($admin)
+        ->get(route('reports.index', [
+            'jenis' => HqReportService::TYPE_KONTRAK_AKTIF,
+            'negeri' => 'Selangor',
+            'daerah' => 'Sabak Bernam',
+        ]));
+
+    $aktif->assertSuccessful()
+        ->assertSee('Tiada rekod untuk laporan ini.');
+
+    expect($aktif->viewData('report')['rows'])->toBeEmpty()
+        ->and($aktif->viewData('report')['summary']['kontrakTigaBulan'])->toBe(1);
 });
 
 test('laporan status sewaan places large premises under pertimbangan ke', function () {

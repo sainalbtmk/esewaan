@@ -10,6 +10,7 @@
             <tr>
                 <th>No</th>
                 <th>Negeri</th>
+                <th>Daerah</th>
                 <th>PTJ</th>
                 <th>Alamat</th>
                 <th>Mula</th>
@@ -31,6 +32,7 @@
                 <tr>
                     <td>{{ $index + 1 }}</td>
                     <td>{{ $contract->premise?->negeri ?? '–' }}</td>
+                    <td>{{ $contract->premise?->daerah ?: '–' }}</td>
                     <td>{{ $contract->premise?->nama_ptj ?? '–' }}</td>
                     <td class="pre">{{ $contract->premise?->alamat_penuh ?: '–' }}</td>
                     <td>{{ ContractNegeriReport::mula($contract) }}</td>

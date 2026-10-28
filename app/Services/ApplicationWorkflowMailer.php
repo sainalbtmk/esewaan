@@ -50,7 +50,7 @@ class ApplicationWorkflowMailer
     public function notifyDraftUploaded(RentalContract $contract, User $actedBy): void
     {
         $this->notifyStage($contract, $actedBy, [
-            'subject' => 'E-Sewaan AADK: Draf Perjanjian Dihantar untuk Semakan PUU',
+            'subject' => 'SPEKTRA: Draf Perjanjian Dihantar untuk Semakan PUU',
             'heading' => 'Dalam Tindakan PUU',
             'intro' => 'Draf perjanjian telah dimuat naik dan dihantar untuk '.$contract->semakanLabel().'.',
             'next_status' => 'Peringkat 4 — Dalam tindakan PUU ('.$contract->semakanLabel().')',
@@ -62,7 +62,7 @@ class ApplicationWorkflowMailer
     public function notifyPuuRejected(RentalContract $contract, User $actedBy): void
     {
         $this->notifyStage($contract, $actedBy, [
-            'subject' => 'E-Sewaan AADK: Semakan PUU Memerlukan Pindaan',
+            'subject' => 'SPEKTRA: Semakan PUU Memerlukan Pindaan',
             'heading' => 'Pindaan Berdasarkan PUU',
             'intro' => 'Semakan PUU dibatalkan. Negeri perlu pinda dan muat naik draf perjanjian semula.',
             'next_status' => 'Peringkat 5 — Pindaan Berdasarkan PUU',
@@ -74,7 +74,7 @@ class ApplicationWorkflowMailer
     public function notifyDraftApproved(RentalContract $contract, User $actedBy): void
     {
         $this->notifyStage($contract, $actedBy, [
-            'subject' => 'E-Sewaan AADK: Draf Perjanjian Diluluskan',
+            'subject' => 'SPEKTRA: Draf Perjanjian Diluluskan',
             'heading' => 'Draf Lulus',
             'intro' => 'Draf perjanjian telah diluluskan. Negeri boleh menyediakan dokumen akhir dan mengembalikannya kepada Ibu Pejabat.',
             'next_status' => 'Peringkat 6 — Draf Lulus',
@@ -86,7 +86,7 @@ class ApplicationWorkflowMailer
     public function notifyReturnedToHq(RentalContract $contract, User $actedBy): void
     {
         $this->notifyStage($contract, $actedBy, [
-            'subject' => 'E-Sewaan AADK: Dokumen Dikembalikan untuk Pengesahan & Tandatangan',
+            'subject' => 'SPEKTRA: Dokumen Dikembalikan untuk Pengesahan & Tandatangan',
             'heading' => 'Pengesahan & Tandatangan',
             'intro' => 'Negeri telah mengembalikan draf akhir kepada Cawangan Pembangunan AADK untuk pengesahan dan tandatangan.',
             'next_status' => 'Peringkat 7 — Pengesahan & Tandatangan',
@@ -98,7 +98,7 @@ class ApplicationWorkflowMailer
     public function notifySentForStampDuty(RentalContract $contract, User $actedBy): void
     {
         $this->notifyStage($contract, $actedBy, [
-            'subject' => 'E-Sewaan AADK: Perjanjian Dihantar untuk Mati Setem',
+            'subject' => 'SPEKTRA: Perjanjian Dihantar untuk Mati Setem',
             'heading' => 'Mati Setem',
             'intro' => 'Ibu Pejabat telah mengesahkan tandatangan. Negeri perlu lengkapkan mati setem.',
             'next_status' => 'Peringkat 8 — Mati Setem',
@@ -110,7 +110,7 @@ class ApplicationWorkflowMailer
     public function notifyCompleted(RentalContract $contract, User $actedBy): void
     {
         $this->notifyStage($contract, $actedBy, [
-            'subject' => 'E-Sewaan AADK: Permohonan Selesai — Dalam Senarai Kontrak Sewaan',
+            'subject' => 'SPEKTRA: Permohonan Selesai — Dalam Senarai Kontrak Sewaan',
             'heading' => 'Selesai',
             'intro' => 'Mati setem telah selesai. Permohonan dimasukkan ke dalam Senarai Kontrak Sewaan.',
             'next_status' => 'Peringkat 9 — Selesai',

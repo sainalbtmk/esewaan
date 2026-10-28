@@ -84,13 +84,16 @@ test('rejecting puu review emails hq and negeri for pindaan stage', function () 
 
 test('approving puu review emails hq and negeri for draf lulus stage', function () {
     Mail::fake();
+    Storage::fake('local');
 
     $negeri = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $hq = User::factory()->create(['role' => 'admin_hq']);
     $contract = createWorkflowMailContract($negeri, RentalContract::WORKFLOW_SEMAKAN_PUU);
 
     $this->actingAs($hq)
-        ->post(route('status-permohonan.approve-puu', $contract))
+        ->post(route('status-permohonan.approve-puu', $contract), [
+            'document' => UploadedFile::fake()->create('dokumen-lulus.pdf', 100, 'application/pdf'),
+        ])
         ->assertRedirect();
 
     assertStageMailSentToHqAndNegeri($hq, $negeri, 'Draf Perjanjian Diluluskan');
@@ -138,9 +141,10 @@ test('hq finalize emails both roles for mati setem stage', function () {
 
     $this->actingAs($hq)
         ->post(route('status-permohonan.finalize', $contract), [
-            'terima_dokumen_acknowledged' => '1',
-            'perjanjian_ditandatangani_acknowledged' => '1',
-            'salinan_promis_acknowledged' => '1',
+            'terima_perjanjian_pemilik_acknowledged' => '1',
+            'dihantar_pkp_saksi_acknowledged' => '1',
+            'dihantar_tkpp_penyewa_acknowledged' => '1',
+            'dikembalikan_negeri_mati_setem_acknowledged' => '1',
         ])
         ->assertRedirect();
 
@@ -158,6 +162,7 @@ test('completing mati setem emails both roles for selesai stage', function () {
         ->post(route('status-permohonan.complete-mati-setem', $contract), [
             'mati_setem_lhdn_acknowledged' => '1',
             'edaran_pemilik_acknowledged' => '1',
+            'salinan_dihantar_cawangan_pembangunan_acknowledged' => '1',
         ])
         ->assertRedirect();
 

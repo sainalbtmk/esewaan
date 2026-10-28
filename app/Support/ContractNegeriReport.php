@@ -59,6 +59,11 @@ class ContractNegeriReport
         return $contract->daysUntilContractEnd();
     }
 
+    public static function bakiBulan(RentalContract $contract): ?int
+    {
+        return RentalStatusReport::bakiBulan($contract);
+    }
+
     public static function isBakiHariKritikal(RentalContract $contract): bool
     {
         $days = self::bakiHari($contract);
@@ -152,8 +157,12 @@ class ContractNegeriReport
         };
     }
 
-    public static function title(?string $negeri): string
+    public static function title(?string $negeri, ?string $daerah = null): string
     {
+        if (filled($negeri) && filled($daerah)) {
+            return 'Laporan Kontrak AADK Negeri '.$negeri.' — Daerah '.$daerah;
+        }
+
         if (filled($negeri)) {
             return 'Laporan Kontrak AADK Negeri '.$negeri;
         }

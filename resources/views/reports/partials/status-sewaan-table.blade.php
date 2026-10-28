@@ -15,6 +15,7 @@
                         <tr>
                             <th class="px-2 py-2 font-semibold">No</th>
                             <th class="px-2 py-2 font-semibold">Negeri</th>
+                            <th class="px-2 py-2 font-semibold">Daerah</th>
                             <th class="px-2 py-2 font-semibold">PTJ</th>
                             <th class="min-w-40 px-2 py-2 font-semibold">Alamat</th>
                             <th class="px-2 py-2 font-semibold">Mula</th>
@@ -37,6 +38,7 @@
                             <tr class="border-t border-slate-200 align-top odd:bg-white even:bg-slate-50/70">
                                 <td class="px-2 py-2 text-slate-500">{{ $index + 1 }}</td>
                                 <td class="px-2 py-2 font-medium uppercase text-slate-800">{{ $contract->premise?->negeri ?? '–' }}</td>
+                                <td class="px-2 py-2 text-slate-800">{{ $contract->premise?->daerah ?: '–' }}</td>
                                 <td class="px-2 py-2 font-medium text-slate-900">{{ $contract->premise?->nama_ptj ?? '–' }}</td>
                                 <td class="whitespace-pre-line px-2 py-2 text-slate-700">{{ $contract->premise?->alamat_penuh ?: '–' }}</td>
                                 <td class="whitespace-nowrap px-2 py-2 text-slate-700">{{ ContractNegeriReport::mula($contract) }}</td>

@@ -122,7 +122,7 @@ class RentalStatusReport
         }
 
         if ($contract->isHqApproved()) {
-            if ($contract->isExpired() || ! $contract->isContractEndWithinEightMonths()) {
+            if (! $contract->isExpired() && ! $contract->isContractEndWithinEightMonths()) {
                 return null;
             }
 
@@ -162,7 +162,7 @@ class RentalStatusReport
     {
         return match ($contract->kategori_permohonan) {
             ApplicationCategories::BARU => 'BAHARU',
-            ApplicationCategories::LANJUTAN => 'PELANJUTAN',
+            ApplicationCategories::LANJUTAN => 'LANJUTAN',
             ApplicationCategories::PINDAH => 'PINDAH',
             default => '–',
         };

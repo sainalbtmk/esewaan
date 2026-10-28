@@ -11,7 +11,7 @@
     : 'Senarai permohonan yang telah disahkan oleh Ibu Pejabat')
 
 @section('content')
-<div class="space-y-4" id="kontrak-sewaan-page" data-list-url="{{ route('kontrak-sewaan.index') }}" data-current-tab="{{ $tab }}">
+<div class="space-y-4" id="kontrak-sewaan-page" data-list-url="{{ route('kontrak-sewaan.index') }}" data-current-tab="{{ $tab }}" data-status-tindakan="{{ $statusTindakan }}">
     <div class="glass-tabs">
         <button
             type="button"
@@ -74,6 +74,7 @@
     const searchInput = document.getElementById('kontrak-sewaan-search');
     const loading = document.getElementById('kontrak-sewaan-search-loading');
     const baseUrl = page.dataset.listUrl;
+    const statusTindakan = page.dataset.statusTindakan || '';
     let currentTab = page.dataset.currentTab || 'active';
     let currentPage = Number(new URL(window.location.href).searchParams.get('page') || 1);
 
@@ -183,6 +184,7 @@
         if (searchInput?.value.trim()) params.set('search', searchInput.value.trim());
         if (currentPage > 1) params.set('page', String(currentPage));
         if (currentTab === 'history') params.set('tab', 'history');
+        if (statusTindakan && currentTab !== 'history') params.set('status_tindakan', statusTindakan);
 
         setLoading(true);
 

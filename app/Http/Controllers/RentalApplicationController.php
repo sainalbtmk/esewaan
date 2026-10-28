@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AutosaveRentalApplicationRequest;
 use App\Http\Requests\StoreRentalApplicationRequest;
 use App\Http\Requests\UpdateRentalApplicationRequest;
+use App\Models\AadkDaerah;
 use App\Models\Premise;
 use App\Models\RentalContract;
 use App\Models\User;
@@ -54,7 +55,7 @@ class RentalApplicationController extends Controller
         $premise = Premise::query()->create([
             'nama_ptj' => $validated['nama_ptj'],
             'negeri' => $validated['negeri'],
-            'daerah' => $validated['negeri'],
+            'daerah' => $validated['daerah'],
             'alamat_penuh' => $validated['alamat_penuh'],
             'jenis_bangunan' => $validated['jenis_bangunan'],
             'nama_pemilik' => $validated['nama_pemilik'],
@@ -137,7 +138,9 @@ class RentalApplicationController extends Controller
             $premise->update([
                 'nama_ptj' => $validated['nama_ptj'] ?? $premise->nama_ptj,
                 'negeri' => $validated['negeri'] ?? $premise->negeri,
-                'daerah' => $validated['negeri'] ?? $premise->daerah,
+                'daerah' => filled($validated['daerah'] ?? null)
+                    ? $validated['daerah']
+                    : $premise->daerah,
                 'alamat_penuh' => $validated['alamat_penuh'] ?? $premise->alamat_penuh,
                 'jenis_bangunan' => array_key_exists('jenis_bangunan', $validated)
                     ? $validated['jenis_bangunan']
@@ -246,6 +249,7 @@ class RentalApplicationController extends Controller
             'negeriList' => MalaysianStates::all(),
             'jenisList' => BuildingTypes::all(),
             'adminNegeri' => $admin->negeri,
+            'daerahList' => AadkDaerah::namesForNegeri($admin->negeri),
         ];
     }
 
