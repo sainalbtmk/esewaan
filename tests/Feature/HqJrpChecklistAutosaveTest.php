@@ -101,7 +101,7 @@ test('hq review page shows catatan only after mof and ke boxes are ticked', func
     $contract = createHqReviewContractForAutosave();
     $contract->update([
         'keluasan_mp' => 100,
-        'kategori_permohonan' => ApplicationCategories::LANJUTAN,
+        'kategori_permohonan' => ApplicationCategories::PINDAH,
         'hq_jrp_checklist' => [
             HqJrpChecklist::KP => false,
             HqJrpChecklist::MOF => true,

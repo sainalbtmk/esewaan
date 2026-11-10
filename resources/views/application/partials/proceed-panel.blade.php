@@ -48,37 +48,55 @@
                                             'proceed_steps.'.$panel['key'].'.agency_dates.'.$agencyKey,
                                             $panel['agency_dates'][$agencyKey] ?? null
                                         );
+                                        $agencyNote = old(
+                                            'proceed_steps.'.$panel['key'].'.agency_notes.'.$agencyKey,
+                                            $panel['agency_notes'][$agencyKey] ?? null
+                                        );
                                     @endphp
-                                    <div class="flex flex-col gap-2 rounded-xl border border-slate-300 bg-white/50 px-3 py-2 transition-colors hover:border-slate-400 hover:bg-white/70 sm:flex-row sm:items-center sm:justify-between">
-                                        <label class="flex min-w-0 cursor-pointer items-start gap-3">
-                                            <input
-                                                type="checkbox"
-                                                name="proceed_steps[{{ $panel['key'] }}][agencies][{{ $agencyKey }}]"
-                                                value="1"
-                                                @checked($agencyChecked)
-                                                class="proceed-agency-checkbox mt-0.5 h-4 w-4 shrink-0 rounded border-white/60 text-slate-800 focus:ring-slate-500/30"
-                                                data-agency-key="{{ $agencyKey }}"
-                                                @if($agencyRequiresDate) data-requires-date="1" @endif
-                                            >
-                                            <span class="text-sm text-slate-700">{{ $agencyLabel }}</span>
-                                        </label>
-                                        @if($agencyRequiresDate)
-                                            <div
-                                                class="proceed-agency-date-wrap ml-7 sm:ml-0 {{ $agencyChecked ? '' : 'hidden' }}"
-                                                data-agency-date-for="{{ $agencyKey }}"
-                                            >
-                                                <label class="sr-only" for="proceed_agency_date_{{ $panel['key'] }}_{{ $agencyKey }}">Tarikh surat {{ $agencyLabel }}</label>
+                                    <div class="flex flex-col gap-2 rounded-xl border border-slate-300 bg-white/50 px-3 py-2 transition-colors hover:border-slate-400 hover:bg-white/70">
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                            <label class="flex min-w-0 cursor-pointer items-start gap-3">
                                                 <input
-                                                    type="date"
-                                                    id="proceed_agency_date_{{ $panel['key'] }}_{{ $agencyKey }}"
-                                                    name="proceed_steps[{{ $panel['key'] }}][agency_dates][{{ $agencyKey }}]"
-                                                    value="{{ $agencyDate }}"
-                                                    class="proceed-agency-date glass-input w-full rounded-lg px-2.5 py-1.5 text-sm sm:w-40"
+                                                    type="checkbox"
+                                                    name="proceed_steps[{{ $panel['key'] }}][agencies][{{ $agencyKey }}]"
+                                                    value="1"
+                                                    @checked($agencyChecked)
+                                                    class="proceed-agency-checkbox mt-0.5 h-4 w-4 shrink-0 rounded border-white/60 text-slate-800 focus:ring-slate-500/30"
                                                     data-agency-key="{{ $agencyKey }}"
-                                                    @disabled(! $agencyChecked)
+                                                    @if($agencyRequiresDate) data-requires-date="1" @endif
                                                 >
-                                            </div>
-                                        @endif
+                                                <span class="text-sm text-slate-700">{{ $agencyLabel }}</span>
+                                            </label>
+                                            @if($agencyRequiresDate)
+                                                <div
+                                                    class="proceed-agency-date-wrap ml-7 sm:ml-0 {{ $agencyChecked ? '' : 'hidden' }}"
+                                                    data-agency-date-for="{{ $agencyKey }}"
+                                                >
+                                                    <label class="sr-only" for="proceed_agency_date_{{ $panel['key'] }}_{{ $agencyKey }}">Tarikh surat {{ $agencyLabel }}</label>
+                                                    <input
+                                                        type="date"
+                                                        id="proceed_agency_date_{{ $panel['key'] }}_{{ $agencyKey }}"
+                                                        name="proceed_steps[{{ $panel['key'] }}][agency_dates][{{ $agencyKey }}]"
+                                                        value="{{ $agencyDate }}"
+                                                        class="proceed-agency-date glass-input w-full rounded-lg px-2.5 py-1.5 text-sm sm:w-40"
+                                                        data-agency-key="{{ $agencyKey }}"
+                                                        @disabled(! $agencyChecked)
+                                                    >
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <div class="ml-7">
+                                            <label class="mb-1 block text-xs font-medium text-slate-600" for="proceed_agency_note_{{ $panel['key'] }}_{{ $agencyKey }}">Catatan</label>
+                                            <textarea
+                                                id="proceed_agency_note_{{ $panel['key'] }}_{{ $agencyKey }}"
+                                                name="proceed_steps[{{ $panel['key'] }}][agency_notes][{{ $agencyKey }}]"
+                                                rows="2"
+                                                maxlength="2000"
+                                                data-agency-key="{{ $agencyKey }}"
+                                                class="proceed-agency-note glass-input w-full rounded-lg px-2.5 py-1.5 text-xs"
+                                                placeholder="Masukkan catatan atau kuiri (pilihan)..."
+                                            >{{ $agencyNote }}</textarea>
+                                        </div>
                                     </div>
                                 @endforeach
                             </div>

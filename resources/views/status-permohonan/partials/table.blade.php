@@ -19,6 +19,7 @@
                 <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">Nama Pemohon</th>
                 <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">Kategori Permohonan</th>
                 <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">Negeri</th>
+                <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">Daerah</th>
                 <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
                 <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">Tarikh Permohonan</th>
                 <th class="min-w-[8rem] px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">Kemajuan</th>
@@ -37,6 +38,7 @@
                         {{ \App\Support\ApplicationCategories::label($c->kategori_permohonan) }}
                     </td>
                     <td class="px-4 py-3 text-center text-sm text-slate-600">{{ $c->premise?->negeri ?? '–' }}</td>
+                    <td class="px-4 py-3 text-center text-sm text-slate-600">{{ filled($c->premise?->daerah) ? $c->premise->daerah : '–' }}</td>
                     <td class="px-4 py-3 text-center text-sm">
                         <div class="flex items-center justify-center gap-2">
                             @if(auth()->user()->isAdminHq() && $c->hasPendingWithdrawalRequest())
@@ -299,7 +301,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="px-4 py-12 text-center text-slate-500">
+                    <td colspan="8" class="px-4 py-12 text-center text-slate-500">
                         Tiada permohonan dijumpai.
                     </td>
                 </tr>

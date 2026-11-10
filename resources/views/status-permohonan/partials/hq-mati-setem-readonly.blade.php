@@ -1,0 +1,42 @@
+@php
+    use App\Support\HqMatiSetemAcknowledgements;
+
+    $savedHqAcknowledgements = is_array($contract->hq_mati_setem_acknowledgements)
+        ? $contract->hq_mati_setem_acknowledgements
+        : [];
+    $hqAcknowledgementsCompleted = $hqAcknowledgementsCompleted ?? $contract->isHqApproved();
+@endphp
+
+<div class="space-y-3">
+    @foreach(HqMatiSetemAcknowledgements::labels() as $acknowledgementKey => $acknowledgementLabel)
+        @php
+            $isChecked = array_key_exists($acknowledgementKey, $savedHqAcknowledgements)
+                ? filter_var($savedHqAcknowledgements[$acknowledgementKey], FILTER_VALIDATE_BOOLEAN)
+                : $hqAcknowledgementsCompleted;
+            $acknowledgementDate = HqMatiSetemAcknowledgements::dateFor($savedHqAcknowledgements, $acknowledgementKey);
+        @endphp
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <label class="flex min-w-0 items-start gap-3 text-sm text-slate-700">
+                <input
+                    type="checkbox"
+                    disabled
+                    @checked($isChecked)
+                    class="mt-0.5 h-4 w-4 shrink-0 cursor-default rounded border-slate-300 text-emerald-600"
+                >
+                <span @class([
+                    'text-slate-800' => $isChecked,
+                    'text-slate-500' => ! $isChecked,
+                ])>{{ $acknowledgementLabel }}</span>
+            </label>
+            @if($isChecked)
+                <span @class([
+                    'ml-7 shrink-0 text-sm sm:ml-0',
+                    'font-medium text-slate-800' => filled($acknowledgementDate),
+                    'text-slate-500' => ! filled($acknowledgementDate),
+                ])>
+                    {{ filled($acknowledgementDate) ? \Carbon\Carbon::parse($acknowledgementDate)->format('d/m/Y') : 'Tiada tarikh' }}
+                </span>
+            @endif
+        </div>
+    @endforeach
+</div>

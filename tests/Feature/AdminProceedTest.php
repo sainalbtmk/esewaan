@@ -367,6 +367,62 @@ test('surat agensi step requires dates for agency letters except pelan and gamba
         ->and(array_key_exists('gambar_bangunan', $contract->admin_proceed_progress[AdminProceedSteps::STEP_SURAT_AGENSI]['agency_dates'] ?? []))->toBeFalse();
 });
 
+test('surat agensi step shows an optional note box on every task and stores filled notes', function () {
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
+    $contract = createPendingProceedContract('Johor', ApplicationCategories::BARU);
+
+    foreach ([2, 3] as $step) {
+        $this->actingAs($admin)->put(route('admin-proceed.update', $contract), proceedStepSavePayload($contract, $step));
+        $contract->refresh();
+    }
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin-proceed.show', ['contract' => $contract, 'step' => 5]));
+
+    $response->assertSuccessful();
+
+    preg_match_all('/<textarea\b[\s\S]*?<\/textarea>/', $response->getContent(), $textareas);
+
+    $noteFields = array_values(array_filter(
+        $textareas[0],
+        fn (string $textarea): bool => str_contains($textarea, 'proceed-agency-note'),
+    ));
+
+    expect($noteFields)->toHaveCount(count(AdminProceedSteps::agencyKeys()));
+
+    foreach ($noteFields as $textarea) {
+        expect($textarea)->not->toContain('required');
+    }
+
+    foreach (AdminProceedSteps::agencyKeys() as $agencyKey) {
+        $response->assertSee('name="proceed_steps[surat_agensi][agency_notes]['.$agencyKey.']"', false);
+        $response->assertSee('Masukkan catatan atau kuiri (pilihan)...', false);
+    }
+
+    $payload = proceedStepSavePayload($contract, 5, 'Catatan langkah');
+    $payload['proceed_steps'][AdminProceedSteps::STEP_SURAT_AGENSI]['agency_notes'] = [
+        'kpksm' => 'Kuiri surat keselamatan',
+        'bomba' => '   ',
+    ];
+
+    $this->actingAs($admin)
+        ->put(route('admin-proceed.update', $contract), $payload)
+        ->assertRedirect();
+
+    $contract->refresh();
+    $notes = $contract->admin_proceed_progress[AdminProceedSteps::STEP_SURAT_AGENSI]['agency_notes'];
+
+    expect(AdminProceedSteps::isStepCompleted($contract, 5))->toBeTrue()
+        ->and($notes['kpksm'])->toBe('Kuiri surat keselamatan')
+        ->and($notes['bomba'])->toBeNull()
+        ->and($notes['gambar_bangunan'])->toBeNull();
+
+    $this->actingAs($admin)
+        ->get(route('admin-proceed.show', ['contract' => $contract, 'step' => 5]))
+        ->assertSuccessful()
+        ->assertSee('Kuiri surat keselamatan');
+});
+
 test('admin negeri cannot access edit page for contract in other negeri', function () {
     $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $contract = createPendingProceedContract('Selangor');

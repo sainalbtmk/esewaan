@@ -10,6 +10,9 @@ use App\Models\User;
 use App\Support\AdminProceedSteps;
 use App\Support\ApplicationCategories;
 use App\Support\HqDraftAcknowledgements;
+use App\Support\HqJrpChecklist;
+use App\Support\HqMatiSetemAcknowledgements;
+use App\Support\StatusTindakan;
 use App\Support\UploadLimits;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -51,6 +54,23 @@ function createStatusListContract(
         'status_aktif' => 'dalam_proses',
         'workflow_tahap' => $workflow,
         'kategori_permohonan' => ApplicationCategories::BARU,
+    ]);
+}
+
+function attachStatusParentRent(RentalContract $contract, float $parentRent, float $childRent): void
+{
+    $parent = RentalContract::query()->create([
+        'premise_id' => $contract->premise_id,
+        'tarikh_mula' => RentalContract::PLACEHOLDER_CONTRACT_DATE,
+        'tarikh_tamat' => RentalContract::PLACEHOLDER_CONTRACT_DATE,
+        'kadar_sewa_bulanan' => $parentRent,
+        'status_aktif' => 'aktif',
+        'kategori_permohonan' => ApplicationCategories::BARU,
+    ]);
+
+    $contract->update([
+        'parent_contract_id' => $parent->id,
+        'kadar_sewa_bulanan' => $childRent,
     ]);
 }
 
@@ -497,6 +517,26 @@ test('hq review page always shows all seven jrp checklist items', function () {
     expect(\App\Support\HqJrpChecklist::applicableKeys($contract))->toHaveCount(7);
 });
 
+test('hq review page places mof approval receipt directly below the mof application task', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+    $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+
+    $html = $this->actingAs($admin)
+        ->get(route('status-permohonan.review', $contract))
+        ->assertSuccessful()
+        ->getContent();
+
+    $definitions = \App\Support\HqJrpChecklist::definitions();
+    $mofTask = strpos($html, $definitions[\App\Support\HqJrpChecklist::MOF]);
+    $mofReceipt = strpos($html, $definitions[\App\Support\HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS]);
+    $keTask = strpos($html, $definitions[\App\Support\HqJrpChecklist::EPU]);
+
+    expect(\App\Support\HqJrpChecklist::allKeys()[2])->toBe(\App\Support\HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS)
+        ->and($mofTask)->not->toBeFalse()
+        ->and($mofReceipt)->toBeGreaterThan($mofTask)
+        ->and($keTask)->toBeGreaterThan($mofReceipt);
+});
+
 test('hq review page auto ticks epu when keluasan exceeds 465 mps', function () {
     $admin = User::factory()->create(['role' => 'admin_hq']);
     $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
@@ -512,8 +552,9 @@ test('hq review page auto ticks epu when keluasan exceeds 465 mps', function () 
 
     expect(\App\Support\HqJrpChecklist::requiresEpuCheckbox($contract))->toBeTrue()
         ->and($epuInput[0] ?? '')->toContain('checked')
+        ->and($epuInput[0] ?? '')->not->toContain('data-jrp-locked="1"')
         ->and($kpInput[0] ?? '')->toContain('checked')
-        ->and($kpInput[0] ?? '')->not->toContain('disabled');
+        ->and($kpInput[0] ?? '')->not->toContain('data-jrp-locked="1"');
 });
 
 test('hq review page auto ticks kelulusan pengurusan tertinggi for baru applications', function () {
@@ -531,8 +572,9 @@ test('hq review page auto ticks kelulusan pengurusan tertinggi for baru applicat
 
     expect(\App\Support\HqJrpChecklist::requiresEpuCheckbox($contract))->toBeFalse()
         ->and($epuInput[0] ?? '')->not->toContain('checked')
+        ->and($epuInput[0] ?? '')->not->toContain('data-jrp-locked="1"')
         ->and($kpInput[0] ?? '')->toContain('checked')
-        ->and($kpInput[0] ?? '')->not->toContain('disabled');
+        ->and($kpInput[0] ?? '')->not->toContain('data-jrp-locked="1"');
 });
 
 test('hq review page does not auto tick kelulusan pengurusan tertinggi for lanjutan applications', function () {
@@ -547,7 +589,176 @@ test('hq review page does not auto tick kelulusan pengurusan tertinggi for lanju
 
     preg_match('/<input\b[^>]*data-jrp-key="kp"[^>]*>/s', $html, $kpInput);
 
-    expect($kpInput[0] ?? '')->not->toContain('checked');
+    expect($kpInput[0] ?? '')->not->toContain('checked')
+        ->and($kpInput[0] ?? '')->toContain('data-jrp-locked="1"');
+});
+
+test('lanjutan disables rent increase checklist items when the increase is under 10 percent or under RM499', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+
+    $belowPercent = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    attachStatusParentRent($belowPercent, 5000, 5499);
+    $belowPercent->update(['kategori_permohonan' => ApplicationCategories::LANJUTAN]);
+
+    $belowAmount = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    attachStatusParentRent($belowAmount, 2000, 2200);
+    $belowAmount->update(['kategori_permohonan' => ApplicationCategories::LANJUTAN]);
+
+    $required = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    attachStatusParentRent($required, 4000, 4499);
+    $required->update(['kategori_permohonan' => ApplicationCategories::LANJUTAN]);
+
+    $baru = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    attachStatusParentRent($baru, 2000, 2100);
+    $baru->update(['kategori_permohonan' => ApplicationCategories::BARU]);
+
+    expect(HqJrpChecklist::lanjutanRentIncreaseItemsDisabled($belowPercent->fresh()))->toBeTrue()
+        ->and(HqJrpChecklist::lanjutanRentIncreaseItemsDisabled($belowAmount->fresh()))->toBeTrue()
+        ->and(HqJrpChecklist::lanjutanRequiresRentIncreaseAcknowledgement($required->fresh()))->toBeTrue()
+        ->and(HqJrpChecklist::lanjutanRentIncreaseItemsDisabled($required->fresh()))->toBeFalse()
+        ->and(HqJrpChecklist::lanjutanRentIncreaseItemsDisabled($baru->fresh()))->toBeFalse()
+        ->and($belowPercent->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_SEMAKAN_IBU_PEJABAT)
+        ->and($required->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_MINIT_CERAIAN);
+
+    $normalized = HqJrpChecklist::normalizeInput([
+        HqJrpChecklist::KP => '1',
+        HqJrpChecklist::MOF => '1',
+        HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS => '1',
+        HqJrpChecklist::AADK_SUBMIT_BPH => '1',
+        'dates' => [
+            HqJrpChecklist::KP => '2026-07-16',
+            HqJrpChecklist::MOF => '2026-07-16',
+            HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS => '2026-07-16',
+            HqJrpChecklist::AADK_SUBMIT_BPH => '2026-07-16',
+        ],
+        'notes' => [
+            HqJrpChecklist::MOF => 'Catatan MOF',
+        ],
+    ], $belowPercent->fresh());
+
+    expect($normalized[HqJrpChecklist::KP])->toBeFalse()
+        ->and($normalized[HqJrpChecklist::MOF])->toBeFalse()
+        ->and($normalized[HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS])->toBeFalse()
+        ->and($normalized[HqJrpChecklist::AADK_SUBMIT_BPH])->toBeTrue()
+        ->and($normalized['dates'][HqJrpChecklist::KP])->toBeNull()
+        ->and($normalized['notes'][HqJrpChecklist::MOF])->toBeNull()
+        ->and($normalized['dates'][HqJrpChecklist::AADK_SUBMIT_BPH])->toBe('2026-07-16');
+
+    $html = $this->actingAs($admin)
+        ->get(route('status-permohonan.review', $belowPercent))
+        ->assertSuccessful()
+        ->getContent();
+
+    foreach (HqJrpChecklist::rentIncreaseAcknowledgementKeys() as $key) {
+        preg_match('/<input\b[^>]*data-jrp-key="'.$key.'"[^>]*>/s', $html, $input);
+
+        expect($input[0] ?? '')->toContain('data-jrp-locked="1"')
+            ->and($input[0] ?? '')->not->toContain('checked');
+    }
+
+    preg_match('/<input\b[^>]*data-jrp-key="aadk_development_submit_bph"[^>]*>/s', $html, $bphInput);
+
+    expect($bphInput[0] ?? '')->not->toContain('data-jrp-locked="1"');
+
+    $requiredHtml = $this->actingAs($admin)
+        ->get(route('status-permohonan.review', $required))
+        ->assertSuccessful()
+        ->getContent();
+
+    preg_match('/<input\b[^>]*data-jrp-key="kp"[^>]*>/s', $requiredHtml, $requiredKp);
+
+    expect($requiredKp[0] ?? '')->not->toContain('data-jrp-locked="1"');
+});
+
+test('pindah below 465 mps disables the ke checklist items', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+
+    $below = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $below->update([
+        'kategori_permohonan' => ApplicationCategories::PINDAH,
+        'keluasan_mp' => 464.99,
+        'hq_jrp_checklist' => [
+            HqJrpChecklist::EPU => true,
+            HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS => true,
+        ],
+    ]);
+
+    $exact = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $exact->update([
+        'kategori_permohonan' => ApplicationCategories::PINDAH,
+        'keluasan_mp' => 465,
+    ]);
+
+    $above = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $above->update([
+        'kategori_permohonan' => ApplicationCategories::PINDAH,
+        'keluasan_mp' => 465.01,
+        'hq_jrp_checklist' => [HqJrpChecklist::EPU => true],
+    ]);
+
+    $unknown = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $unknown->update(['kategori_permohonan' => ApplicationCategories::PINDAH]);
+
+    $baru = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $baru->update([
+        'kategori_permohonan' => ApplicationCategories::BARU,
+        'keluasan_mp' => 100,
+    ]);
+
+    expect(HqJrpChecklist::pindahKeItemsDisabled($below->fresh()))->toBeTrue()
+        ->and(HqJrpChecklist::pindahKeItemsDisabled($exact->fresh()))->toBeFalse()
+        ->and(HqJrpChecklist::pindahKeItemsDisabled($above->fresh()))->toBeFalse()
+        ->and(HqJrpChecklist::pindahKeItemsDisabled($unknown->fresh()))->toBeFalse()
+        ->and(HqJrpChecklist::pindahKeItemsDisabled($baru->fresh()))->toBeFalse()
+        ->and($below->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_SEMAKAN_IBU_PEJABAT)
+        ->and(StatusTindakan::matchingIds(StatusTindakan::PERTIMBANGAN_KE))->toBe([$above->id]);
+
+    $normalized = HqJrpChecklist::normalizeInput([
+        HqJrpChecklist::EPU => '1',
+        HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS => '1',
+        HqJrpChecklist::AADK_SUBMIT_BPH => '1',
+        'dates' => [
+            HqJrpChecklist::EPU => '2026-07-16',
+            HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS => '2026-07-16',
+            HqJrpChecklist::AADK_SUBMIT_BPH => '2026-07-16',
+        ],
+        'notes' => [
+            HqJrpChecklist::EPU => 'Catatan KE',
+        ],
+    ], $below->fresh());
+
+    expect($normalized[HqJrpChecklist::EPU])->toBeFalse()
+        ->and($normalized[HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS])->toBeFalse()
+        ->and($normalized[HqJrpChecklist::AADK_SUBMIT_BPH])->toBeTrue()
+        ->and($normalized['dates'][HqJrpChecklist::EPU])->toBeNull()
+        ->and($normalized['dates'][HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS])->toBeNull()
+        ->and($normalized['notes'][HqJrpChecklist::EPU])->toBeNull()
+        ->and($normalized['dates'][HqJrpChecklist::AADK_SUBMIT_BPH])->toBe('2026-07-16');
+
+    $html = $this->actingAs($admin)
+        ->get(route('status-permohonan.review', $below))
+        ->assertSuccessful()
+        ->getContent();
+
+    foreach (HqJrpChecklist::keAcknowledgementKeys() as $key) {
+        preg_match('/<input\b[^>]*data-jrp-key="'.$key.'"[^>]*>/s', $html, $input);
+
+        expect($input[0] ?? '')->toContain('data-jrp-locked="1"')
+            ->and($input[0] ?? '')->not->toContain('checked');
+    }
+
+    preg_match('/<input\b[^>]*data-jrp-key="aadk_development_submit_bph"[^>]*>/s', $html, $bphInput);
+
+    expect($bphInput[0] ?? '')->not->toContain('data-jrp-locked="1"');
+
+    $exactHtml = $this->actingAs($admin)
+        ->get(route('status-permohonan.review', $exact))
+        ->assertSuccessful()
+        ->getContent();
+
+    preg_match('/<input\b[^>]*data-jrp-key="epu_jpm_planning"[^>]*>/s', $exactHtml, $exactEpu);
+
+    expect($exactEpu[0] ?? '')->not->toContain('data-jrp-locked="1"');
 });
 
 test('admin hq can approve application after review', function () {
@@ -649,6 +860,31 @@ test('approving application by hq sends email to configured test recipient when 
     Mail::assertSent(ApplicationApprovedByHqNotification::class, 2);
 });
 
+test('status list shows daerah between negeri and status', function () {
+    $hq = User::factory()->create(['role' => 'admin_hq']);
+    $contract = createStatusListContract('Perak', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $contract->commit(['workflow_tahap' => RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ]);
+    $contract->premise->update(['daerah' => 'Kerian']);
+
+    $response = $this->actingAs($hq)->get(route('status-permohonan.index'));
+
+    $response->assertSuccessful()
+        ->assertSee('Daerah')
+        ->assertSee('Kerian');
+
+    $html = $response->getContent();
+    $header = strstr($html, '<thead>');
+    $header = $header === false ? '' : strstr($header, '</thead>', true);
+
+    $negeriPos = strpos($header, '>Negeri<');
+    $daerahPos = strpos($header, '>Daerah<');
+    $statusPos = strpos($header, '>Status<');
+
+    expect($negeriPos)->not->toBeFalse()
+        ->and($daerahPos)->toBeGreaterThan($negeriPos)
+        ->and($statusPos)->toBeGreaterThan($daerahPos);
+});
+
 test('status list displays admin negeri column', function () {
     $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Selangor', 'name' => 'Admin Selangor']);
     $contract = createStatusListContract('Selangor');
@@ -693,71 +929,119 @@ test('status list search matches displayed status label', function () {
     $other->premise->update(['nama_ptj' => 'Premis Tindakan']);
 
     $response = $this->actingAs($admin)
-        ->get(route('status-permohonan.index', ['search' => 'Permohonan kepada MOF']));
+        ->get(route('status-permohonan.index', ['search' => 'Semakan Ibu Pejabat']));
 
     $response->assertSuccessful()
-        ->assertSee('Permohonan kepada MOF')
-        ->assertDontSee('Menunggu semakan Ibu Pejabat');
+        ->assertSee('Semakan Ibu Pejabat');
 
     expect($response->viewData('contracts')->pluck('id')->all())->toBe([$match->id]);
 });
 
-test('status list shows the next unticked hq checklist step', function () {
-    $admin = User::factory()->create(['role' => 'admin_hq']);
-    $mof = createStatusListContract('Melaka', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
-    $ke = createStatusListContract('Melaka', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
-    $bph = createStatusListContract('Melaka', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
-    $cleared = createStatusListContract('Melaka', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+test('hq review status follows the page five conditions for negeri and hq', function () {
+    $hq = User::factory()->create(['role' => 'admin_hq']);
+    $negeri = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
 
+    $unticked = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $unticked->update(['kategori_permohonan' => ApplicationCategories::LANJUTAN]);
+
+    $minitBeforeTick = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    attachStatusParentRent($minitBeforeTick, 4000, 4500);
+    $minitBeforeTick->update(['kategori_permohonan' => ApplicationCategories::LANJUTAN]);
+
+    $keBeforeTick = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $keBeforeTick->update([
+        'kategori_permohonan' => ApplicationCategories::PINDAH,
+        'keluasan_mp' => 500,
+    ]);
+
+    $minit = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    attachStatusParentRent($minit, 1000, 1600);
+    $minit->update([
+        'kategori_permohonan' => ApplicationCategories::LANJUTAN,
+        'hq_jrp_checklist' => [HqJrpChecklist::MOF => true],
+    ]);
+
+    $mof = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    attachStatusParentRent($mof, 1000, 1600);
+    $mof->update([
+        'kategori_permohonan' => ApplicationCategories::PINDAH,
+        'keluasan_mp' => 500,
+        'hq_jrp_checklist' => [HqJrpChecklist::KP => true],
+    ]);
+
+    $ke = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    attachStatusParentRent($ke, 1000, 1600);
     $ke->update([
+        'kategori_permohonan' => ApplicationCategories::BARU,
+        'keluasan_mp' => 500,
         'hq_jrp_checklist' => [
-            \App\Support\HqJrpChecklist::MOF => true,
+            HqJrpChecklist::KP => true,
+            HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS => true,
         ],
     ]);
+
+    $bph = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    attachStatusParentRent($bph, 1000, 1600);
     $bph->update([
+        'kategori_permohonan' => ApplicationCategories::PINDAH,
+        'keluasan_mp' => 500,
         'hq_jrp_checklist' => [
-            \App\Support\HqJrpChecklist::MOF => true,
-            \App\Support\HqJrpChecklist::EPU => true,
-        ],
-    ]);
-    $cleared->update([
-        'hq_jrp_checklist' => [
-            \App\Support\HqJrpChecklist::MOF => true,
-            \App\Support\HqJrpChecklist::EPU => true,
-            \App\Support\HqJrpChecklist::AADK_SUBMIT_BPH => true,
+            HqJrpChecklist::KP => true,
+            HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS => true,
+            HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS => true,
         ],
     ]);
 
-    expect($mof->applicationStatusLabel())->toBe('Permohonan kepada MOF')
-        ->and($ke->fresh()->applicationStatusLabel())->toBe('Permohonan kepada KE')
-        ->and($bph->fresh()->applicationStatusLabel())->toBe('Pertimbangan BPH')
-        ->and($cleared->fresh()->applicationStatusLabel())->toBe('Menunggu semakan Ibu Pejabat');
+    $lanjutan = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    attachStatusParentRent($lanjutan, 1000, 1100);
+    $lanjutan->update([
+        'kategori_permohonan' => ApplicationCategories::LANJUTAN,
+        'keluasan_mp' => 800,
+        'hq_jrp_checklist' => [HqJrpChecklist::AADK_SUBMIT_BPH => true],
+    ]);
 
-    $bphIds = $this->actingAs($admin)
-        ->get(route('status-permohonan.index', ['search' => 'Pertimbangan BPH']))
+    $rentOnly = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    attachStatusParentRent($rentOnly, 10000, 10600);
+    $rentOnly->update([
+        'kategori_permohonan' => ApplicationCategories::BARU,
+        'hq_jrp_checklist' => [HqJrpChecklist::KP => true],
+    ]);
+
+    $replied = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $replied->update([
+        'kategori_permohonan' => ApplicationCategories::LANJUTAN,
+        'hq_jrp_checklist' => [HqJrpChecklist::AADK_RECEIVE_BPH_APPROVAL => true],
+    ]);
+
+    expect($unticked->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_SEMAKAN_IBU_PEJABAT)
+        ->and($minitBeforeTick->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_MINIT_CERAIAN)
+        ->and($keBeforeTick->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_PERMOHONAN_KE)
+        ->and($minit->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_MINIT_CERAIAN)
+        ->and($mof->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_PERMOHONAN_MOF)
+        ->and($ke->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_PERMOHONAN_KE)
+        ->and($bph->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_PERMOHONAN_BPH)
+        ->and($lanjutan->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_PERMOHONAN_BPH)
+        ->and($rentOnly->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_PERMOHONAN_BPH)
+        ->and($replied->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_SEMAKAN_IBU_PEJABAT)
+        ->and($mof->fresh()->applicationStatusLabel($negeri))->toBe($mof->applicationStatusLabel($hq));
+
+    $mofIds = $this->actingAs($hq)
+        ->get(route('status-permohonan.index', ['search' => 'Permohonan ke MOF']))
         ->assertSuccessful()
-        ->assertSee('Pertimbangan BPH')
+        ->assertSee('Permohonan ke MOF')
         ->viewData('contracts')
         ->pluck('id')
         ->all();
 
-    $keIds = $this->actingAs($admin)
-        ->get(route('status-permohonan.index', ['search' => 'Permohonan kepada KE']))
+    $keIds = $this->actingAs($negeri)
+        ->get(route('status-permohonan.index', ['search' => 'Permohonan ke KE']))
         ->assertSuccessful()
         ->viewData('contracts')
         ->pluck('id')
         ->all();
 
-    $clearedIds = $this->actingAs($admin)
-        ->get(route('status-permohonan.index', ['search' => 'Menunggu semakan Ibu Pejabat']))
-        ->assertSuccessful()
-        ->viewData('contracts')
-        ->pluck('id')
-        ->all();
-
-    expect($bphIds)->toBe([$bph->id])
-        ->and($keIds)->toBe([$ke->id])
-        ->and($clearedIds)->toBe([$cleared->id]);
+    expect($mofIds)->toBe([$mof->id])
+        ->and($keIds)->toBe([$ke->id, $keBeforeTick->id]);
 });
 
 test('status list live search returns table partial only', function () {
@@ -798,7 +1082,7 @@ test('admin hq can see permohonan after admin negeri submits to hq', function ()
         ->get(route('status-permohonan.index'))
         ->assertSuccessful()
         ->assertSee('Admin Melaka HQ')
-        ->assertSee('Permohonan kepada MOF');
+        ->assertSee('Semakan Ibu Pejabat');
 });
 
 test('status list shows edit and hantar ke hq actions when ready', function () {
@@ -1870,10 +2154,12 @@ test('admin hq finalizes application into mati setem after ticking all acknowled
         ->and($contract->fresh()->hq_draft_acknowledgements['dates'][HqDraftAcknowledgements::DIKEMBALIKAN_NEGERI])->toBe('2026-05-01');
 });
 
-test('admin negeri completes mati setem and moves application into kontrak sewaan', function () {
-    $negeriAdmin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Melaka', 'name' => 'Admin Melaka Selesai']);
+test('admin negeri sends completed mati setem to ibu pejabat', function () {
+    $negeriAdmin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Melaka', 'name' => 'Admin Melaka Hantar']);
+    $hq = User::factory()->create(['role' => 'admin_hq']);
     $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_MATI_SETEM);
     $contract->update(['admin_negeri_user_id' => $negeriAdmin->id]);
+    $contract->premise->update(['nama_ptj' => 'Premis Belum Kontrak Aktif']);
 
     $this->actingAs($negeriAdmin)
         ->post(route('status-permohonan.complete-mati-setem', $contract), [
@@ -1884,21 +2170,111 @@ test('admin negeri completes mati setem and moves application into kontrak sewaa
                 'salinan_dihantar_cawangan_pembangunan_acknowledged' => '2026-04-09',
             ],
         ])
+        ->assertRedirect(route('status-permohonan.index'))
+        ->assertSessionHas('success');
+
+    expect($contract->fresh()->workflow_tahap)->toBe(RentalContract::WORKFLOW_PENGESAHAN_IBU_PEJABAT)
+        ->and($contract->fresh()->isHqApproved())->toBeFalse()
+        ->and($contract->fresh()->status_aktif)->toBe('dalam_proses')
+        ->and($contract->fresh()->applicationStatusLabel())->toBe('Menunggu pengesahan Ibu Pejabat')
+        ->and($contract->fresh()->negeri_mati_setem_acknowledgements['mati_setem_lhdn_acknowledged'])->toBeTrue()
+        ->and($contract->fresh()->negeri_mati_setem_acknowledgements['edaran_pemilik_acknowledged'])->toBeTrue()
+        ->and($contract->fresh()->negeri_mati_setem_acknowledgements['salinan_dihantar_cawangan_pembangunan_acknowledged'])->toBeTrue()
+        ->and($contract->fresh()->negeri_mati_setem_acknowledgements['dates']['salinan_dihantar_cawangan_pembangunan_acknowledged'])->toBe('2026-04-09');
+
+    $kontrakIds = $this->actingAs($negeriAdmin)
+        ->get(route('kontrak-sewaan.index'))
+        ->assertSuccessful()
+        ->viewData('contracts')
+        ->pluck('id')
+        ->all();
+
+    $statusIds = $this->actingAs($hq)
+        ->get(route('status-permohonan.index'))
+        ->assertSuccessful()
+        ->assertSee('Menunggu pengesahan Ibu Pejabat')
+        ->viewData('contracts')
+        ->pluck('id')
+        ->all();
+
+    expect($kontrakIds)->not->toContain($contract->id)
+        ->and($statusIds)->toContain($contract->id);
+});
+
+test('admin hq completes the final stamp confirmation and moves the application into kontrak aktif', function () {
+    $negeriAdmin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Melaka', 'name' => 'Admin Melaka Akhir']);
+    $hq = User::factory()->create(['role' => 'admin_hq']);
+    $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_PENGESAHAN_IBU_PEJABAT);
+    $contract->update(['admin_negeri_user_id' => $negeriAdmin->id]);
+
+    $this->actingAs($hq)
+        ->get(route('status-permohonan.review', $contract))
+        ->assertSuccessful()
+        ->assertSee('1 Salinan Dokumen Perjanjian yang telah dimatikan setem diterima dari AADK Negeri')
+        ->assertSee('Perjanjian telah dimuat naik ke dalam Sistem PROMIS')
+        ->assertSee('Simpan')
+        ->assertSee('Selesai')
+        ->assertDontSee('Hantar ke Ibu Pejabat');
+
+    $this->actingAs($hq)
+        ->from(route('status-permohonan.review', $contract))
+        ->post(route('status-permohonan.complete-hq-mati-setem', $contract), [
+            HqMatiSetemAcknowledgements::SALINAN_DITERIMA => '1',
+        ])
+        ->assertRedirect(route('status-permohonan.review', $contract))
+        ->assertSessionHasErrors(HqMatiSetemAcknowledgements::DIMUAT_NAIK_SISTEM_PREMIS);
+
+    expect($contract->fresh()->isHqApproved())->toBeFalse();
+
+    $this->actingAs($negeriAdmin)
+        ->post(route('status-permohonan.complete-hq-mati-setem', $contract), [
+            HqMatiSetemAcknowledgements::SALINAN_DITERIMA => '1',
+            HqMatiSetemAcknowledgements::DIMUAT_NAIK_SISTEM_PREMIS => '1',
+        ])
+        ->assertForbidden();
+
+    $this->actingAs($hq)
+        ->post(route('status-permohonan.complete-hq-mati-setem', $contract), [
+            HqMatiSetemAcknowledgements::SALINAN_DITERIMA => '1',
+            HqMatiSetemAcknowledgements::DIMUAT_NAIK_SISTEM_PREMIS => '1',
+            'dates' => [
+                HqMatiSetemAcknowledgements::DIMUAT_NAIK_SISTEM_PREMIS => '2026-04-10',
+            ],
+        ])
         ->assertRedirect(route('kontrak-sewaan.index'))
         ->assertSessionHas('success');
 
     expect($contract->fresh()->workflow_tahap)->toBe(RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI)
         ->and($contract->fresh()->isHqApproved())->toBeTrue()
         ->and($contract->fresh()->status_aktif)->toBe('aktif')
-        ->and($contract->fresh()->negeri_mati_setem_acknowledgements['mati_setem_lhdn_acknowledged'])->toBeTrue()
-        ->and($contract->fresh()->negeri_mati_setem_acknowledgements['edaran_pemilik_acknowledged'])->toBeTrue()
-        ->and($contract->fresh()->negeri_mati_setem_acknowledgements['salinan_dihantar_cawangan_pembangunan_acknowledged'])->toBeTrue()
-        ->and($contract->fresh()->negeri_mati_setem_acknowledgements['dates']['salinan_dihantar_cawangan_pembangunan_acknowledged'])->toBe('2026-04-09');
+        ->and($contract->fresh()->hq_mati_setem_acknowledgements[HqMatiSetemAcknowledgements::SALINAN_DITERIMA])->toBeTrue()
+        ->and($contract->fresh()->hq_mati_setem_acknowledgements[HqMatiSetemAcknowledgements::DIMUAT_NAIK_SISTEM_PREMIS])->toBeTrue()
+        ->and($contract->fresh()->hq_mati_setem_acknowledgements['dates'][HqMatiSetemAcknowledgements::DIMUAT_NAIK_SISTEM_PREMIS])->toBe('2026-04-10');
 
-    $this->actingAs($negeriAdmin)
+    $hqKontrakIds = $this->actingAs($hq)
         ->get(route('kontrak-sewaan.index'))
         ->assertSuccessful()
-        ->assertSee('Admin Melaka Selesai');
+        ->viewData('contracts')
+        ->pluck('id')
+        ->all();
+
+    $hqStatusIds = $this->actingAs($hq)
+        ->get(route('status-permohonan.index'))
+        ->assertSuccessful()
+        ->viewData('contracts')
+        ->pluck('id')
+        ->all();
+
+    $negeriKontrakIds = $this->actingAs($negeriAdmin)
+        ->get(route('kontrak-sewaan.index'))
+        ->assertSuccessful()
+        ->viewData('contracts')
+        ->pluck('id')
+        ->all();
+
+    expect($hqKontrakIds)->toContain($contract->id)
+        ->and($hqStatusIds)->not->toContain($contract->id)
+        ->and($negeriKontrakIds)->toContain($contract->id);
 });
 
 test('admin negeri sees the third mati setem checkbox with a date on the right', function () {
@@ -1913,7 +2289,7 @@ test('admin negeri sees the third mati setem checkbox with a date on the right',
         ->assertSee('1 Salinan Dokumen Perjanjian telah diedar kepada Pemilik Premis')
         ->assertSee('Salinan dihantar ke Cawangan Pembangunan melalui Pos/Kourier')
         ->assertSee('name="dates[salinan_dihantar_cawangan_pembangunan_acknowledged]"', false)
-        ->assertSee('Selesai');
+        ->assertSee('Hantar ke Ibu Pejabat');
 });
 
 test('admin negeri autosave stores the mati setem date beside a ticked checkbox', function () {
@@ -2016,7 +2392,8 @@ test('admin negeri can view review page while application waits for hq', functio
     $this->actingAs($admin)
         ->get(route('status-permohonan.review', $contract))
         ->assertSuccessful()
-        ->assertSee('Permohonan kepada MOF')
+        ->assertSee('Semakan Ibu Pejabat')
+        ->assertDontSee('Permohonan kepada MOF')
         ->assertSee('Permohonan ini sedang menunggu semakan Ibu Pejabat.')
         ->assertDontSee('Teruskan Dengan Draf Perjanjian')
         ->assertDontSee(route('status-permohonan.approve', $contract, false));

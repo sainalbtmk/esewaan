@@ -7,9 +7,11 @@ use App\Http\Requests\ApproveHqApplicationRequest;
 use App\Http\Requests\ApprovePuuReviewRequest;
 use App\Http\Requests\AutosaveHqDraftAcknowledgementsRequest;
 use App\Http\Requests\AutosaveHqJrpChecklistRequest;
+use App\Http\Requests\AutosaveHqMatiSetemAcknowledgementsRequest;
 use App\Http\Requests\AutosaveNegeriDraftAcknowledgementsRequest;
 use App\Http\Requests\AutosaveNegeriMatiSetemAcknowledgementsRequest;
 use App\Http\Requests\CompleteDraftAgreementRequest;
+use App\Http\Requests\CompleteHqMatiSetemRequest;
 use App\Http\Requests\CompleteMatiSetemRequest;
 use App\Http\Requests\DeleteRentalApplicationRequest;
 use App\Http\Requests\RejectPuuReviewRequest;
@@ -29,6 +31,7 @@ use App\Support\ApplicationCategories;
 use App\Support\ContractDocumentStorage;
 use App\Support\HqDraftAcknowledgements;
 use App\Support\HqJrpChecklist;
+use App\Support\HqMatiSetemAcknowledgements;
 use App\Support\NegeriDraftAcknowledgements;
 use App\Support\NegeriMatiSetemAcknowledgements;
 use App\Support\RentalContractListSearch;
@@ -372,10 +375,37 @@ class StatusPermohonanController extends Controller
     }
 
     /**
-     * Negeri confirms stamp duty is complete and the application enters the
-     * rental contract list.
+     * Negeri confirms stamp duty and sends the application to Ibu Pejabat
+     * for the final confirmation.
      */
     public function completeMatiSetem(CompleteMatiSetemRequest $request, RentalContract $contract): RedirectResponse
+    {
+        $contract->loadMissing(['premise', 'submittedBy', 'adminNegeriUser']);
+        $user = $request->user();
+
+        $contract->commit([
+            'workflow_tahap' => RentalContract::WORKFLOW_PENGESAHAN_IBU_PEJABAT,
+            'negeri_mati_setem_acknowledgements' => NegeriMatiSetemAcknowledgements::normalizeInput($request->validated()),
+        ]);
+
+        ActivityLogger::log(
+            $user,
+            'stamp_duty_sent_to_hq',
+            'Perjanjian premis '.($contract->premise?->nama_ptj ?? '–').' dihantar ke Ibu Pejabat selepas mati setem.',
+            ['contract_id' => $contract->id],
+        );
+
+        return $this->redirectWithWorkflowNotice(
+            'status-permohonan.index',
+            'Permohonan telah dihantar ke Ibu Pejabat untuk pengesahan akhir.',
+        );
+    }
+
+    /**
+     * Ibu Pejabat confirms receipt of the stamped copy and the Sistem PROMIS
+     * upload, then the application enters the active contract list.
+     */
+    public function completeHqMatiSetem(CompleteHqMatiSetemRequest $request, RentalContract $contract): RedirectResponse
     {
         $contract->loadMissing(['premise', 'submittedBy', 'adminNegeriUser']);
         $user = $request->user();
@@ -384,13 +414,13 @@ class StatusPermohonanController extends Controller
             'workflow_tahap' => RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
             'status_aktif' => 'aktif',
             'hq_approved_at' => $contract->hq_approved_at ?? now(),
-            'negeri_mati_setem_acknowledgements' => NegeriMatiSetemAcknowledgements::normalizeInput($request->validated()),
+            'hq_mati_setem_acknowledgements' => HqMatiSetemAcknowledgements::normalizeInput($request->validated()),
         ]);
 
         ActivityLogger::log(
             $user,
             'agreement_finalized',
-            'Perjanjian premis '.($contract->premise?->nama_ptj ?? '–').' selesai selepas mati setem dan dimasukkan ke dalam Senarai Kontrak Sewaan.',
+            'Perjanjian premis '.($contract->premise?->nama_ptj ?? '–').' diselesaikan oleh Ibu Pejabat dan dimasukkan ke dalam Senarai Kontrak Sewaan.',
             ['contract_id' => $contract->id],
         );
 
@@ -460,6 +490,21 @@ class StatusPermohonanController extends Controller
             'success' => true,
             'message' => 'Data disimpan',
             'acknowledgements' => $contract->fresh()->negeri_mati_setem_acknowledgements,
+        ]);
+    }
+
+    public function autosaveHqMatiSetemAcknowledgements(AutosaveHqMatiSetemAcknowledgementsRequest $request, RentalContract $contract): JsonResponse
+    {
+        $contract->commit([
+            'hq_mati_setem_acknowledgements' => HqMatiSetemAcknowledgements::normalizeInput(
+                $request->validated('acknowledgements') ?? [],
+            ),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data disimpan',
+            'acknowledgements' => $contract->fresh()->hq_mati_setem_acknowledgements,
         ]);
     }
 
@@ -696,6 +741,7 @@ class StatusPermohonanController extends Controller
         return RentalContract::query()
             ->with([
                 'premise',
+                'parentContract',
                 'submittedBy',
                 'adminNegeriUser',
                 'withdrawalRequestedBy',

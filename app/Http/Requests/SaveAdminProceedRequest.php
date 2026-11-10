@@ -42,6 +42,8 @@ class SaveAdminProceedRequest extends FormRequest
             'proceed_steps.*.agencies.*' => ['sometimes', 'boolean'],
             'proceed_steps.*.agency_dates' => ['sometimes', 'array'],
             'proceed_steps.*.agency_dates.*' => ['nullable', 'date'],
+            'proceed_steps.*.agency_notes' => ['sometimes', 'array'],
+            'proceed_steps.*.agency_notes.*' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -53,6 +55,7 @@ class SaveAdminProceedRequest extends FormRequest
         return [
             'proceed_steps.required' => 'Tiada maklumat langkah tindakan untuk disimpan.',
             'current_step.required' => 'Langkah semasa diperlukan.',
+            'proceed_steps.*.agency_notes.*.max' => 'Catatan tidak boleh melebihi 2000 aksara.',
         ];
     }
 

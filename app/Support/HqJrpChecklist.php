@@ -6,7 +6,17 @@ use App\Models\RentalContract;
 
 class HqJrpChecklist
 {
-    public const PENDING_HQ_REVIEW_STATUS = 'Menunggu semakan Ibu Pejabat';
+    public const STATUS_SEMAKAN_IBU_PEJABAT = 'Semakan Ibu Pejabat';
+
+    public const STATUS_MINIT_CERAIAN = 'Minit Ceraian Kelulusan Kos';
+
+    public const STATUS_PERMOHONAN_MOF = 'Permohonan ke MOF';
+
+    public const STATUS_PERMOHONAN_KE = 'Permohonan ke KE';
+
+    public const STATUS_PERMOHONAN_BPH = 'Permohonan ke BPH';
+
+    public const PENDING_HQ_REVIEW_STATUS = self::STATUS_SEMAKAN_IBU_PEJABAT;
 
     public const MOF = 'mof_negeri_budget_office';
 
@@ -24,6 +34,10 @@ class HqJrpChecklist
 
     public const KELUASAN_THRESHOLD = 465;
 
+    public const LANJUTAN_RENT_PERCENT_MINIMUM = 10;
+
+    public const LANJUTAN_RENT_DIFFERENCE_MINIMUM = 499;
+
     /**
      * @return list<string>
      */
@@ -32,9 +46,9 @@ class HqJrpChecklist
         return [
             self::KP,
             self::MOF,
+            self::AADK_RECEIVE_MOF_COMMENTS,
             self::EPU,
             self::AADK_RECEIVE_EPU_COMMENTS,
-            self::AADK_RECEIVE_MOF_COMMENTS,
             self::AADK_SUBMIT_BPH,
             self::AADK_RECEIVE_BPH_APPROVAL,
         ];
@@ -50,9 +64,9 @@ class HqJrpChecklist
         return [
             self::KP,
             self::MOF,
+            self::AADK_RECEIVE_MOF_COMMENTS,
             self::EPU,
             self::AADK_RECEIVE_EPU_COMMENTS,
-            self::AADK_RECEIVE_MOF_COMMENTS,
             self::AADK_SUBMIT_BPH,
             self::AADK_RECEIVE_BPH_APPROVAL,
         ];
@@ -82,31 +96,191 @@ class HqJrpChecklist
     }
 
     /**
-     * Status labels shown on the application list while HQ review is open,
-     * in the order of the first checklist item that is still unticked.
-     *
-     * @return array<string, string>
+     * @return list<string>
      */
-    public static function pendingHqReviewStatusSteps(): array
+    public static function pendingHqReviewStatusLabels(): array
     {
         return [
-            self::MOF => 'Permohonan kepada MOF',
-            self::EPU => 'Permohonan kepada KE',
-            self::AADK_SUBMIT_BPH => 'Pertimbangan BPH',
+            self::STATUS_SEMAKAN_IBU_PEJABAT,
+            self::STATUS_MINIT_CERAIAN,
+            self::STATUS_PERMOHONAN_MOF,
+            self::STATUS_PERMOHONAN_KE,
+            self::STATUS_PERMOHONAN_BPH,
         ];
     }
 
+    /**
+     * Status while the application is with Ibu Pejabat. Negeri and HQ share this label.
+     *
+     * Baharu or Pindah with an increase above 10 percent and at least RM500, and Lanjutan
+     * with an increase of at least 10 percent and RM499, shows Minit Ceraian until
+     * Kelulusan Pengurusan Tertinggi is ticked, then Permohonan ke MOF until the MOF reply
+     * is ticked. Baharu or Pindah above 465 mps shows Permohonan ke KE until the KE reply
+     * is ticked. Pindah below 465 mps leaves both KE checklist items disabled. Permohonan
+     * ke BPH follows once those paths are done, or for Lanjutan without that rent increase
+     * after Ibu Pejabat ticks another action. Lanjutan in that case does not pass through
+     * MOF or KE. Anything still untouched, and outside those paths, stays on Semakan Ibu Pejabat.
+     */
     public static function pendingHqReviewStatusLabel(RentalContract $contract): string
+    {
+        $rentPath = self::requiresRentIncreasePath($contract);
+        $kePath = self::requiresKePath($contract);
+
+        if ($rentPath && ! self::checklistChecked($contract, self::KP)) {
+            return self::STATUS_MINIT_CERAIAN;
+        }
+
+        if ($rentPath && ! self::checklistChecked($contract, self::AADK_RECEIVE_MOF_COMMENTS)) {
+            return self::STATUS_PERMOHONAN_MOF;
+        }
+
+        if ($kePath && ! self::checklistChecked($contract, self::AADK_RECEIVE_EPU_COMMENTS)) {
+            return self::STATUS_PERMOHONAN_KE;
+        }
+
+        if (! self::anyChecklistChecked($contract)) {
+            return self::STATUS_SEMAKAN_IBU_PEJABAT;
+        }
+
+        if (! self::checklistChecked($contract, self::AADK_RECEIVE_BPH_APPROVAL)) {
+            return self::STATUS_PERMOHONAN_BPH;
+        }
+
+        return self::STATUS_SEMAKAN_IBU_PEJABAT;
+    }
+
+    public static function requiresRentIncreasePath(RentalContract $contract): bool
+    {
+        if (! in_array($contract->kategori_permohonan, [
+            ApplicationCategories::BARU,
+            ApplicationCategories::PINDAH,
+            ApplicationCategories::LANJUTAN,
+        ], true)) {
+            return false;
+        }
+
+        $parentRent = $contract->parentRent();
+        $difference = $contract->rentDifferenceFromParent();
+
+        if ($contract->kategori_permohonan === ApplicationCategories::LANJUTAN) {
+            return self::lanjutanRequiresRentIncreaseAcknowledgement($contract);
+        }
+
+        if ($parentRent === null || $parentRent <= 0 || $difference === null || $difference < RentalContract::RENT_DIFFERENCE_THRESHOLD) {
+            return false;
+        }
+
+        return ($difference / $parentRent) * 100 > 10;
+    }
+
+    /**
+     * Lanjutan leaves Kelulusan Pengurusan Tertinggi, the MOF application, and the MOF
+     * approval receipt unticked when the new rent is under 10 percent or under RM499
+     * above the original rent.
+     */
+    public static function lanjutanRentIncreaseItemsDisabled(RentalContract $contract): bool
+    {
+        return $contract->kategori_permohonan === ApplicationCategories::LANJUTAN
+            && ! self::lanjutanRequiresRentIncreaseAcknowledgement($contract);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function rentIncreaseAcknowledgementKeys(): array
+    {
+        return [
+            self::KP,
+            self::MOF,
+            self::AADK_RECEIVE_MOF_COMMENTS,
+        ];
+    }
+
+    /**
+     * Pindah leaves the KE application and the KE comments receipt unticked when the
+     * floor area is below 465 mps.
+     */
+    public static function pindahKeItemsDisabled(RentalContract $contract): bool
+    {
+        $keluasan = $contract->keluasan_mp;
+
+        return $contract->kategori_permohonan === ApplicationCategories::PINDAH
+            && $keluasan !== null
+            && (float) $keluasan < self::KELUASAN_THRESHOLD;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function keAcknowledgementKeys(): array
+    {
+        return [
+            self::EPU,
+            self::AADK_RECEIVE_EPU_COMMENTS,
+        ];
+    }
+
+    public static function checklistItemDisabled(RentalContract $contract, string $key): bool
+    {
+        if (self::lanjutanRentIncreaseItemsDisabled($contract)
+            && in_array($key, self::rentIncreaseAcknowledgementKeys(), true)) {
+            return true;
+        }
+
+        return self::pindahKeItemsDisabled($contract)
+            && in_array($key, self::keAcknowledgementKeys(), true);
+    }
+
+    public static function lanjutanRequiresRentIncreaseAcknowledgement(RentalContract $contract): bool
+    {
+        $parentRent = $contract->parentRent();
+        $difference = $contract->rentDifferenceFromParent();
+
+        if ($parentRent === null || $parentRent <= 0 || $difference === null) {
+            return false;
+        }
+
+        return $difference >= self::LANJUTAN_RENT_DIFFERENCE_MINIMUM
+            && ($difference / $parentRent) * 100 >= self::LANJUTAN_RENT_PERCENT_MINIMUM;
+    }
+
+    public static function requiresKePath(RentalContract $contract): bool
+    {
+        if (! in_array($contract->kategori_permohonan, [
+            ApplicationCategories::BARU,
+            ApplicationCategories::PINDAH,
+        ], true)) {
+            return false;
+        }
+
+        return self::requiresEpuCheckbox($contract);
+    }
+
+    private static function checklistChecked(RentalContract $contract, string $key): bool
     {
         $checklist = is_array($contract->hq_jrp_checklist) ? $contract->hq_jrp_checklist : [];
 
-        foreach (self::pendingHqReviewStatusSteps() as $key => $label) {
-            if (filter_var($checklist[$key] ?? false, FILTER_VALIDATE_BOOLEAN) !== true) {
-                return $label;
+        return filter_var($checklist[$key] ?? false, FILTER_VALIDATE_BOOLEAN) === true;
+    }
+
+    private static function anyChecklistChecked(RentalContract $contract): bool
+    {
+        $ignored = array_merge(
+            self::lanjutanRentIncreaseItemsDisabled($contract) ? self::rentIncreaseAcknowledgementKeys() : [],
+            self::pindahKeItemsDisabled($contract) ? self::keAcknowledgementKeys() : [],
+        );
+
+        foreach (self::allKeys() as $key) {
+            if (in_array($key, $ignored, true)) {
+                continue;
+            }
+
+            if (self::checklistChecked($contract, $key)) {
+                return true;
             }
         }
 
-        return self::PENDING_HQ_REVIEW_STATUS;
+        return false;
     }
 
     /**
@@ -117,9 +291,9 @@ class HqJrpChecklist
         return [
             self::KP => 'Kelulusan Pengurusan Tertinggi',
             self::MOF => 'Permohonan kepada Kementerian Kewangan (MOF) untuk permohonan Baru / Pindah / Pelanjutan dengan Kenaikan Sewa Lebih 10% @ minimum RM500',
+            self::AADK_RECEIVE_MOF_COMMENTS => 'Cawangan Pembangunan AADK menerima Kelulusan daripada MOF melalui KDN',
             self::EPU => 'Permohonan kepada Kementerian Ekonomi (KE) (jika keluasan melebihi 465 mps) — untuk permohonan perpindahan ruang pejabat / ruang pejabat baharu',
             self::AADK_RECEIVE_EPU_COMMENTS => 'Cawangan Pembangunan AADK menerima ulasan daripada Kementerian Ekonomi (KE)',
-            self::AADK_RECEIVE_MOF_COMMENTS => 'Cawangan Pembangunan AADK menerima Kelulusan daripada MOF melalui KDN',
             self::AADK_SUBMIT_BPH => 'Cawangan Pembangunan AADK mengemukakan permohonan Bahagian Hartanah (BPH) Jabatan Perdana Menteri untuk mendapatkan kelulusan',
             self::AADK_RECEIVE_BPH_APPROVAL => 'Cawangan Pembangunan AADK terima surat kelulusan daripada BPH',
         ];
@@ -195,7 +369,8 @@ class HqJrpChecklist
         $normalized = [];
 
         foreach (self::applicableKeys($contract) as $key) {
-            $normalized[$key] = filter_var($input[$key] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $checked = filter_var($input[$key] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $normalized[$key] = self::checklistItemDisabled($contract, $key) ? false : $checked;
         }
 
         $datesInput = is_array($input['dates'] ?? null) ? $input['dates'] : [];

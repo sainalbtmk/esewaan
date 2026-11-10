@@ -212,6 +212,7 @@
             const tarikhSurat = panel.querySelector('.proceed-step-tarikh-surat');
             const agencies = {};
             const agencyDates = {};
+            const agencyNotes = {};
 
             panel.querySelectorAll('.proceed-agency-checkbox').forEach((agencyCheckbox) => {
                 agencies[agencyCheckbox.dataset.agencyKey] = agencyCheckbox.checked ? '1' : '0';
@@ -225,6 +226,10 @@
                 agencyDates[dateInput.dataset.agencyKey] = dateInput.value || '';
             });
 
+            panel.querySelectorAll('.proceed-agency-note').forEach((noteInput) => {
+                agencyNotes[noteInput.dataset.agencyKey] = noteInput.value || '';
+            });
+
             steps[key] = {
                 completed: completedChecked ? '1' : '0',
                 confirmed_accurate: accurateChecked ? '1' : '0',
@@ -234,6 +239,7 @@
                 tarikh_surat: tarikhSurat?.value ?? '',
                 agencies,
                 agency_dates: agencyDates,
+                agency_notes: agencyNotes,
             };
         });
         return steps;
@@ -253,6 +259,9 @@
             });
             Object.entries(value.agency_dates).forEach(([agencyKey, dateValue]) => {
                 formData.append(`proceed_steps[${key}][agency_dates][${agencyKey}]`, dateValue);
+            });
+            Object.entries(value.agency_notes || {}).forEach(([agencyKey, noteValue]) => {
+                formData.append(`proceed_steps[${key}][agency_notes][${agencyKey}]`, noteValue);
             });
         });
     }
@@ -490,6 +499,16 @@
 
                 if (dateInput && !dateInput.disabled) {
                     dateInput.value = dateValue ?? '';
+                }
+            });
+        }
+
+        if (state.agency_notes) {
+            Object.entries(state.agency_notes).forEach(([agencyKey, noteValue]) => {
+                const noteInput = panel.querySelector(`.proceed-agency-note[data-agency-key="${agencyKey}"]`);
+
+                if (noteInput) {
+                    noteInput.value = noteValue ?? '';
                 }
             });
         }
@@ -810,7 +829,7 @@
         });
     });
 
-    form.querySelectorAll('.proceed-step-notes, .proceed-step-no-rujukan, .proceed-step-tarikh-surat').forEach((field) => {
+    form.querySelectorAll('.proceed-step-notes, .proceed-agency-note, .proceed-step-no-rujukan, .proceed-step-tarikh-surat').forEach((field) => {
         field.addEventListener('change', () => {
             clearProceedRequiredHighlights(field.closest('.proceed-step-panel') ?? form);
             handleProceedFieldChange(true);

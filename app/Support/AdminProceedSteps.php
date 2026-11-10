@@ -151,6 +151,23 @@ class AdminProceedSteps
 
     /**
      * @param  array<string, mixed>  $input
+     * @return array<string, string|null>
+     */
+    public static function normalizeAgencyNotesInput(array $input): array
+    {
+        $notes = [];
+
+        foreach (self::agencyKeys() as $key) {
+            $raw = $input[$key] ?? null;
+            $value = is_string($raw) ? trim($raw) : null;
+            $notes[$key] = filled($value) ? $value : null;
+        }
+
+        return $notes;
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
      * @param  array<string, bool>  $agencies
      * @return array<string, string|null>
      */
@@ -198,7 +215,7 @@ class AdminProceedSteps
     }
 
     /**
-     * @return array<string, array{completed: bool, marked_complete: bool, confirmed_accurate: bool, confirmed_promis: bool, completed_at: string|null, completed_by_user_id: int|null, notes: string|null, agencies: array<string, bool>, agency_dates: array<string, string|null>}>
+     * @return array<string, array{completed: bool, marked_complete: bool, confirmed_accurate: bool, confirmed_promis: bool, completed_at: string|null, completed_by_user_id: int|null, notes: string|null, agencies: array<string, bool>, agency_dates: array<string, string|null>, agency_notes: array<string, string|null>}>
      */
     public static function progressFor(RentalContract $contract): array
     {
@@ -236,6 +253,9 @@ class AdminProceedSteps
                         is_array($entry['agency_dates'] ?? null) ? $entry['agency_dates'] : [],
                         self::normalizeAgenciesInput(is_array($entry['agencies'] ?? null) ? $entry['agencies'] : []),
                     )
+                    : [],
+                'agency_notes' => $key === self::STEP_SURAT_AGENSI
+                    ? self::normalizeAgencyNotesInput(is_array($entry['agency_notes'] ?? null) ? $entry['agency_notes'] : [])
                     : [],
             ];
         }
@@ -432,6 +452,9 @@ class AdminProceedSteps
                 'agency_dates' => $key === self::STEP_SURAT_AGENSI
                     ? ($progress[$key]['agency_dates'] ?? self::normalizeAgencyDatesInput([], []))
                     : [],
+                'agency_notes' => $key === self::STEP_SURAT_AGENSI
+                    ? ($progress[$key]['agency_notes'] ?? self::normalizeAgencyNotesInput([]))
+                    : [],
             ];
         }
 
@@ -506,6 +529,9 @@ class AdminProceedSteps
                         is_array($existing['agency_dates'] ?? null) ? $existing['agency_dates'] : [],
                         $agencies,
                     );
+                $entry['agency_notes'] = array_key_exists('agency_notes', $stepInput)
+                    ? self::normalizeAgencyNotesInput(is_array($stepInput['agency_notes']) ? $stepInput['agency_notes'] : [])
+                    : self::normalizeAgencyNotesInput(is_array($existing['agency_notes'] ?? null) ? $existing['agency_notes'] : []);
             }
 
             $progress[$key] = $entry;
@@ -547,6 +573,9 @@ class AdminProceedSteps
             $entry['agency_dates'] = self::normalizeAgencyDatesInput(
                 is_array($stepInput['agency_dates'] ?? null) ? $stepInput['agency_dates'] : [],
                 $agencies,
+            );
+            $entry['agency_notes'] = self::normalizeAgencyNotesInput(
+                is_array($stepInput['agency_notes'] ?? null) ? $stepInput['agency_notes'] : [],
             );
         }
 

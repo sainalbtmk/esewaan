@@ -61,6 +61,18 @@ class AutosaveRentalApplicationRequest extends FormRequest
             'proceed_steps.*.agencies.*' => ['sometimes', 'boolean'],
             'proceed_steps.*.agency_dates' => ['sometimes', 'array'],
             'proceed_steps.*.agency_dates.*' => ['nullable', 'date'],
+            'proceed_steps.*.agency_notes' => ['sometimes', 'array'],
+            'proceed_steps.*.agency_notes.*' => ['nullable', 'string', 'max:2000'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'proceed_steps.*.agency_notes.*.max' => 'Catatan tidak boleh melebihi 2000 aksara.',
         ];
     }
 }

@@ -60,26 +60,32 @@
                                     $agencyChecked = ($panel['agencies'][$agencyKey] ?? false) === true;
                                     $agencyRequiresDate = \App\Support\AdminProceedSteps::agencyRequiresDate($agencyKey);
                                     $agencyDate = $panel['agency_dates'][$agencyKey] ?? null;
+                                    $agencyNote = $panel['agency_notes'][$agencyKey] ?? null;
                                 @endphp
-                                <div class="flex flex-col gap-2 rounded-lg border border-slate-300 bg-white/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                                    <label class="flex min-w-0 items-start gap-3">
-                                        <input
-                                            type="checkbox"
-                                            disabled
-                                            @checked($agencyChecked)
-                                            class="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-slate-800"
-                                        >
-                                        <span @class(['text-sm', 'text-slate-800' => $agencyChecked, 'text-slate-500' => ! $agencyChecked])>
-                                            {{ $agencyLabel }}
-                                        </span>
-                                    </label>
-                                    @if($agencyRequiresDate && $agencyChecked)
-                                        <span @class([
-                                            'ml-7 text-xs text-slate-600 sm:ml-0 sm:text-sm',
-                                            'font-medium text-slate-800' => filled($agencyDate),
-                                        ])>
-                                            {{ filled($agencyDate) ? \Illuminate\Support\Carbon::parse($agencyDate)->format('d/m/Y') : 'Tiada tarikh' }}
-                                        </span>
+                                <div class="flex flex-col gap-2 rounded-lg border border-slate-300 bg-white/50 px-3 py-2">
+                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <label class="flex min-w-0 items-start gap-3">
+                                            <input
+                                                type="checkbox"
+                                                disabled
+                                                @checked($agencyChecked)
+                                                class="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-slate-800"
+                                            >
+                                            <span @class(['text-sm', 'text-slate-800' => $agencyChecked, 'text-slate-500' => ! $agencyChecked])>
+                                                {{ $agencyLabel }}
+                                            </span>
+                                        </label>
+                                        @if($agencyRequiresDate && $agencyChecked)
+                                            <span @class([
+                                                'ml-7 text-xs text-slate-600 sm:ml-0 sm:text-sm',
+                                                'font-medium text-slate-800' => filled($agencyDate),
+                                            ])>
+                                                {{ filled($agencyDate) ? \Illuminate\Support\Carbon::parse($agencyDate)->format('d/m/Y') : 'Tiada tarikh' }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                    @if(filled($agencyNote))
+                                        <p class="ml-7 text-xs leading-relaxed text-slate-600">{{ $agencyNote }}</p>
                                     @endif
                                 </div>
                             @endforeach

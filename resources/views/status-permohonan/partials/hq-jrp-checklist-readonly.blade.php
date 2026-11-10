@@ -18,13 +18,19 @@
     <div @class(['space-y-2' => ! $compact, 'space-y-1.5' => $compact])>
         @foreach(HqJrpChecklist::allKeys() as $key)
             @php
-                $isChecked = filter_var($checklist[$key] ?? false, FILTER_VALIDATE_BOOLEAN);
+                $isDisabled = HqJrpChecklist::checklistItemDisabled($contract, $key);
+                $isChecked = $isDisabled
+                    ? false
+                    : filter_var($checklist[$key] ?? false, FILTER_VALIDATE_BOOLEAN);
                 $requiresDate = HqJrpChecklist::requiresDate($key);
                 $requiresNote = HqJrpChecklist::requiresNote($key);
                 $itemDate = $dates[$key] ?? null;
                 $itemNote = $notes[$key] ?? null;
             @endphp
-            <div class="flex flex-col gap-2 rounded-lg border border-slate-300 bg-white/50 px-3 py-2">
+            <div @class([
+                'flex flex-col gap-2 rounded-lg border border-slate-300 bg-white/50 px-3 py-2',
+                'opacity-60' => $isDisabled,
+            ])>
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <label class="flex min-w-0 items-start gap-2.5">
                         <input

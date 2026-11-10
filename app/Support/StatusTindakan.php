@@ -49,7 +49,7 @@ class StatusTindakan
             ],
             [
                 'key' => self::SEMAKAN_CP_SEBELUM_BPH,
-                'label' => 'Semakan Cawangan Pembangunan Sebelum ke BPH',
+                'label' => 'Semakan Cawangan Pembangunan',
             ],
             [
                 'key' => self::MINIT_CERAIAN_KELULUSAN_KOS,
@@ -273,8 +273,11 @@ class StatusTindakan
         return match ($statusKey) {
             self::SEMAKAN_CP_SEBELUM_BPH => self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_BPH_APPROVAL),
             self::MINIT_CERAIAN_KELULUSAN_KOS => self::checklistChecked($contract, HqJrpChecklist::MOF),
-            self::PERTIMBANGAN_MOF => self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS),
-            self::PERTIMBANGAN_KE => self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS),
+            self::PERTIMBANGAN_MOF => ! self::checklistChecked($contract, HqJrpChecklist::MOF)
+                || self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS),
+            self::PERTIMBANGAN_KE => HqJrpChecklist::pindahKeItemsDisabled($contract)
+                || ! self::checklistChecked($contract, HqJrpChecklist::EPU)
+                || self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS),
             self::PERTIMBANGAN_BPH_SUPS => self::checklistChecked($contract, HqJrpChecklist::AADK_SUBMIT_BPH),
             self::SEDIA_DRAF_PERJANJIAN, self::SEMAKAN_CP_SEBELUM_PUU => self::hasReachedSemakanOne($contract),
             self::SEMAKAN_PUU => self::puuReviewApproved($contract),
@@ -313,6 +316,7 @@ class StatusTindakan
             RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS,
             RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ,
             RentalContract::WORKFLOW_MATI_SETEM,
+            RentalContract::WORKFLOW_PENGESAHAN_IBU_PEJABAT,
         ], true);
     }
 
@@ -325,6 +329,7 @@ class StatusTindakan
             RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS,
             RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ,
             RentalContract::WORKFLOW_MATI_SETEM,
+            RentalContract::WORKFLOW_PENGESAHAN_IBU_PEJABAT,
         ], true)) {
             return true;
         }

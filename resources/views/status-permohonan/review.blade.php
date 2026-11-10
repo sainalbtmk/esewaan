@@ -686,7 +686,7 @@
                 <section class="glass-card overflow-hidden">
                     <div class="glass-divider-soft border-b px-4 py-3">
                         <h2 class="text-base font-semibold text-slate-900">Tindakan Negeri</h2>
-                        <p class="mt-0.5 text-xs text-slate-500">Sahkan mati setem dan edaran dokumen sebelum menyelesaikan permohonan.</p>
+                        <p class="mt-0.5 text-xs text-slate-500">Sahkan mati setem dan edaran dokumen sebelum menghantar permohonan ke Ibu Pejabat.</p>
                     </div>
                     <form
                         id="negeri-mati-setem-form"
@@ -766,10 +766,99 @@
                                 type="submit"
                                 class="glass-btn-success rounded-lg px-4 py-2 text-sm font-medium"
                             >
-                                Selesai
+                                Hantar ke Ibu Pejabat
                             </button>
                         </div>
                     </form>
+                </section>
+            @elseif(auth()->user()->isAdminHq() && $contract->isAwaitingHqMatiSetemConfirmation())
+                <section class="glass-card overflow-hidden">
+                    <div class="glass-divider-soft border-b px-4 py-3">
+                        <h2 class="text-base font-semibold text-slate-900">Tindakan Ibu Pejabat</h2>
+                        <p class="mt-0.5 text-xs text-slate-500">Sahkan penerimaan salinan dan muat naik perjanjian ke Sistem PROMIS sebelum menyelesaikan permohonan.</p>
+                    </div>
+                    <div class="space-y-4 px-4 py-3">
+                        <div class="glass-subtle rounded-xl border border-slate-200/60 p-4">
+                            @include('status-permohonan.partials.negeri-mati-setem-readonly', [
+                                'contract' => $contract,
+                                'acknowledgementsCompleted' => true,
+                            ])
+                        </div>
+                        <form
+                            id="hq-mati-setem-form"
+                            method="POST"
+                            action="{{ route('status-permohonan.complete-hq-mati-setem', $contract) }}"
+                            class="space-y-4"
+                            data-autosave-url="{{ route('status-permohonan.hq-mati-setem-autosave', $contract) }}"
+                        >
+                            @csrf
+                            @php
+                                $savedHqMatiSetemAcknowledgements = is_array($contract->hq_mati_setem_acknowledgements)
+                                    ? $contract->hq_mati_setem_acknowledgements
+                                    : [];
+                                $savedHqMatiSetemDates = is_array($savedHqMatiSetemAcknowledgements['dates'] ?? null)
+                                    ? $savedHqMatiSetemAcknowledgements['dates']
+                                    : [];
+                            @endphp
+                            <div class="space-y-3">
+                                @foreach(\App\Support\HqMatiSetemAcknowledgements::labels() as $acknowledgementKey => $acknowledgementLabel)
+                                    @php
+                                        $hqMatiSetemChecked = filter_var(old($acknowledgementKey, $savedHqMatiSetemAcknowledgements[$acknowledgementKey] ?? false), FILTER_VALIDATE_BOOLEAN);
+                                        $hqMatiSetemDate = old('dates.'.$acknowledgementKey, $savedHqMatiSetemDates[$acknowledgementKey] ?? '');
+                                    @endphp
+                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <label class="flex min-w-0 items-start gap-3 text-sm text-slate-700">
+                                            <input
+                                                type="checkbox"
+                                                name="{{ $acknowledgementKey }}"
+                                                value="1"
+                                                class="hq-mati-setem-ack mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                                data-ack-key="{{ $acknowledgementKey }}"
+                                                @checked($hqMatiSetemChecked)
+                                            >
+                                            <span>{{ $acknowledgementLabel }}</span>
+                                        </label>
+                                        <div class="hq-mati-setem-date-wrap ml-7 sm:ml-0 {{ $hqMatiSetemChecked ? '' : 'hidden' }}">
+                                            <label class="sr-only" for="hq-mati-setem-date-{{ $acknowledgementKey }}">Tarikh {{ $acknowledgementLabel }}</label>
+                                            <input
+                                                type="date"
+                                                id="hq-mati-setem-date-{{ $acknowledgementKey }}"
+                                                name="dates[{{ $acknowledgementKey }}]"
+                                                value="{{ $hqMatiSetemDate }}"
+                                                data-ack-date-for="{{ $acknowledgementKey }}"
+                                                class="hq-mati-setem-date glass-input w-full rounded-lg px-2.5 py-1.5 text-sm sm:w-40"
+                                                @disabled(! $hqMatiSetemChecked)
+                                            >
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                            @foreach(\App\Support\HqMatiSetemAcknowledgements::keys() as $acknowledgementKey)
+                                @error($acknowledgementKey)
+                                    <p class="text-xs text-red-600">{{ $message }}</p>
+                                @enderror
+                                @error('dates.'.$acknowledgementKey)
+                                    <p class="text-xs text-red-600">{{ $message }}</p>
+                                @enderror
+                            @endforeach
+                            <div class="flex flex-wrap items-center justify-end gap-3">
+                                <p id="hq-mati-setem-save-status" class="mr-auto hidden text-xs text-slate-500" aria-live="polite"></p>
+                                <button
+                                    type="button"
+                                    id="hq-mati-setem-save-button"
+                                    class="glass-btn-secondary rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-60"
+                                >
+                                    Simpan
+                                </button>
+                                <button
+                                    type="submit"
+                                    class="glass-btn-success rounded-lg px-4 py-2 text-sm font-medium"
+                                >
+                                    Selesai
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </section>
             @else
                 <section class="glass-card overflow-hidden">
@@ -781,17 +870,23 @@
                         <p class="text-sm text-slate-600">
                             @if($currentStepIndex > 6)
                                 Mati setem telah selesai dan permohonan dimasukkan ke dalam Senarai Kontrak Sewaan.
+                            @elseif($contract->isAwaitingHqMatiSetemConfirmation())
+                                Permohonan telah dihantar ke Ibu Pejabat untuk pengesahan akhir.
                             @elseif($currentStepIndex === 6)
                                 Menunggu tindakan Negeri untuk mati setem.
                             @else
                                 Peringkat ini belum bermula.
                             @endif
                         </p>
-                        @if($currentStepIndex > 6)
-                            <div class="glass-subtle rounded-xl border border-slate-200/60 p-4">
+                        @if($contract->isAwaitingHqMatiSetemConfirmation() || $currentStepIndex > 6)
+                            <div class="glass-subtle space-y-4 rounded-xl border border-slate-200/60 p-4">
                                 @include('status-permohonan.partials.negeri-mati-setem-readonly', [
                                     'contract' => $contract,
                                     'acknowledgementsCompleted' => true,
+                                ])
+                                @include('status-permohonan.partials.hq-mati-setem-readonly', [
+                                    'contract' => $contract,
+                                    'hqAcknowledgementsCompleted' => $currentStepIndex > 6,
                                 ])
                             </div>
                         @endif
@@ -811,7 +906,7 @@
                     @if($currentStepIndex >= 7)
                         <p class="text-sm text-emerald-700">Permohonan telah selesai dan dimasukkan ke dalam Senarai Kontrak Sewaan.</p>
                     @else
-                        <p class="text-sm text-slate-600">Peringkat ini belum bermula. Permohonan akan dimasukkan ke dalam Senarai Kontrak Sewaan selepas Mati Setem selesai.</p>
+                        <p class="text-sm text-slate-600">Peringkat ini belum bermula. Permohonan akan dimasukkan ke dalam Senarai Kontrak Sewaan selepas Ibu Pejabat menyelesaikan pengesahan.</p>
                     @endif
                 </div>
             </section>
@@ -1482,6 +1577,160 @@
     });
 
     form.querySelectorAll('.negeri-mati-setem-date').forEach((dateInput) => {
+        dateInput.addEventListener('change', () => {
+            clearTimeout(autosaveTimer);
+            autosaveTimer = window.setTimeout(() => {
+                saveProgress();
+            }, AUTOSAVE_DEBOUNCE_MS);
+        });
+    });
+
+    saveButton?.addEventListener('click', () => {
+        clearTimeout(autosaveTimer);
+        saveProgress();
+    });
+})();
+
+(function () {
+    const form = document.getElementById('hq-mati-setem-form');
+    if (!form) {
+        return;
+    }
+
+    const autosaveUrl = form.dataset.autosaveUrl;
+    const status = document.getElementById('hq-mati-setem-save-status');
+    const saveButton = document.getElementById('hq-mati-setem-save-button');
+    let autosaveTimer = null;
+    let autosaveInFlight = null;
+    let autosavePending = false;
+    const AUTOSAVE_DEBOUNCE_MS = 400;
+
+    function showStatus(message) {
+        if (!status) {
+            return;
+        }
+
+        status.textContent = message;
+        status.classList.remove('hidden');
+    }
+
+    function todayDateValue() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    }
+
+    function dateInputFor(key) {
+        return form.querySelector(`.hq-mati-setem-date[data-ack-date-for="${key}"]`);
+    }
+
+    function syncAcknowledgementDate(checkbox, autoSetToday = false) {
+        const dateInput = dateInputFor(checkbox.dataset.ackKey);
+        const dateWrap = dateInput?.closest('.hq-mati-setem-date-wrap');
+
+        if (!dateInput || !dateWrap) {
+            return;
+        }
+
+        dateWrap.classList.toggle('hidden', !checkbox.checked);
+        dateInput.disabled = !checkbox.checked;
+
+        if (!checkbox.checked) {
+            dateInput.value = '';
+            return;
+        }
+
+        if (autoSetToday || !dateInput.value) {
+            dateInput.value = todayDateValue();
+        }
+    }
+
+    function collectFormData() {
+        const formData = new FormData();
+        formData.append('_method', 'PATCH');
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.content ?? '');
+
+        form.querySelectorAll('.hq-mati-setem-ack').forEach((checkbox) => {
+            formData.append(`acknowledgements[${checkbox.dataset.ackKey}]`, checkbox.checked ? '1' : '0');
+
+            const dateInput = dateInputFor(checkbox.dataset.ackKey);
+            if (checkbox.checked && dateInput?.value) {
+                formData.append(`acknowledgements[dates][${checkbox.dataset.ackKey}]`, dateInput.value);
+            }
+        });
+
+        return formData;
+    }
+
+    async function saveProgress() {
+        if (!autosaveUrl) {
+            return;
+        }
+
+        if (autosaveInFlight) {
+            autosavePending = true;
+            return autosaveInFlight;
+        }
+
+        if (saveButton) {
+            saveButton.disabled = true;
+        }
+
+        autosaveInFlight = fetch(autosaveUrl, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+            },
+            body: collectFormData(),
+        })
+            .then(async (response) => {
+                if (response.status === 429) {
+                    throw new Error('Terlalu banyak permintaan. Sila tunggu sebentar.');
+                }
+
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Gagal menyimpan progres.');
+                }
+
+                showStatus(data.message || 'Data disimpan');
+                return data;
+            })
+            .catch((error) => {
+                showStatus(error.message || 'Gagal menyimpan progres.');
+                throw error;
+            })
+            .finally(() => {
+                autosaveInFlight = null;
+                if (saveButton) {
+                    saveButton.disabled = false;
+                }
+
+                if (autosavePending) {
+                    autosavePending = false;
+                    saveProgress();
+                }
+            });
+
+        return autosaveInFlight;
+    }
+
+    form.querySelectorAll('.hq-mati-setem-ack').forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+            syncAcknowledgementDate(checkbox, true);
+            clearTimeout(autosaveTimer);
+            autosaveTimer = window.setTimeout(() => {
+                saveProgress();
+            }, AUTOSAVE_DEBOUNCE_MS);
+        });
+    });
+
+    form.querySelectorAll('.hq-mati-setem-date').forEach((dateInput) => {
         dateInput.addEventListener('change', () => {
             clearTimeout(autosaveTimer);
             autosaveTimer = window.setTimeout(() => {

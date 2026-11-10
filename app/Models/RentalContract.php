@@ -75,6 +75,7 @@ class RentalContract extends Model
         'negeri_draft_acknowledgements',
         'hq_draft_acknowledgements',
         'negeri_mati_setem_acknowledgements',
+        'hq_mati_setem_acknowledgements',
         'admin_negeri_user_id',
     ];
 
@@ -195,6 +196,8 @@ class RentalContract extends Model
 
     public const WORKFLOW_MATI_SETEM = 'mati_setem';
 
+    public const WORKFLOW_PENGESAHAN_IBU_PEJABAT = 'pengesahan_ibu_pejabat';
+
     /**
      * Workflow stages handled within the "Senarai Permohonan" / "Status Permohonan"
      * draft-agreement flow after HQ decides to proceed with the draft agreement.
@@ -210,6 +213,7 @@ class RentalContract extends Model
             self::WORKFLOW_DRAF_PERJANJIAN_LULUS,
             self::WORKFLOW_DRAF_DIKEMBALIKAN_HQ,
             self::WORKFLOW_MATI_SETEM,
+            self::WORKFLOW_PENGESAHAN_IBU_PEJABAT,
         ];
     }
 
@@ -263,6 +267,7 @@ class RentalContract extends Model
             self::WORKFLOW_DRAF_PERJANJIAN_LULUS,
             self::WORKFLOW_DRAF_DIKEMBALIKAN_HQ,
             self::WORKFLOW_MATI_SETEM,
+            self::WORKFLOW_PENGESAHAN_IBU_PEJABAT,
             self::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
         ];
     }
@@ -373,6 +378,7 @@ class RentalContract extends Model
             'negeri_draft_acknowledgements' => 'array',
             'hq_draft_acknowledgements' => 'array',
             'negeri_mati_setem_acknowledgements' => 'array',
+            'hq_mati_setem_acknowledgements' => 'array',
             'superseded_at' => 'datetime',
         ];
     }
@@ -661,6 +667,11 @@ class RentalContract extends Model
         return $this->workflow_tahap === self::WORKFLOW_MATI_SETEM;
     }
 
+    public function isAwaitingHqMatiSetemConfirmation(): bool
+    {
+        return $this->workflow_tahap === self::WORKFLOW_PENGESAHAN_IBU_PEJABAT;
+    }
+
     public function semakanLabel(): string
     {
         return 'Semakan PUU '.max(1, (int) $this->semakan_count);
@@ -680,7 +691,7 @@ class RentalContract extends Model
     {
         return match (true) {
             $this->isHqApproved() => 7,
-            $this->isMatiSetem() => 6,
+            $this->isMatiSetem(), $this->isAwaitingHqMatiSetemConfirmation() => 6,
             $this->isDrafDikembalikanHq() => 5,
             $this->isDrafPerjanjianLulus() => 4,
             $this->isPindaanBerdasarkanPuu(), $this->isSemakanPuu() => 3,
@@ -1010,6 +1021,7 @@ class RentalContract extends Model
             self::WORKFLOW_DRAF_PERJANJIAN_LULUS => self::DRAF_LULUS_STATUS_LABEL,
             self::WORKFLOW_DRAF_DIKEMBALIKAN_HQ => self::DRAF_DIKEMBALIKAN_HQ_STATUS_LABEL,
             self::WORKFLOW_MATI_SETEM => 'Menunggu Mati Setem',
+            self::WORKFLOW_PENGESAHAN_IBU_PEJABAT => 'Menunggu pengesahan Ibu Pejabat',
             default => match ($this->status_aktif) {
                 'aktif' => 'Aktif',
                 'tamat_tempoh' => 'Tamat tempoh',
@@ -1077,6 +1089,7 @@ class RentalContract extends Model
             self::WORKFLOW_DRAF_PERJANJIAN_LULUS => self::DRAF_LULUS_STATUS_LABEL,
             self::WORKFLOW_DRAF_DIKEMBALIKAN_HQ => self::DRAF_DIKEMBALIKAN_HQ_STATUS_LABEL,
             self::WORKFLOW_MATI_SETEM => 'Menunggu Mati Setem',
+            self::WORKFLOW_PENGESAHAN_IBU_PEJABAT => 'Menunggu pengesahan Ibu Pejabat',
             default => $this->workflow_tahap ?? '–',
         };
     }

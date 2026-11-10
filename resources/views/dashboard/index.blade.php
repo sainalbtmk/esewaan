@@ -180,8 +180,8 @@
                                     <td class="px-2 py-2">
                                         <span @class([
                                             'inline-flex rounded px-2 py-1 text-xs font-bold',
-                                            'bg-red-600 text-white' => $bakiBulan !== null && $bakiBulan < 0,
-                                            'bg-amber-400 text-slate-900' => $bakiBulan === null || $bakiBulan >= 0,
+                                            'bg-red-600 text-white' => \App\Support\RentalStatusReport::isBakiBulanRed($contract),
+                                            'bg-amber-400 text-slate-900' => \App\Support\RentalStatusReport::isBakiBulanYellow($contract),
                                         ])>{{ $bakiBulan === null ? '–' : $bakiBulan.' Bulan' }}</span>
                                     </td>
                                     <td class="px-2 py-2 text-slate-700">Belum Terima Permohonan</td>

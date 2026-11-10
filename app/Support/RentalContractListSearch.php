@@ -103,51 +103,35 @@ class RentalContractListSearch
 
     private static function applyPendingHqReviewStatusSearch(Builder $query, string $needle): void
     {
-        $labels = HqJrpChecklist::pendingHqReviewStatusSteps();
-        $labels['fallback'] = HqJrpChecklist::PENDING_HQ_REVIEW_STATUS;
+        $matchesLabel = false;
 
-        foreach ($labels as $key => $label) {
-            if (! str_contains(mb_strtolower($label), $needle)) {
-                continue;
+        foreach (HqJrpChecklist::pendingHqReviewStatusLabels() as $label) {
+            if (str_contains(mb_strtolower($label), $needle)) {
+                $matchesLabel = true;
+
+                break;
             }
-
-            $query->orWhere(function (Builder $query) use ($key): void {
-                if ($key === 'fallback') {
-                    self::whereHqReviewStatusCleared($query);
-
-                    return;
-                }
-
-                self::wherePendingHqReviewStep($query, $key);
-            });
-        }
-    }
-
-    private static function wherePendingHqReviewStep(Builder $query, string $key): void
-    {
-        $steps = array_keys(HqJrpChecklist::pendingHqReviewStatusSteps());
-        $index = array_search($key, $steps, true);
-
-        $query->where('workflow_tahap', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
-
-        foreach (array_slice($steps, 0, $index === false ? 0 : $index) as $previous) {
-            $query->where("hq_jrp_checklist->{$previous}", true);
         }
 
-        $query->where(function (Builder $query) use ($key): void {
-            $query->whereNull('hq_jrp_checklist')
-                ->orWhereNull("hq_jrp_checklist->{$key}")
-                ->orWhere("hq_jrp_checklist->{$key}", false);
-        });
-    }
-
-    private static function whereHqReviewStatusCleared(Builder $query): void
-    {
-        $query->where('workflow_tahap', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
-
-        foreach (array_keys(HqJrpChecklist::pendingHqReviewStatusSteps()) as $key) {
-            $query->where("hq_jrp_checklist->{$key}", true);
+        if (! $matchesLabel) {
+            return;
         }
+
+        $ids = RentalContract::query()
+            ->where('workflow_tahap', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ)
+            ->with('parentContract')
+            ->get()
+            ->filter(fn (RentalContract $contract): bool => str_contains(
+                mb_strtolower(HqJrpChecklist::pendingHqReviewStatusLabel($contract)),
+                $needle,
+            ))
+            ->modelKeys();
+
+        if ($ids === []) {
+            return;
+        }
+
+        $query->orWhereIn($query->getModel()->getQualifiedKeyName(), $ids);
     }
 
     /**
@@ -162,6 +146,7 @@ class RentalContractListSearch
             RentalContract::WORKFLOW_MENUNGGU_PROCEED_NEGERI => 'Menunggu langkah tindakan',
             RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI => 'Menunggu semakan pentadbir negeri',
             RentalContract::WORKFLOW_MATI_SETEM => 'Menunggu Mati Setem',
+            RentalContract::WORKFLOW_PENGESAHAN_IBU_PEJABAT => 'Menunggu pengesahan Ibu Pejabat',
         ];
     }
 }

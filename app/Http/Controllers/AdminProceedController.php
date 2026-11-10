@@ -102,6 +102,7 @@ class AdminProceedController extends Controller
                 'notes' => $progress[$panel['key']]['notes'] ?? '',
                 'agencies' => $progress[$panel['key']]['agencies'] ?? [],
                 'agency_dates' => $progress[$panel['key']]['agency_dates'] ?? [],
+                'agency_notes' => $progress[$panel['key']]['agency_notes'] ?? [],
             ];
         }
 

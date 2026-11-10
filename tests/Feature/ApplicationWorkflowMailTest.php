@@ -151,7 +151,7 @@ test('hq finalize emails both roles for mati setem stage', function () {
     assertStageMailSentToHqAndNegeri($hq, $negeri, 'Mati Setem');
 });
 
-test('completing mati setem emails both roles for selesai stage', function () {
+test('hq final confirmation emails both roles for selesai stage', function () {
     Mail::fake();
 
     $negeri = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Melaka']);
@@ -163,6 +163,15 @@ test('completing mati setem emails both roles for selesai stage', function () {
             'mati_setem_lhdn_acknowledged' => '1',
             'edaran_pemilik_acknowledged' => '1',
             'salinan_dihantar_cawangan_pembangunan_acknowledged' => '1',
+        ])
+        ->assertRedirect();
+
+    Mail::assertNothingSent();
+
+    $this->actingAs($hq)
+        ->post(route('status-permohonan.complete-hq-mati-setem', $contract), [
+            'salinan_diterima_dari_negeri' => '1',
+            'perjanjian_dimuat_naik_sistem_premis' => '1',
         ])
         ->assertRedirect();
 

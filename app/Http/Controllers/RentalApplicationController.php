@@ -221,6 +221,7 @@ class RentalApplicationController extends Controller
                 'tarikh_surat' => $progress[$panel['key']]['tarikh_surat'] ?? '',
                 'agencies' => $progress[$panel['key']]['agencies'] ?? [],
                 'agency_dates' => $progress[$panel['key']]['agency_dates'] ?? [],
+                'agency_notes' => $progress[$panel['key']]['agency_notes'] ?? [],
             ];
         }
 

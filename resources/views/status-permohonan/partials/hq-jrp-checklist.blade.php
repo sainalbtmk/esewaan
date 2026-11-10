@@ -45,18 +45,31 @@
                 $requiresNote = HqJrpChecklist::requiresNote($key);
                 $itemDate = $sourceDates[$key] ?? null;
                 $itemNote = $sourceNotes[$key] ?? null;
+                $isDisabled = HqJrpChecklist::checklistItemDisabled($contract, $key);
+                if ($isDisabled) {
+                    $isChecked = false;
+                }
             @endphp
-            <div class="flex flex-col gap-2 rounded-lg border border-slate-300 bg-white/50 px-3 py-2">
+            <div @class([
+                'flex flex-col gap-2 rounded-lg border border-slate-300 bg-white/50 px-3 py-2',
+                'opacity-60' => $isDisabled,
+            ])>
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <label class="flex min-w-0 cursor-pointer items-start gap-2.5">
+                    <label @class([
+                        'flex min-w-0 items-start gap-2.5',
+                        'cursor-pointer' => ! $isDisabled,
+                        'cursor-not-allowed' => $isDisabled,
+                    ])>
                         <input
                             type="checkbox"
                             name="jrp_checklist[{{ $key }}]"
                             value="1"
                             data-jrp-key="{{ $key }}"
                             @checked($isChecked)
+                            @disabled($isDisabled)
+                            @if($isDisabled) data-jrp-locked="1" @endif
                             @if($requiresDate) data-requires-date="1" @endif
-                            class="jrp-checklist-item mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-slate-800 focus:ring-slate-500"
+                            class="jrp-checklist-item mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-slate-800 focus:ring-slate-500 disabled:cursor-not-allowed"
                         >
                         <span class="text-xs leading-relaxed text-slate-700">{{ $definitions[$key] }}</span>
                     </label>

@@ -153,6 +153,7 @@ class RentalStatusReport
             RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS => self::row(self::SECTION_PTJ, 'Tandatangan Pemilik Premis', 'PTJ', true),
             RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ => self::row(self::SECTION_HQ, 'Tandatangan Penyewa (AADK)', 'CP', true),
             RentalContract::WORKFLOW_MATI_SETEM => self::row(self::SECTION_PTJ, 'Mati setem', 'PTJ', true),
+            RentalContract::WORKFLOW_PENGESAHAN_IBU_PEJABAT => self::row(self::SECTION_HQ, 'Pengesahan Ibu Pejabat', 'CP', true),
             RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ => self::hqReviewPlacement($contract),
             default => null,
         };
@@ -314,6 +315,20 @@ class RentalStatusReport
         return $months !== null && $months < 0;
     }
 
+    public static function isBakiBulanRed(RentalContract $contract): bool
+    {
+        $months = self::bakiBulan($contract);
+
+        return $months !== null && $months <= 3;
+    }
+
+    public static function isBakiBulanYellow(RentalContract $contract): bool
+    {
+        $months = self::bakiBulan($contract);
+
+        return $months !== null && $months >= 4 && $months <= 8;
+    }
+
     /**
      * @return array{section: string, rumusan: string, tindakan: string, diterima: bool}
      */
@@ -364,6 +379,7 @@ class RentalStatusReport
             RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS,
             RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ,
             RentalContract::WORKFLOW_MATI_SETEM,
+            RentalContract::WORKFLOW_PENGESAHAN_IBU_PEJABAT,
         ], true)) {
             return false;
         }
