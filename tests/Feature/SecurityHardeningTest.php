@@ -4,11 +4,44 @@ use App\Models\Premise;
 use App\Models\RentalContract;
 use App\Models\User;
 use App\Support\ApplicationCategories;
+use App\Support\LocalTrustedHosts;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 uses(RefreshDatabase::class);
+
+test('local development only trusts configured hosts', function () {
+    config([
+        'app.url' => 'http://10.103.103.17:8000',
+        'app.allowed_hosts' => ['dev.example'],
+    ]);
+
+    expect(LocalTrustedHosts::allows('10.103.103.17'))->toBeTrue()
+        ->and(LocalTrustedHosts::allows('10.103.103.17:8000'))->toBeTrue()
+        ->and(LocalTrustedHosts::allows('localhost'))->toBeTrue()
+        ->and(LocalTrustedHosts::allows('esewaan.test'))->toBeTrue()
+        ->and(LocalTrustedHosts::allows('dev.example'))->toBeTrue()
+        ->and(LocalTrustedHosts::allows('evil.example'))->toBeFalse()
+        ->and(LocalTrustedHosts::allows('evil.example:8000'))->toBeFalse();
+
+    config(['app.url' => 'https://spektra.aadk.gov.my']);
+
+    expect(LocalTrustedHosts::productionPatterns())->toBe(['^spektra\.aadk\.gov\.my$'])
+        ->and(LocalTrustedHosts::productionPatterns())->not->toContain('esewaan.test');
+});
+
+test('an untrusted host header is rejected when local trusted hosts are applied', function () {
+    Request::setTrustedHosts(LocalTrustedHosts::patterns());
+
+    try {
+        $this->get('http://evil.example/login')->assertBadRequest();
+        $this->get('http://localhost/login')->assertSuccessful();
+    } finally {
+        Request::setTrustedHosts([]);
+    }
+});
 
 test('web responses include modern security headers', function () {
     $response = $this->get(route('login'));

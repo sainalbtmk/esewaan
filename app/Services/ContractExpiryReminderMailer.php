@@ -152,7 +152,7 @@ class ContractExpiryReminderMailer
         $testRecipient = config('mail.test_recipient');
 
         if (filled($testRecipient)) {
-            return [trim((string) $testRecipient)];
+            return $this->usableEmails([(string) $testRecipient]);
         }
 
         $negeri = $contracts->first()?->premise?->negeri;
@@ -161,17 +161,13 @@ class ContractExpiryReminderMailer
             return [];
         }
 
-        return User::query()
+        return $this->usableEmails(User::query()
             ->where('role', 'admin_negeri')
             ->where('negeri', $negeri)
             ->where('is_active', true)
             ->whereNotNull('email')
             ->pluck('email')
-            ->map(fn (mixed $email): string => trim((string) $email))
-            ->filter(fn (string $email): bool => $email !== '')
-            ->unique(fn (string $email): string => strtolower($email))
-            ->values()
-            ->all();
+            ->all());
     }
 
     /**
@@ -211,7 +207,38 @@ class ContractExpiryReminderMailer
             $cc[] = $email;
         }
 
-        return $cc;
+        return $this->usableEmails($cc);
+    }
+
+    /**
+     * @param  list<mixed>  $emails
+     * @return list<string>
+     */
+    private function usableEmails(array $emails): array
+    {
+        $usable = [];
+        $seen = [];
+
+        foreach ($emails as $email) {
+            $email = trim((string) $email);
+            $key = strtolower($email);
+
+            if ($email === '' || isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+
+            if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                report(new \RuntimeException('Penerima peringatan kontrak tidak sah.'));
+
+                continue;
+            }
+
+            $usable[] = $email;
+        }
+
+        return $usable;
     }
 
     /**

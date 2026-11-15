@@ -178,12 +178,16 @@ class User extends Authenticatable
             return;
         }
 
-        Mail::to($this->email)->send(new PasswordResetMail(
-            user: $this,
-            resetUrl: route('password.reset', [
-                'token' => $token,
-                'email' => $this->email,
-            ]),
-        ));
+        try {
+            Mail::to($this->email)->send(new PasswordResetMail(
+                user: $this,
+                resetUrl: route('password.reset', [
+                    'token' => $token,
+                    'email' => $this->email,
+                ]),
+            ));
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
     }
 }

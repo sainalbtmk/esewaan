@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\LocalTrustedHosts;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustHosts(
+            at: fn (): array => LocalTrustedHosts::productionPatterns(),
+            subdomains: false,
+        );
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'admin.hq' => \App\Http\Middleware\EnsureUserIsAdminHq::class,

@@ -6,6 +6,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
+use Symfony\Component\Mailer\Envelope;
+use Symfony\Component\Mailer\Exception\TransportException;
+use Symfony\Component\Mailer\SentMessage;
+use Symfony\Component\Mailer\Transport\TransportInterface;
+use Symfony\Component\Mime\RawMessage;
 
 uses(RefreshDatabase::class);
 
@@ -129,7 +134,37 @@ test('password reset mail uses custom mailable', function () {
     $user->sendPasswordResetNotification('test-token');
 
     Mail::assertSent(PasswordResetMail::class, function (PasswordResetMail $mail) use ($user) {
+        $html = $mail->render();
+
         return $mail->hasTo($user->email)
-            && str_contains($mail->resetUrl, 'test-token');
+            && str_contains($mail->resetUrl, 'test-token')
+            && str_contains($html, 'Set Semula Kata Laluan')
+            && str_contains($html, $mail->resetUrl);
     });
+});
+
+test('password reset request still succeeds when email delivery fails', function () {
+    Mail::setSymfonyTransport(new class implements TransportInterface
+    {
+        public function send(RawMessage $message, ?Envelope $envelope = null): ?SentMessage
+        {
+            throw new TransportException('535 Username and Password not accepted');
+        }
+
+        public function __toString(): string
+        {
+            return 'failing';
+        }
+    });
+
+    $user = User::factory()->create([
+        'email' => 'gagal-emel@esewa.test',
+        'is_active' => true,
+    ]);
+
+    $this->post(route('password.email'), [
+        'email' => $user->email,
+    ])
+        ->assertRedirect()
+        ->assertSessionHas('success');
 });

@@ -27,6 +27,7 @@ test('ibu pejabat sees jawatan names and emails on the user list', function () {
         ->get(route('users.index'))
         ->assertSuccessful()
         ->assertSee('Salinan Emel Jawatan')
+        ->assertSee('notifikasi aliran kerja permohonan')
         ->assertSee('Nama Jawatan')
         ->assertSee('Ketua Pengarah')
         ->assertSee('TKPP')

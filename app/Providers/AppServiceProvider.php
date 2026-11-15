@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\SidebarNotificationService;
+use App\Support\LocalTrustedHosts;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
@@ -33,16 +34,21 @@ class AppServiceProvider extends ServiceProvider
         $this->configureProductionGuards();
 
         if ($this->app->environment('local')) {
+            Request::setTrustedHosts(LocalTrustedHosts::patterns());
+
             $this->app->booted(function (): void {
                 if ($this->app->runningInConsole() || ! $this->app->bound('request')) {
                     return;
                 }
 
                 $request = $this->app->make('request');
+                $host = (string) $request->headers->get('HOST', '');
 
-                if ($request->getHost() !== '') {
-                    URL::forceRootUrl($request->getSchemeAndHttpHost());
+                if (! LocalTrustedHosts::allows($host)) {
+                    return;
                 }
+
+                URL::forceRootUrl($request->getSchemeAndHttpHost());
             });
         }
 

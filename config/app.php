@@ -68,6 +68,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Extra hosts trusted in the local environment
+    |--------------------------------------------------------------------------
+    |
+    | Comma-separated hostnames that may be used while APP_ENV=local, in
+    | addition to APP_URL, localhost, and esewaan.test. A request whose Host
+    | header is not in this list is rejected.
+    |
+    */
+
+    'allowed_hosts' => array_values(array_filter(array_map(
+        static fn (string $host): string => strtolower(trim($host)),
+        explode(',', (string) env('APP_ALLOWED_HOSTS', '')),
+    ))),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

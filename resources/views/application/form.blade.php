@@ -38,6 +38,9 @@
     $sahSehinggaValue = old('sah_sehingga', $contract?->sah_sehingga?->format('Y-m-d') ?? '');
     $tarikhMulaTawaranValue = old('tarikh_mula_tawaran', $contract?->tarikh_mula_tawaran?->format('Y-m-d') ?? '');
     $parentBakiBulan = $parent ? \App\Support\RentalStatusReport::bakiBulan($parent) : null;
+    $rentDifferenceNotice = ($isFollowUp && $parentRent !== null && is_numeric($kadarSewaValue))
+        ? \App\Support\RentDifferenceNotice::describe((float) $parentRent, (float) $kadarSewaValue)
+        : null;
 @endphp
 
 @section('title', $isFollowUp ? 'Permohonan '.\App\Support\ApplicationCategories::label($contract->kategori_permohonan) : ($isEdit ? 'Kemaskini Permohonan' : 'Permohonan Baru'))
@@ -223,7 +226,17 @@
                                 class="glass-input w-full rounded-xl px-3 py-2 text-sm placeholder:text-slate-400"
                             >
                             @if($isFollowUp)
-                                <p id="rent-diff-badge" class="mt-1.5 hidden text-xs font-medium" data-below-label="Perbezaan < RM500" data-above-label="Perbezaan ≥ RM500"></p>
+                                <p
+                                    id="rent-diff-badge"
+                                    @class([
+                                        'mt-1.5 text-xs font-medium',
+                                        'hidden' => $rentDifferenceNotice === null,
+                                        'text-emerald-700' => ($rentDifferenceNotice['band'] ?? null) === 'below',
+                                        'text-amber-700' => ($rentDifferenceNotice['band'] ?? null) === 'above',
+                                    ])
+                                    data-below-label="{{ \App\Support\RentDifferenceNotice::BELOW_LABEL }}"
+                                    data-above-label="{{ \App\Support\RentDifferenceNotice::ABOVE_LABEL }}"
+                                >{{ $rentDifferenceNotice['text'] ?? '' }}</p>
                             @endif
                             @error('kadar_sewa')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                         </div>
@@ -600,8 +613,11 @@
             const isBelow = magnitude < threshold;
             const label = isBelow ? badge.dataset.belowLabel : badge.dataset.aboveLabel;
             const sign = difference > 0 ? '+' : (difference < 0 ? '−' : '');
+            const percentSuffix = parentRent === 0
+                ? ''
+                : `, ${sign}${format(Math.abs((difference / parentRent) * 100))}%`;
 
-            badge.textContent = `${label} — Lama RM${format(parentRent)} → Baharu RM${format(value)} (${sign}RM${format(magnitude)})`;
+            badge.textContent = `${label} — Lama RM${format(parentRent)} → Baharu RM${format(value)} (${sign}RM${format(magnitude)}${percentSuffix})`;
             badge.classList.remove('hidden', 'text-emerald-700', 'text-amber-700');
             badge.classList.add(isBelow ? 'text-emerald-700' : 'text-amber-700');
         };

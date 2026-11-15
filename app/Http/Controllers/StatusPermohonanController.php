@@ -395,6 +395,8 @@ class StatusPermohonanController extends Controller
             ['contract_id' => $contract->id],
         );
 
+        $this->workflowMailer->notifyAwaitingHqConfirmation($contract->fresh(['premise', 'submittedBy', 'adminNegeriUser']), $user);
+
         return $this->redirectWithWorkflowNotice(
             'status-permohonan.index',
             'Permohonan telah dihantar ke Ibu Pejabat untuk pengesahan akhir.',

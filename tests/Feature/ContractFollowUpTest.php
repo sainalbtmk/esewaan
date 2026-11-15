@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Support\AdminProceedSteps;
 use App\Support\ApplicationCategories;
 use App\Support\RentalStatusReport;
+use App\Support\RentDifferenceNotice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -324,6 +325,34 @@ test('superseded contract is hidden from the kontrak sewaan list but the follow-
 
     expect($listedIds)->toContain($child->id)
         ->and($listedIds)->not->toContain($parent->id);
+});
+
+test('rent difference notice shows the percentage beside the amount', function (float $parentRent, float $newRent, string $expected) {
+    expect(RentDifferenceNotice::describe($parentRent, $newRent)['text'])->toBe($expected);
+})->with([
+    'increase above threshold' => [1800, 2500, 'Perbezaan ≥ RM500 — Lama RM1,800.00 → Baharu RM2,500.00 (+RM700.00, +38.89%)'],
+    'increase below threshold' => [1800, 2000, 'Perbezaan < RM500 — Lama RM1,800.00 → Baharu RM2,000.00 (+RM200.00, +11.11%)'],
+    'decrease' => [2500, 1800, 'Perbezaan ≥ RM500 — Lama RM2,500.00 → Baharu RM1,800.00 (−RM700.00, −28.00%)'],
+    'unchanged' => [1800, 1800, 'Perbezaan < RM500 — Lama RM1,800.00 → Baharu RM1,800.00 (RM0.00, 0.00%)'],
+    'no parent rent' => [0, 700, 'Perbezaan ≥ RM500 — Lama RM0.00 → Baharu RM700.00 (+RM700.00)'],
+]);
+
+test('follow-up form shows the rent increase percentage beside the amount', function () {
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
+    $parent = createApprovedParentContract('Johor', 1800);
+
+    $this->actingAs($admin)->post(route('kontrak-sewaan.follow-up', $parent), [
+        'kategori_permohonan' => ApplicationCategories::LANJUTAN,
+    ]);
+
+    $child = RentalContract::query()->where('parent_contract_id', $parent->id)->firstOrFail();
+    $child->premise->update(['kadar_sewa' => 2500]);
+
+    $this->actingAs($admin)
+        ->get(route('application.edit', $child))
+        ->assertSuccessful()
+        ->assertSee('Perbezaan ≥ RM500 — Lama RM1,800.00 → Baharu RM2,500.00 (+RM700.00, +38.89%)', false)
+        ->assertSee('(difference / parentRent) * 100', false);
 });
 
 test('rent difference band flags below and above the RM500 threshold', function () {

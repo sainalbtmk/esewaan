@@ -4,6 +4,7 @@ use App\Mail\ApplicationApprovedByHqNotification;
 use App\Mail\ApplicationSubmittedToAdminNegeriNotification;
 use App\Mail\ApplicationSubmittedToHqNotification;
 use App\Models\ContractDocument;
+use App\Models\EmelJawatan;
 use App\Models\Premise;
 use App\Models\RentalContract;
 use App\Models\User;
@@ -832,7 +833,13 @@ test('approving application by hq sends email notification to admin hq and relev
         return $mail->hasTo('negeri-johor@example.test') || $mail->hasTo('hq-inactive@example.test');
     });
 
-    Mail::assertSent(ApplicationApprovedByHqNotification::class, 2);
+    foreach (EmelJawatan::query()->pluck('email') as $email) {
+        Mail::assertSent(ApplicationApprovedByHqNotification::class, function (ApplicationApprovedByHqNotification $mail) use ($email): bool {
+            return $mail->hasTo($email);
+        });
+    }
+
+    Mail::assertSent(ApplicationApprovedByHqNotification::class, 2 + EmelJawatan::query()->count());
 });
 
 test('approving application by hq sends email to configured test recipient when set', function () {
@@ -1200,6 +1207,15 @@ test('submitting application to hq sends email notification to active admin hq u
     Mail::assertNotSent(ApplicationSubmittedToAdminNegeriNotification::class, function (ApplicationSubmittedToAdminNegeriNotification $mail): bool {
         return $mail->hasTo('negeri@example.test');
     });
+
+    foreach (EmelJawatan::query()->pluck('email') as $email) {
+        Mail::assertSent(ApplicationSubmittedToHqNotification::class, function (ApplicationSubmittedToHqNotification $mail) use ($email): bool {
+            return $mail->hasTo($email);
+        });
+    }
+
+    Mail::assertSent(ApplicationSubmittedToHqNotification::class, 1 + EmelJawatan::query()->count());
+    Mail::assertSent(ApplicationSubmittedToAdminNegeriNotification::class, 1);
 });
 
 test('submitting application to hq sends email to configured test recipient when set', function () {
