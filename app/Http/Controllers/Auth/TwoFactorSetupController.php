@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ConfirmTwoFactorRequest;
+use App\Support\QrCode;
 use App\Support\Totp;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,13 +39,15 @@ class TwoFactorSetupController extends Controller
 
         $user->refresh();
 
+        $provisioningUri = Totp::provisioningUri(
+            (string) $user->two_factor_secret,
+            $user->email,
+            (string) config('app.name'),
+        );
+
         return view('auth.two-factor-setup', [
             'secret' => (string) $user->two_factor_secret,
-            'provisioningUri' => Totp::provisioningUri(
-                (string) $user->two_factor_secret,
-                $user->email,
-                (string) config('app.name'),
-            ),
+            'qrSvg' => QrCode::svg($provisioningUri),
             'recoveryCodes' => $request->session()->get('two_factor.recovery_plain', []),
         ]);
     }

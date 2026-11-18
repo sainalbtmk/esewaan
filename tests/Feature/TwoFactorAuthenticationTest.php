@@ -40,7 +40,11 @@ test('production mfa must be confirmed before the dashboard opens', function () 
 
     $this->get(route('dashboard'))->assertRedirect(route('two-factor.setup'));
 
-    $this->get(route('two-factor.setup'))->assertSuccessful();
+    $this->get(route('two-factor.setup'))
+        ->assertSuccessful()
+        ->assertSee('Imbas kod QR', false)
+        ->assertSee('<svg', false)
+        ->assertDontSee('otpauth://', false);
 
     $secret = $user->fresh()->two_factor_secret;
     $recoveryCodes = session('two_factor.recovery_plain');

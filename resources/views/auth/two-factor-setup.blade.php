@@ -8,11 +8,19 @@
 <div class="mx-auto max-w-2xl space-y-6">
     <div class="glass-card p-6">
         <h1 class="text-xl font-bold text-slate-800">Sediakan pengesahan dua faktor</h1>
-        <p class="mt-2 text-sm text-slate-600">Tambah akaun ini dalam aplikasi authenticator menggunakan kunci di bawah, kemudian masukkan kod 6 digit untuk mengesahkan.</p>
+        <p class="mt-2 text-sm text-slate-600">Imbas kod QR ini dengan aplikasi authenticator, kemudian masukkan kod 6 digit untuk mengesahkan.</p>
 
-        <p class="mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">Kunci persediaan</p>
-        <p class="mt-1 break-all font-mono text-sm text-slate-900">{{ trim(chunk_split($secret, 4, ' ')) }}</p>
-        <p class="mt-3 break-all text-xs text-slate-500">{{ $provisioningUri }}</p>
+        <div class="mt-5 flex justify-center">
+            <div class="w-full max-w-[280px] rounded-2xl bg-white p-3 shadow-sm">
+                {!! $qrSvg !!}
+            </div>
+        </div>
+
+        <details class="mt-5">
+            <summary class="cursor-pointer text-sm font-medium text-slate-600">Imbasan tidak berjaya? Masukkan kunci secara manual</summary>
+            <p class="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Kunci persediaan</p>
+            <p class="mt-1 break-all font-mono text-sm text-slate-900">{{ trim(chunk_split($secret, 4, ' ')) }}</p>
+        </details>
 
         @if($recoveryCodes !== [])
             <p class="mt-6 text-xs font-semibold uppercase tracking-wide text-slate-500">Kod pemulihan</p>
