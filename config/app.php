@@ -66,6 +66,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'spektra_url' => 'https://spektra.aadk.gov.my/',
+
     /*
     |--------------------------------------------------------------------------
     | Extra hosts trusted in the local environment

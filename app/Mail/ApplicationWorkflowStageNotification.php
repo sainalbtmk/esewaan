@@ -15,7 +15,7 @@ class ApplicationWorkflowStageNotification extends Mailable
     use Queueable, SerializesModels;
 
     /**
-     * @param  array{subject: string, heading: string, intro: string, next_status: string, cta_url: string, cta_label: string}  $payload
+     * @param  array{subject: string, paragraphs: list<string>, include_catatan: bool, tindakan_lanjut: ?string}  $payload
      */
     public function __construct(
         public RentalContract $contract,
@@ -33,7 +33,12 @@ class ApplicationWorkflowStageNotification extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.application-workflow-stage',
+            view: 'emails.spektra-notice',
+            with: [
+                'paragraphs' => $this->payload['paragraphs'],
+                'includeCatatan' => $this->payload['include_catatan'],
+                'tindakanLanjut' => $this->payload['tindakan_lanjut'],
+            ],
         );
     }
 

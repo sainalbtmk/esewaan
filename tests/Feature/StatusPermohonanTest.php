@@ -818,7 +818,9 @@ test('approving application by hq sends email notification to admin hq and relev
         return $mail->hasTo($negeriAdmin->email)
             && $mail->contract->is($contract->fresh())
             && $mail->approvedBy->is($hqAdmin)
-            && str_contains($html, 'Penyediaan Draf Perjanjian')
+            && str_contains($html, 'Penyediaan draf Perjanjian')
+            && str_contains($html, 'tujuh (7) hari bekerja')
+            && str_contains($html, 'TELAH DILULUSKAN')
             && ! str_contains($html, 'No. Fail Rujukan')
             && ! str_contains($html, 'Menunggu maklum balas daripada PTJ');
     });
@@ -826,7 +828,9 @@ test('approving application by hq sends email notification to admin hq and relev
     Mail::assertSent(ApplicationApprovedByHqNotification::class, function (ApplicationApprovedByHqNotification $mail) use ($hqAdmin, $contract): bool {
         return $mail->hasTo($hqAdmin->email)
             && $mail->contract->is($contract->fresh())
-            && $mail->approvedBy->is($hqAdmin);
+            && $mail->approvedBy->is($hqAdmin)
+            && $mail->audience === 'hq'
+            && ! str_contains($mail->render(), 'tujuh (7) hari bekerja');
     });
 
     Mail::assertNotSent(ApplicationApprovedByHqNotification::class, function (ApplicationApprovedByHqNotification $mail): bool {
@@ -1187,17 +1191,28 @@ test('submitting application to hq sends email notification to active admin hq u
         ->assertSessionHas('success');
 
     Mail::assertSent(ApplicationSubmittedToHqNotification::class, function (ApplicationSubmittedToHqNotification $mail) use ($hqActive, $admin, $contract): bool {
+        $html = $mail->render();
+
         return $mail->hasTo($hqActive->email)
+            && $mail->envelope()->subject === 'SPEKTRA: PERMOHONAN BAHARU UNTUK SEMAKAN IBU PEJABAT'
             && $mail->contract->is($contract)
             && $mail->submittedBy->is($admin)
-            && ! str_contains($mail->render(), 'No. Fail Rujukan');
+            && str_contains($html, 'Semakan Permohonan (Ibu Pejabat)')
+            && str_contains($html, (string) $admin->id)
+            && ! str_contains($html, 'semakan lanjut')
+            && ! str_contains($html, 'No. Fail Rujukan');
     });
 
     Mail::assertSent(ApplicationSubmittedToAdminNegeriNotification::class, function (ApplicationSubmittedToAdminNegeriNotification $mail) use ($admin, $contract): bool {
+        $html = $mail->render();
+
         return $mail->hasTo($admin->email)
+            && $mail->envelope()->subject === 'SPEKTRA: PERMOHONAN DIHANTAR KE IBU PEJABAT UNTUK SEMAKAN'
             && $mail->contract->is($contract)
             && $mail->submittedBy->is($admin)
-            && ! str_contains($mail->render(), 'No. Fail Rujukan');
+            && str_contains($html, 'semakan lanjut')
+            && str_contains($html, 'https://spektra.aadk.gov.my/')
+            && ! str_contains($html, 'No. Fail Rujukan');
     });
 
     Mail::assertNotSent(ApplicationSubmittedToHqNotification::class, function (ApplicationSubmittedToHqNotification $mail): bool {

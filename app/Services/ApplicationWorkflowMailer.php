@@ -49,111 +49,169 @@ class ApplicationWorkflowMailer
         $headquarters = $this->adminHqNotificationRecipients();
 
         foreach ($negeri as $email) {
-            $this->deliver($email, new ApplicationApprovedByHqNotification($contract, $approvedBy));
+            $this->deliver($email, new ApplicationApprovedByHqNotification($contract, $approvedBy, 'negeri'));
         }
 
         foreach ($headquarters as $email) {
-            $this->deliver($email, new ApplicationApprovedByHqNotification($contract, $approvedBy));
+            $this->deliver($email, new ApplicationApprovedByHqNotification($contract, $approvedBy, 'hq'));
         }
 
         foreach ($this->additionalPositionRecipients([...$negeri, ...$headquarters]) as $email) {
-            $this->deliver($email, new ApplicationApprovedByHqNotification($contract, $approvedBy));
+            $this->deliver($email, new ApplicationApprovedByHqNotification($contract, $approvedBy, 'hq'));
         }
     }
 
     public function notifyDraftUploaded(RentalContract $contract, User $actedBy): void
     {
-        $this->notifyStage($contract, $actedBy, [
-            'subject' => 'SPEKTRA: Draf Perjanjian Dihantar untuk Semakan PUU',
-            'heading' => 'Dalam Tindakan PUU',
-            'intro' => 'Draf perjanjian telah dimuat naik dan dihantar untuk '.$contract->semakanLabel().'.',
-            'next_status' => $this->stepperStatus($contract, $contract->semakanLabel()),
-            'cta_url' => route('status-permohonan.review', $contract),
-            'cta_label' => 'Semak Draf Perjanjian',
-        ]);
+        $round = max(1, (int) $contract->semakan_count);
+
+        $this->notifyAudiences(
+            $contract,
+            $actedBy,
+            $this->notice(
+                'SPEKTRA: DRAF PERJANJIAN UNTUK SEMAKAN PENASIHAT UNDANG-UNDANG',
+                ['Dimaklumkan bahawa draf Perjanjian telah dimuat naik dan dihantar untuk semakan PUU '.$round.'.'],
+            ),
+            $this->notice(
+                'SPEKTRA: DRAF PERJANJIAN DIHANTAR UNTUK SEMAKAN PENASIHAT UNDANG-UNDANG',
+                [
+                    'Dimaklumkan bahawa draf Perjanjian telah berjaya dimuat naik dan dihantar untuk semakan PUU '.$round.'.',
+                    'Sehubungan itu, mohon pihak tuan/puan untuk membuat semakan lanjut ke atas permohonan tersebut melalui sistem SPEKTRA.',
+                ],
+            ),
+        );
     }
 
     public function notifyPuuRejected(RentalContract $contract, User $actedBy): void
     {
-        $this->notifyStage($contract, $actedBy, [
-            'subject' => 'SPEKTRA: Semakan PUU Memerlukan Pindaan',
-            'heading' => 'Kuiri PUU',
-            'intro' => 'Semakan PUU dikembalikan untuk pindaan. Negeri perlu muat naik semula draf perjanjian.',
-            'next_status' => $this->stepperStatus($contract),
-            'cta_url' => route('status-permohonan.review', $contract),
-            'cta_label' => 'Lihat Permohonan',
-        ]);
+        $returned = 'Dimaklumkan bahawa draf Perjanjian telah disemak dan dikembalikan untuk tindakan lanjut pihak tuan/puan.';
+
+        $this->notifyAudiences(
+            $contract,
+            $actedBy,
+            $this->notice('SPEKTRA: KUIRI OLEH PENASIHAT UNDANG-UNDANG', [$returned], 'Semak semula'),
+            $this->notice(
+                'SPEKTRA: KUIRI OLEH PENASIHAT UNDANG-UNDANG',
+                [
+                    $returned,
+                    'Sehubungan itu, mohon pihak tuan/puan untuk mengemukakan dokumen sokongan yang diminta oleh PUU dalam tempoh tujuh (7) hari bekerja kepada Cawangan Pembangunan untuk semakan semula draf Perjanjian.',
+                ],
+                'Semak semula',
+            ),
+        );
     }
 
     public function notifyDraftApproved(RentalContract $contract, User $actedBy): void
     {
-        $this->notifyStage($contract, $actedBy, [
-            'subject' => 'SPEKTRA: Draf Perjanjian Diluluskan',
-            'heading' => 'Draf Lulus',
-            'intro' => 'Draf perjanjian telah diluluskan. Negeri boleh menyediakan dokumen akhir dan mengembalikannya kepada Ibu Pejabat.',
-            'next_status' => $this->stepperStatus($contract),
-            'cta_url' => route('status-permohonan.review', $contract),
-            'cta_label' => 'Lihat Permohonan',
-        ]);
+        $approved = 'Dimaklumkan bahawa draf Perjanjian telah disemak dan diluluskan tertakluk kepada pindaan seperti ulasan PUU.';
+
+        $this->notifyAudiences(
+            $contract,
+            $actedBy,
+            $this->notice('SPEKTRA: DRAF PERJANJIAN DILULUSKAN OLEH PENASIHAT UNDANG-UNDANG', [$approved]),
+            $this->notice(
+                'SPEKTRA: DRAF PERJANJIAN DILULUSKAN OLEH PENASIHAT UNDANG-UNDANG',
+                [
+                    $approved,
+                    'Sehubungan itu, mohon pihak tuan/puan untuk menyediakan tiga (3) salinan perjanjian seperti pindaan syor PUU yang telah ditandatangani Pemilik Premis, dan kemukakannya ke Cawangan Pembangunan untuk tandatangan pengurusan AADK dalam tempoh tujuh (7) hari bekerja.',
+                ],
+            ),
+        );
     }
 
     public function notifyReturnedToHq(RentalContract $contract, User $actedBy): void
     {
-        $this->notifyStage($contract, $actedBy, [
-            'subject' => 'SPEKTRA: Dokumen Dikembalikan untuk Pengesahan & Tandatangan',
-            'heading' => 'Pengesahan & Tandatangan',
-            'intro' => 'Negeri telah mengembalikan draf akhir kepada Cawangan Pembangunan AADK untuk pengesahan dan tandatangan.',
-            'next_status' => $this->stepperStatus($contract),
-            'cta_url' => route('status-permohonan.review', $contract),
-            'cta_label' => 'Semak Dokumen',
-        ]);
+        $notice = $this->notice(
+            'SPEKTRA: PERJANJIAN UNTUK DITANDATANGANI PENGURUSAN AADK',
+            ['Dimaklumkan bahawa tiga (3) salinan Perjanjian telah dihantar untuk tujuan tandatangan oleh Pihak Pengurusan AADK selaku Penyewa.'],
+        );
+
+        $this->notifyAudiences($contract, $actedBy, $notice, $notice);
     }
 
     public function notifySentForStampDuty(RentalContract $contract, User $actedBy): void
     {
-        $this->notifyStage($contract, $actedBy, [
-            'subject' => 'SPEKTRA: Perjanjian Dihantar untuk Mati Setem',
-            'heading' => 'Mati Setem',
-            'intro' => 'Ibu Pejabat telah mengesahkan tandatangan. Negeri perlu lengkapkan mati setem.',
-            'next_status' => $this->stepperStatus($contract),
-            'cta_url' => route('status-permohonan.review', $contract),
-            'cta_label' => 'Lengkapkan Mati Setem',
-        ]);
+        $notice = $this->notice(
+            'SPEKTRA: PERJANJIAN UNTUK TINDAKAN MATI SETEM',
+            ['Dimaklumkan bahawa tiga (3) Salinan Perjanjian telah selesai ditandatangani dan dihantar ke Negeri untuk tindakan mati setem di Lembaga Hasil Dalam Negeri.'],
+        );
+
+        $this->notifyAudiences($contract, $actedBy, $notice, $notice);
     }
 
     public function notifyAwaitingHqConfirmation(RentalContract $contract, User $actedBy): void
     {
-        $this->notifyStage($contract, $actedBy, [
-            'subject' => 'SPEKTRA: Mati Setem Selesai — Menunggu Pengesahan Ibu Pejabat',
-            'heading' => 'Menunggu Pengesahan Ibu Pejabat',
-            'intro' => 'Negeri telah menyelesaikan mati setem. Ibu Pejabat perlu mengesahkan penerimaan salinan dan muat naik sistem sebelum permohonan dimasukkan ke Senarai Kontrak Sewaan.',
-            'next_status' => $this->stepperStatus($contract),
-            'cta_url' => route('status-permohonan.review', $contract),
-            'cta_label' => 'Sahkan Permohonan',
-        ]);
+        $this->notifyAudiences(
+            $contract,
+            $actedBy,
+            $this->notice(
+                'SPEKTRA: PERJANJIAN SELESAI DIMATI SETEM',
+                [
+                    'Dimaklumkan bahawa Perjanjian telah selesai dilaksanakan tindakan mati setem di Lembaga Hasil Dalam Negeri. Satu (1) salinan perjanjian telah dihantar ke Ibu Pejabat untuk tujuan rekod.',
+                    'Sehubungan itu, dimohon pihak tuan/puan untuk membuat pengesahan penerimaan Perjanjian di peringkat Ibu Pejabat.',
+                ],
+            ),
+            null,
+        );
     }
 
     public function notifyCompleted(RentalContract $contract, User $actedBy): void
     {
-        $this->notifyStage($contract, $actedBy, [
-            'subject' => 'SPEKTRA: Permohonan Selesai — Dalam Senarai Kontrak Sewaan',
-            'heading' => 'Selesai',
-            'intro' => 'Pengesahan Ibu Pejabat selesai. Permohonan dimasukkan ke dalam Senarai Kontrak Sewaan.',
-            'next_status' => $this->stepperStatus($contract),
-            'cta_url' => route('kontrak-sewaan.show', $contract),
-            'cta_label' => 'Lihat Kontrak Sewaan',
-        ]);
+        $this->notifyAudiences(
+            $contract,
+            $actedBy,
+            null,
+            $this->notice(
+                'SPEKTRA: PERJANJIAN SELESAI DAN TELAH DIMASUKKAN KE DALAM SENARAI KONTRAK SEWAAN',
+                [
+                    'Dimaklumkan bahawa satu (1) Salinan Perjanjian telah diterima dan telah dimuat naik ke dalam Sistem ProMIS.',
+                    'Permohonan telah dimasukkan ke dalam Senarai Kontrak Sewaan.',
+                ],
+            ),
+        );
     }
 
     /**
-     * @param  array{subject: string, heading: string, intro: string, next_status: string, cta_url: string, cta_label: string}  $payload
+     * @param  list<string>  $paragraphs
+     * @return array{subject: string, paragraphs: list<string>, include_catatan: bool, tindakan_lanjut: ?string}
      */
-    private function notifyStage(RentalContract $contract, User $actedBy, array $payload): void
+    private function notice(string $subject, array $paragraphs, ?string $tindakanLanjut = null, bool $includeCatatan = false): array
+    {
+        return [
+            'subject' => $subject,
+            'paragraphs' => $paragraphs,
+            'include_catatan' => $includeCatatan,
+            'tindakan_lanjut' => $tindakanLanjut,
+        ];
+    }
+
+    /**
+     * @param  array{subject: string, paragraphs: list<string>, include_catatan: bool, tindakan_lanjut: ?string}|null  $headquarters
+     * @param  array{subject: string, paragraphs: list<string>, include_catatan: bool, tindakan_lanjut: ?string}|null  $negeri
+     */
+    private function notifyAudiences(RentalContract $contract, User $actedBy, ?array $headquarters, ?array $negeri): void
     {
         $contract->loadMissing(['premise', 'adminNegeriUser', 'submittedBy']);
 
-        foreach ($this->workflowRecipients($contract) as $email) {
-            $this->deliver($email, new ApplicationWorkflowStageNotification($contract, $actedBy, $payload));
+        $alreadySent = [];
+
+        if ($headquarters !== null) {
+            foreach ($this->headquartersNoticeRecipients() as $email) {
+                $this->deliver($email, new ApplicationWorkflowStageNotification($contract, $actedBy, $headquarters));
+                $alreadySent[strtolower($email)] = true;
+            }
+        }
+
+        if ($negeri === null) {
+            return;
+        }
+
+        foreach ($this->adminNegeriNotificationRecipients($contract) as $email) {
+            if (isset($alreadySent[strtolower($email)]) && $headquarters === $negeri) {
+                continue;
+            }
+
+            $this->deliver($email, new ApplicationWorkflowStageNotification($contract, $actedBy, $negeri));
         }
     }
 
@@ -171,11 +229,10 @@ class ApplicationWorkflowMailer
     /**
      * @return list<string>
      */
-    private function workflowRecipients(RentalContract $contract): array
+    private function headquartersNoticeRecipients(): array
     {
         return $this->deliverableEmails(array_merge(
             $this->adminHqNotificationRecipients(),
-            $this->adminNegeriNotificationRecipients($contract),
             $this->positionNotificationRecipients(),
         ));
     }
@@ -263,35 +320,6 @@ class ApplicationWorkflowMailer
         }
 
         return $this->deliverableEmails($emails);
-    }
-
-    private function stepperStatus(RentalContract $contract, ?string $detail = null): string
-    {
-        $index = $contract->draftAgreementCurrentStepIndex();
-        $label = $contract->draftAgreementProgressSteps()[$index]['label'] ?? 'Permohonan';
-        $detail ??= $this->statusDetail($contract, $label);
-        $line = 'Peringkat '.($index + 1).' — '.$label;
-
-        if (filled($detail) && $detail !== $label) {
-            $line .= ' ('.$detail.')';
-        }
-
-        return $line;
-    }
-
-    private function statusDetail(RentalContract $contract, string $stepLabel): ?string
-    {
-        if ($contract->isPendingAdminReview()) {
-            return null;
-        }
-
-        $status = $contract->applicationStatusLabel();
-
-        if ($status === '' || $status === $stepLabel || str_contains($stepLabel, $status)) {
-            return null;
-        }
-
-        return $status;
     }
 
     /**

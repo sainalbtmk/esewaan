@@ -22,14 +22,22 @@ class ApplicationSubmittedToAdminNegeriNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'SPEKTRA: Permohonan Dihantar ke Ibu Pejabat',
+            subject: 'SPEKTRA: PERMOHONAN DIHANTAR KE IBU PEJABAT UNTUK SEMAKAN',
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.application-submitted-to-admin-negeri',
+            view: 'emails.spektra-notice',
+            with: [
+                'paragraphs' => [
+                    'Dimaklumkan bahawa permohonan berkenaan kini berada dalam status Semakan Permohonan (Ibu Pejabat).',
+                    'Sehubungan itu, mohon pihak tuan/puan untuk membuat semakan lanjut ke atas permohonan tersebut melalui sistem SPEKTRA.',
+                ],
+                'includeCatatan' => true,
+                'tindakanLanjut' => null,
+            ],
         );
     }
 

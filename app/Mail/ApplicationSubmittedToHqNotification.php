@@ -22,14 +22,21 @@ class ApplicationSubmittedToHqNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'SPEKTRA: Permohonan Baharu Menunggu Semakan Ibu Pejabat',
+            subject: 'SPEKTRA: PERMOHONAN BAHARU UNTUK SEMAKAN IBU PEJABAT',
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.application-submitted-to-hq',
+            view: 'emails.spektra-notice',
+            with: [
+                'paragraphs' => [
+                    'Dimaklumkan bahawa permohonan berkenaan kini berada dalam status Semakan Permohonan (Ibu Pejabat).',
+                ],
+                'includeCatatan' => true,
+                'tindakanLanjut' => null,
+            ],
         );
     }
 

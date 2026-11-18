@@ -129,12 +129,13 @@ class ContractExpiryReminderMailer
             ->kontrakNotExpired()
             ->with(['premise'])
             ->when(
-                $tier === ContractExpiryReminderTier::ThreeMonth,
+                $tier !== ContractExpiryReminderTier::FiveMonth,
                 fn ($query) => $query->with('followUpApplications'),
             )
             ->get()
             ->filter(fn (RentalContract $contract): bool => match ($tier) {
-                ContractExpiryReminderTier::EightMonth => $contract->isDueForEightMonthReminder(),
+                ContractExpiryReminderTier::EightMonth => $contract->isDueForEightMonthReminder()
+                    && ! $contract->followUpHasBeenSentToHq(),
                 ContractExpiryReminderTier::FiveMonth => $contract->isDueForFiveMonthFirmReminder(),
                 ContractExpiryReminderTier::ThreeMonth => $contract->isDueForThreeMonthWarning()
                     && ! $contract->followUpHasBeenSentToHq(),

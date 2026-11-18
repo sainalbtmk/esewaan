@@ -434,9 +434,58 @@ test('reminders use the real agreement end date', function () {
     Artisan::call('contracts:send-expiry-reminders');
 
     Mail::assertSent(ContractExpiryReminderMail::class, function (ContractExpiryReminderMail $mail) use ($negeri): bool {
+        $html = $mail->render();
+        $contract = $mail->contracts->first();
+
         return $mail->tier === ContractExpiryReminderTier::EightMonth
             && $mail->hasTo($negeri->email)
-            && $mail->contracts->first()?->premise?->nama_ptj === 'Premis Tarikh Sebenar';
+            && $contract?->premise?->nama_ptj === 'Premis Tarikh Sebenar'
+            && str_contains($html, 'PERINGATAN PENGHANTARAN PERMOHONAN PELANJUTAN')
+            && str_contains($html, 'https://spektra.aadk.gov.my/')
+            && str_contains($html, 'https://promis.bph.gov.my/')
+            && str_contains($html, 'Pelanjutan')
+            && str_contains($html, 'Belum Terima')
+            && str_contains($html, 'Premis Tarikh Sebenar')
+            && str_contains($html, $contract->contractStartDate()?->format('d/m/Y') ?? '')
+            && str_contains($html, $contract->contractEndDate()?->format('d/m/Y') ?? '');
+    });
+});
+
+test('eight month reminder skips a contract whose extension was already sent to headquarters', function () {
+    Mail::fake();
+
+    $negeri = User::factory()->create([
+        'role' => 'admin_negeri',
+        'negeri' => 'Johor',
+        'email' => 'negeri-sudah-hantar@example.com',
+    ]);
+
+    $contract = createExpiryReminderContract($negeri, 200);
+    createExpiryReminderFollowUp($contract, $negeri, RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+
+    Artisan::call('contracts:send-expiry-reminders');
+
+    Mail::assertNothingSent();
+});
+
+test('eight month reminder still includes a contract whose extension has not been submitted', function () {
+    Mail::fake();
+
+    $negeri = User::factory()->create([
+        'role' => 'admin_negeri',
+        'negeri' => 'Johor',
+        'email' => 'negeri-belum-hantar@example.com',
+    ]);
+
+    $contract = createExpiryReminderContract($negeri, 200);
+    createExpiryReminderFollowUp($contract, $negeri, RentalContract::WORKFLOW_MENUNGGU_PROCEED_NEGERI);
+
+    Artisan::call('contracts:send-expiry-reminders');
+
+    Mail::assertSent(ContractExpiryReminderMail::class, function (ContractExpiryReminderMail $mail) use ($negeri): bool {
+        return $mail->tier === ContractExpiryReminderTier::EightMonth
+            && $mail->hasTo($negeri->email)
+            && str_contains($mail->render(), 'Belum Terima');
     });
 });
 

@@ -32,7 +32,9 @@ class ContractExpiryReminderMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.contract-expiry-reminder',
+            view: $this->tier === ContractExpiryReminderTier::EightMonth
+                ? 'emails.contract-extension-reminder'
+                : 'emails.contract-expiry-reminder',
         );
     }
 

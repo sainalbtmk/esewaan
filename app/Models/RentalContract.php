@@ -527,6 +527,17 @@ class RentalContract extends Model
         return '–';
     }
 
+    public function pemohonUserId(): string
+    {
+        $user = $this->submittedBy ?? $this->adminNegeriUser;
+
+        if ($user === null) {
+            return '–';
+        }
+
+        return (string) $user->id;
+    }
+
     /**
      * @return array{tindakan: ?string, rumusan_status: ?string}
      */
@@ -1135,6 +1146,15 @@ class RentalContract extends Model
         $end = $this->contractEndDate();
 
         return $end !== null && $end->startOfDay()->lt(Carbon::today());
+    }
+
+    public function contractStartDate(): ?Carbon
+    {
+        if ($this->tarikh_mula && ! $this->usesPlaceholderContractDates()) {
+            return $this->tarikh_mula;
+        }
+
+        return $this->tarikh_mula_tawaran;
     }
 
     public function contractEndDate(): ?Carbon

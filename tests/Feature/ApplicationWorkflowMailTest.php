@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
+beforeEach(function () {
+    config(['mail.test_recipient' => null]);
+});
+
 function createWorkflowMailContract(User $negeriAdmin, string $workflow): RentalContract
 {
     $premise = Premise::query()->create([
@@ -73,7 +77,27 @@ test('uploading draft agreement emails hq and negeri for puu stage', function ()
         ])
         ->assertRedirect();
 
-    assertStageMailSentToHqAndNegeri($hq, $negeri, 'Semakan PUU', 'Peringkat 4 — Dalam tindakan PUU (Semakan PUU 2)');
+    assertStageMailSentToHqAndNegeri($hq, $negeri, 'PENASIHAT UNDANG-UNDANG', 'semakan PUU 2');
+
+    Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($hq): bool {
+        $html = $mail->render();
+
+        return $mail->hasTo($hq->email)
+            && $mail->envelope()->subject === 'SPEKTRA: DRAF PERJANJIAN UNTUK SEMAKAN PENASIHAT UNDANG-UNDANG'
+            && str_contains($html, 'telah dimuat naik dan dihantar untuk semakan PUU 2')
+            && ! str_contains($html, 'berjaya dimuat naik')
+            && str_contains($html, 'https://spektra.aadk.gov.my/');
+    });
+
+    Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($negeri): bool {
+        $html = $mail->render();
+
+        return $mail->hasTo($negeri->email)
+            && $mail->envelope()->subject === 'SPEKTRA: DRAF PERJANJIAN DIHANTAR UNTUK SEMAKAN PENASIHAT UNDANG-UNDANG'
+            && str_contains($html, 'berjaya dimuat naik')
+            && str_contains($html, 'semakan lanjut')
+            && str_contains($html, (string) $negeri->id);
+    });
 });
 
 test('rejecting puu review emails hq and negeri for pindaan stage', function () {
@@ -90,7 +114,17 @@ test('rejecting puu review emails hq and negeri for pindaan stage', function () 
         ])
         ->assertRedirect();
 
-    assertStageMailSentToHqAndNegeri($hq, $negeri, 'Pindaan', 'Peringkat 3 — Penyediaan Draf (Kuiri PUU)');
+    assertStageMailSentToHqAndNegeri($hq, $negeri, 'KUIRI OLEH PENASIHAT UNDANG-UNDANG', 'Semak semula');
+
+    Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($negeri): bool {
+        return $mail->hasTo($negeri->email)
+            && str_contains($mail->render(), 'tujuh (7) hari bekerja');
+    });
+
+    Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($hq): bool {
+        return $mail->hasTo($hq->email)
+            && ! str_contains($mail->render(), 'tujuh (7) hari bekerja');
+    });
 });
 
 test('approving puu review emails hq and negeri for draf lulus stage', function () {
@@ -107,7 +141,17 @@ test('approving puu review emails hq and negeri for draf lulus stage', function 
         ])
         ->assertRedirect();
 
-    assertStageMailSentToHqAndNegeri($hq, $negeri, 'Draf Perjanjian Diluluskan', 'Peringkat 5 — Draf Lulus');
+    assertStageMailSentToHqAndNegeri($hq, $negeri, 'DILULUSKAN OLEH PENASIHAT UNDANG-UNDANG', 'tertakluk kepada pindaan');
+
+    Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($negeri): bool {
+        return $mail->hasTo($negeri->email)
+            && str_contains($mail->render(), 'tiga (3) salinan');
+    });
+
+    Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($hq): bool {
+        return $mail->hasTo($hq->email)
+            && ! str_contains($mail->render(), 'tiga (3) salinan');
+    });
 });
 
 test('completing pindaan emails hq and negeri for draf lulus stage', function () {
@@ -121,7 +165,12 @@ test('completing pindaan emails hq and negeri for draf lulus stage', function ()
         ->post(route('status-permohonan.complete', $contract))
         ->assertRedirect();
 
-    assertStageMailSentToHqAndNegeri($hq, $negeri, 'Draf Perjanjian Diluluskan', 'Peringkat 5 — Draf Lulus');
+    assertStageMailSentToHqAndNegeri($hq, $negeri, 'DILULUSKAN OLEH PENASIHAT UNDANG-UNDANG', 'tertakluk kepada pindaan');
+
+    Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($negeri): bool {
+        return $mail->hasTo($negeri->email)
+            && str_contains($mail->render(), 'tiga (3) salinan');
+    });
 });
 
 test('returning draft to hq emails both roles for pengesahan stage', function () {
@@ -140,7 +189,7 @@ test('returning draft to hq emails both roles for pengesahan stage', function ()
         ])
         ->assertRedirect();
 
-    assertStageMailSentToHqAndNegeri($hq, $negeri, 'Pengesahan & Tandatangan', 'Peringkat 6 — Pengesahan');
+    assertStageMailSentToHqAndNegeri($hq, $negeri, 'DITANDATANGANI PENGURUSAN AADK', 'selaku Penyewa');
 });
 
 test('hq finalize emails both roles for mati setem stage', function () {
@@ -159,7 +208,7 @@ test('hq finalize emails both roles for mati setem stage', function () {
         ])
         ->assertRedirect();
 
-    assertStageMailSentToHqAndNegeri($hq, $negeri, 'Mati Setem', 'Peringkat 7 — Mati Setem (Menunggu Mati Setem)');
+    assertStageMailSentToHqAndNegeri($hq, $negeri, 'TINDAKAN MATI SETEM', 'Lembaga Hasil Dalam Negeri');
 });
 
 test('hq final confirmation emails both roles for selesai stage', function () {
@@ -177,10 +226,25 @@ test('hq final confirmation emails both roles for selesai stage', function () {
         ])
         ->assertRedirect();
 
-    assertStageMailSentToHqAndNegeri($hq, $negeri, 'Menunggu Pengesahan Ibu Pejabat', 'Menunggu pengesahan Ibu Pejabat');
+    Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($hq): bool {
+        return $mail->hasTo($hq->email)
+            && $mail->envelope()->subject === 'SPEKTRA: PERJANJIAN SELESAI DIMATI SETEM'
+            && str_contains($mail->render(), 'pengesahan penerimaan Perjanjian di peringkat Ibu Pejabat');
+    });
+
+    Mail::assertNotSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($negeri): bool {
+        return $mail->hasTo($negeri->email);
+    });
+
+    foreach (EmelJawatan::query()->orderBy('susunan')->pluck('email') as $email) {
+        Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($email): bool {
+            return $mail->hasTo($email)
+                && str_contains($mail->envelope()->subject, 'SELESAI DIMATI SETEM');
+        });
+    }
 
     Mail::assertNotSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail): bool {
-        return str_contains($mail->envelope()->subject, 'Permohonan Selesai');
+        return str_contains($mail->envelope()->subject, 'SENARAI KONTRAK SEWAAN');
     });
 
     $this->actingAs($hq)
@@ -190,7 +254,19 @@ test('hq final confirmation emails both roles for selesai stage', function () {
         ])
         ->assertRedirect();
 
-    assertStageMailSentToHqAndNegeri($hq, $negeri, 'Selesai', 'Peringkat 8 — Selesai');
+    Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($negeri): bool {
+        $html = $mail->render();
+
+        return $mail->hasTo($negeri->email)
+            && $mail->envelope()->subject === 'SPEKTRA: PERJANJIAN SELESAI DAN TELAH DIMASUKKAN KE DALAM SENARAI KONTRAK SEWAAN'
+            && str_contains($html, 'Sistem ProMIS')
+            && str_contains($html, 'Senarai Kontrak Sewaan');
+    });
+
+    Mail::assertNotSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($hq): bool {
+        return $mail->hasTo($hq->email)
+            && str_contains($mail->envelope()->subject, 'SENARAI KONTRAK SEWAAN');
+    });
 });
 
 test('workflow mail reaches every active negeri admin and the four jawatan mailboxes', function () {
@@ -227,7 +303,7 @@ test('workflow mail reaches every active negeri admin and the four jawatan mailb
         ])
         ->assertRedirect();
 
-    assertStageMailSentToHqAndNegeri($hq, $negeri, 'Semakan PUU');
+    assertStageMailSentToHqAndNegeri($hq, $negeri, 'PENASIHAT UNDANG-UNDANG');
 
     Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($colleague): bool {
         return $mail->hasTo($colleague->email);
