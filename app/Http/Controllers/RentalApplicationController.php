@@ -134,6 +134,8 @@ class RentalApplicationController extends Controller
             abort(404);
         }
 
+        $validated = $this->preserveLanjutanOriginals($validated, $contract);
+
         if (! $partial || array_key_exists('nama_ptj', $validated)) {
             $premise->update([
                 'nama_ptj' => $validated['nama_ptj'] ?? $premise->nama_ptj,
@@ -200,6 +202,48 @@ class RentalApplicationController extends Controller
         }
 
         return $contract->fresh(['premise', 'submittedBy']);
+    }
+
+    /**
+     * Lanjutan keeps the original premise identity and floor area.
+     * Rent, dates, daerah, and remark may still change.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function preserveLanjutanOriginals(array $validated, RentalContract $contract): array
+    {
+        if (! $contract->isLanjutan()) {
+            return $validated;
+        }
+
+        $contract->loadMissing('parentContract.premise');
+        $parent = $contract->parentContract;
+        $parentPremise = $parent?->premise;
+
+        if ($parentPremise) {
+            if (filled($parentPremise->nama_ptj)) {
+                $validated['nama_ptj'] = $parentPremise->nama_ptj;
+            }
+
+            if (filled($parentPremise->alamat_penuh)) {
+                $validated['alamat_penuh'] = $parentPremise->alamat_penuh;
+            }
+
+            if (filled($parentPremise->jenis_bangunan)) {
+                $validated['jenis_bangunan'] = $parentPremise->jenis_bangunan;
+            }
+
+            if (filled($parentPremise->nama_pemilik)) {
+                $validated['nama_pemilik'] = $parentPremise->nama_pemilik;
+            }
+        }
+
+        if ($parent?->keluasan_mp !== null) {
+            $validated['keluasan_mp'] = $parent->keluasan_mp;
+        }
+
+        return $validated;
     }
 
     private function jsonSaveResponse(RentalContract $contract, string $message): JsonResponse

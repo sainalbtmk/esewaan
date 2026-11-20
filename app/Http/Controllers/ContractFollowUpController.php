@@ -15,8 +15,9 @@ class ContractFollowUpController extends Controller
 {
     /**
      * Start a pindah/lanjutan application from an existing HQ-approved contract.
-     * Negeri is carried over from the parent. For lanjutan, keluasan is copied
-     * from the existing contract; pindah and other maklumat baharu start empty.
+     * Negeri is carried over from the parent. For lanjutan, the original premise
+     * name, building type, area, address, and owner are copied and kept.
+     * Pindah and the remaining maklumat baharu start empty.
      */
     public function store(StoreFollowUpApplicationRequest $request, RentalContract $contract): RedirectResponse
     {
@@ -29,23 +30,22 @@ class ContractFollowUpController extends Controller
 
         $kategori = $request->validated('kategori_permohonan');
         $admin = $request->user();
+        $isLanjutan = $kategori === ApplicationCategories::LANJUTAN;
 
         $followUp = null;
 
-        DB::transaction(function () use ($contract, $parentPremise, $kategori, $admin, &$followUp): void {
+        DB::transaction(function () use ($contract, $parentPremise, $kategori, $isLanjutan, $admin, &$followUp): void {
             $premise = Premise::query()->create([
-                'nama_ptj' => '',
+                'nama_ptj' => $isLanjutan ? $parentPremise->nama_ptj : '',
                 'negeri' => $parentPremise->negeri,
-                'daerah' => $kategori === ApplicationCategories::LANJUTAN ? $parentPremise->daerah : '',
-                'alamat_penuh' => '',
-                'jenis_bangunan' => null,
-                'nama_pemilik' => null,
+                'daerah' => $isLanjutan ? $parentPremise->daerah : '',
+                'alamat_penuh' => $isLanjutan ? ($parentPremise->alamat_penuh ?? '') : '',
+                'jenis_bangunan' => $isLanjutan ? $parentPremise->jenis_bangunan : null,
+                'nama_pemilik' => $isLanjutan ? $parentPremise->nama_pemilik : null,
                 'kadar_sewa' => null,
             ]);
 
-            $keluasan = $kategori === ApplicationCategories::LANJUTAN
-                ? $contract->keluasan_mp
-                : null;
+            $keluasan = $isLanjutan ? $contract->keluasan_mp : null;
 
             $followUp = RentalContract::createCommitted([
                 'parent_contract_id' => $contract->id,

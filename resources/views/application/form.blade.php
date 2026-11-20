@@ -20,15 +20,27 @@
         }
     }
 
-    $keluasanValue = old('keluasan_mp');
-    if ($keluasanValue === null) {
-        $keluasanValue = $contract?->keluasan_mp;
+    $namaPtjValue = $isLanjutan
+        ? (filled($parentPremise?->nama_ptj) ? $parentPremise->nama_ptj : ($contract?->premise?->nama_ptj ?? ''))
+        : old('nama_ptj', $contract?->premise?->nama_ptj);
+    $jenisBangunanValue = $isLanjutan
+        ? (filled($parentPremise?->jenis_bangunan) ? $parentPremise->jenis_bangunan : $contract?->premise?->jenis_bangunan)
+        : old('jenis_bangunan', $contract?->premise?->jenis_bangunan);
+    $alamatPenuhValue = $isLanjutan
+        ? (filled($parentPremise?->alamat_penuh) ? $parentPremise->alamat_penuh : ($contract?->premise?->alamat_penuh ?? ''))
+        : old('alamat_penuh', $contract?->premise?->alamat_penuh);
+    $namaPemilikValue = $isLanjutan
+        ? (filled($parentPremise?->nama_pemilik) ? $parentPremise->nama_pemilik : ($contract?->premise?->nama_pemilik ?? ''))
+        : old('nama_pemilik', $contract?->premise?->nama_pemilik);
 
-        if ($keluasanValue === null && $isLanjutan) {
-            $keluasanValue = $parent?->keluasan_mp;
+    if ($isLanjutan && $parent?->keluasan_mp !== null) {
+        $keluasanValue = $parent->keluasan_mp;
+    } else {
+        $keluasanValue = old('keluasan_mp');
+
+        if ($keluasanValue === null) {
+            $keluasanValue = $contract?->keluasan_mp ?? '';
         }
-
-        $keluasanValue = $keluasanValue ?? '';
     }
 
     $keluasanKpsValue = filled($keluasanValue)
@@ -190,22 +202,48 @@
                         <div>
                             <label for="nama_ptj" class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-600">
                                 <span>Nama Premis *</span>
-                                @include('partials.form-field-hint', ['text' => 'Nama premis atau pejabat yang hendak disewa, contoh: AADK Daerah Pasir Puteh.'])
+                                @include('partials.form-field-hint', ['text' => $isLanjutan
+                                    ? 'Nama premis dikunci mengikut kontrak sedia ada untuk permohonan lanjutan.'
+                                    : 'Nama premis atau pejabat yang hendak disewa, contoh: AADK Daerah Pasir Puteh.'])
                             </label>
-                            <input type="text" name="nama_ptj" id="nama_ptj" value="{{ old('nama_ptj', $contract?->premise?->nama_ptj) }}" required placeholder="Cth: AADK Daerah Pasir Puteh" class="glass-input w-full rounded-xl px-3 py-2 text-sm placeholder:text-slate-400">
+                            <input
+                                type="text"
+                                name="nama_ptj"
+                                id="nama_ptj"
+                                value="{{ $namaPtjValue }}"
+                                required
+                                @readonly($isLanjutan)
+                                @unless($isLanjutan) placeholder="Cth: AADK Daerah Pasir Puteh" @endunless
+                                class="glass-input w-full rounded-xl px-3 py-2 text-sm placeholder:text-slate-400 {{ $isLanjutan ? 'cursor-not-allowed opacity-70' : '' }}"
+                            >
+                            @if($isLanjutan)
+                                <p class="mt-1.5 text-xs glass-accent-text">Dikunci mengikut kontrak sedia ada.</p>
+                            @endif
                             @error('nama_ptj')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                         </div>
                         <div>
                             <label for="jenis_bangunan" class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-600">
                                 <span>Jenis Bangunan *</span>
-                                @include('partials.form-field-hint', ['text' => 'Pilih kategori bangunan premis: kompleks kerajaan atau komersial.'])
+                                @include('partials.form-field-hint', ['text' => $isLanjutan
+                                    ? 'Jenis bangunan dikunci mengikut kontrak sedia ada untuk permohonan lanjutan.'
+                                    : 'Pilih kategori bangunan premis: kompleks kerajaan atau komersial.'])
                             </label>
-                            <select name="jenis_bangunan" id="jenis_bangunan" required class="glass-input w-full rounded-xl px-3 py-2 text-sm">
-                                <option value="">— Pilih jenis bangunan —</option>
-                                @foreach($jenisList as $value => $label)
-                                    <option value="{{ $value }}" @selected(old('jenis_bangunan', $contract?->premise?->jenis_bangunan) === $value)>{{ $label }}</option>
-                                @endforeach
-                            </select>
+                            @if($isLanjutan)
+                                <select id="jenis_bangunan" required disabled class="glass-input w-full cursor-not-allowed rounded-xl px-3 py-2 text-sm opacity-70">
+                                    <option value="{{ $jenisBangunanValue }}" selected>
+                                        {{ filled($jenisBangunanValue) ? ($jenisList[$jenisBangunanValue] ?? $jenisBangunanValue) : '— Pilih jenis bangunan —' }}
+                                    </option>
+                                </select>
+                                <input type="hidden" name="jenis_bangunan" value="{{ $jenisBangunanValue }}">
+                                <p class="mt-1.5 text-xs glass-accent-text">Dikunci mengikut kontrak sedia ada.</p>
+                            @else
+                                <select name="jenis_bangunan" id="jenis_bangunan" required class="glass-input w-full rounded-xl px-3 py-2 text-sm">
+                                    <option value="">— Pilih jenis bangunan —</option>
+                                    @foreach($jenisList as $value => $label)
+                                        <option value="{{ $value }}" @selected($jenisBangunanValue === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            @endif
                             @error('jenis_bangunan')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                         </div>
                         <div>
@@ -324,9 +362,22 @@
                         <div class="md:col-span-2">
                             <label for="alamat_penuh" class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-600">
                                 <span>Alamat Penuh Premis *</span>
-                                @include('partials.form-field-hint', ['text' => 'Alamat lengkap premis termasuk tingkat, jalan, bandar dan poskod.'])
+                                @include('partials.form-field-hint', ['text' => $isLanjutan
+                                    ? 'Alamat penuh premis dikunci mengikut kontrak sedia ada untuk permohonan lanjutan.'
+                                    : 'Alamat lengkap premis termasuk tingkat, jalan, bandar dan poskod.'])
                             </label>
-                            <textarea name="alamat_penuh" id="alamat_penuh" rows="2" required placeholder="Cth: Tingkat 3, Plaza MARA Lot A-31 Jalan Kota." class="glass-input w-full resize-none rounded-xl px-3 py-2 text-sm placeholder:text-slate-400">{{ old('alamat_penuh', $contract?->premise?->alamat_penuh) }}</textarea>
+                            <textarea
+                                name="alamat_penuh"
+                                id="alamat_penuh"
+                                rows="2"
+                                required
+                                @readonly($isLanjutan)
+                                @unless($isLanjutan) placeholder="Cth: Tingkat 3, Plaza MARA Lot A-31 Jalan Kota." @endunless
+                                class="glass-input w-full resize-none rounded-xl px-3 py-2 text-sm placeholder:text-slate-400 {{ $isLanjutan ? 'cursor-not-allowed opacity-70' : '' }}"
+                            >{{ $alamatPenuhValue }}</textarea>
+                            @if($isLanjutan)
+                                <p class="mt-1.5 text-xs glass-accent-text">Dikunci mengikut kontrak sedia ada.</p>
+                            @endif
                             @error('alamat_penuh')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                         </div>
                     </div>
@@ -341,9 +392,23 @@
                         <div>
                             <label for="nama_pemilik" class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-600">
                                 <span>Nama Pemilik *</span>
-                                @include('partials.form-field-hint', ['text' => 'Nama pemilik premis atau agensi pemilik, contoh: Majlis Amanah Rakyat (MARA).'])
+                                @include('partials.form-field-hint', ['text' => $isLanjutan
+                                    ? 'Nama pemilik dikunci mengikut kontrak sedia ada untuk permohonan lanjutan.'
+                                    : 'Nama pemilik premis atau agensi pemilik, contoh: Majlis Amanah Rakyat (MARA).'])
                             </label>
-                            <input type="text" name="nama_pemilik" id="nama_pemilik" value="{{ old('nama_pemilik', $contract?->premise?->nama_pemilik) }}" required placeholder="Cth: Majlis Amanah Rakyat (MARA)" class="glass-input w-full rounded-xl px-3 py-2 text-sm placeholder:text-slate-400">
+                            <input
+                                type="text"
+                                name="nama_pemilik"
+                                id="nama_pemilik"
+                                value="{{ $namaPemilikValue }}"
+                                required
+                                @readonly($isLanjutan)
+                                @unless($isLanjutan) placeholder="Cth: Majlis Amanah Rakyat (MARA)" @endunless
+                                class="glass-input w-full rounded-xl px-3 py-2 text-sm placeholder:text-slate-400 {{ $isLanjutan ? 'cursor-not-allowed opacity-70' : '' }}"
+                            >
+                            @if($isLanjutan)
+                                <p class="mt-1.5 text-xs glass-accent-text">Dikunci mengikut kontrak sedia ada.</p>
+                            @endif
                             @error('nama_pemilik')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                         </div>
                     </div>

@@ -105,10 +105,10 @@ test('admin negeri can start a lanjutan from an existing contract', function () 
         ->and($child->sah_sehingga)->toBeNull()
         ->and((float) $child->keluasan_mp)->toBe(150.5)
         ->and($child->premise->kadar_sewa)->toBeNull()
-        ->and($child->premise->nama_ptj)->toBe('')
-        ->and($child->premise->alamat_penuh)->toBe('')
-        ->and($child->premise->jenis_bangunan)->toBeNull()
-        ->and($child->premise->nama_pemilik)->toBeNull();
+        ->and($child->premise->nama_ptj)->toBe('AADK Daerah Muar')
+        ->and($child->premise->alamat_penuh)->toBe('Tingkat 2, Plaza Lama')
+        ->and($child->premise->jenis_bangunan)->toBe(\App\Support\BuildingTypes::KOMPLEKS_KERAJAAN)
+        ->and($child->premise->nama_pemilik)->toBe('Pemilik Lama');
 
     $response->assertRedirect(route('application.edit', $child));
 
@@ -119,6 +119,11 @@ test('admin negeri can start a lanjutan from an existing contract', function () 
         ->assertSee('Baki Bulan')
         ->assertSee(RentalStatusReport::bakiBulan($parent->fresh()).' bulan')
         ->assertSee('value="150.50"', false)
+        ->assertSee('value="AADK Daerah Muar"', false)
+        ->assertSee('value="Pemilik Lama"', false)
+        ->assertSee('name="jenis_bangunan" value="kompleks kerajaan"', false)
+        ->assertSee('Tingkat 2, Plaza Lama')
+        ->assertSee('readonly', false)
         ->assertSee('Dikunci mengikut kontrak sedia ada.')
         ->assertSee($parent->premise->nama_ptj);
 });
@@ -605,6 +610,100 @@ test('remark is saved when updating a follow-up application', function () {
         ->and($child->premise->nama_ptj)->toBe('Premis Baharu Pindah')
         ->and((float) $child->kadar_sewa_bulanan)->toBe(1550.0)
         ->and((float) $child->keluasan_mp)->toBe(200.0);
+});
+
+test('lanjutan update keeps the original premise name building area address and owner', function () {
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
+    $parent = createApprovedParentContract('Johor', 1000);
+    $parent->premise->update(['daerah' => 'Muar']);
+
+    $this->actingAs($admin)->post(route('kontrak-sewaan.follow-up', $parent), [
+        'kategori_permohonan' => ApplicationCategories::LANJUTAN,
+    ]);
+
+    $child = RentalContract::query()->where('parent_contract_id', $parent->id)->firstOrFail();
+
+    $this->actingAs($admin)->put(route('application.update', $child), [
+        'negeri' => 'Johor',
+        'daerah' => 'Batu Pahat',
+        'nama_ptj' => 'Premis Ditukar',
+        'alamat_penuh' => 'Alamat ditukar',
+        'nama_pemilik' => 'Pemilik Ditukar',
+        'jenis_bangunan' => \App\Support\BuildingTypes::KOMERSIAL,
+        'kadar_sewa' => 1800,
+        'keluasan_mp' => 999,
+        'tarikh_mula_tawaran' => now()->toDateString(),
+        'sah_sehingga' => now()->addYear()->toDateString(),
+        'remark' => 'Lanjutan dengan kadar baharu.',
+    ])->assertRedirect(route('application.edit', $child));
+
+    $child->refresh();
+
+    expect($child->premise->nama_ptj)->toBe('AADK Daerah Muar')
+        ->and($child->premise->alamat_penuh)->toBe('Tingkat 2, Plaza Lama')
+        ->and($child->premise->nama_pemilik)->toBe('Pemilik Lama')
+        ->and($child->premise->jenis_bangunan)->toBe(\App\Support\BuildingTypes::KOMPLEKS_KERAJAAN)
+        ->and($child->premise->daerah)->toBe('Batu Pahat')
+        ->and((float) $child->keluasan_mp)->toBe(150.5)
+        ->and((float) $child->kadar_sewa_bulanan)->toBe(1800.0)
+        ->and($child->remark)->toBe('Lanjutan dengan kadar baharu.');
+});
+
+test('existing lanjutan draft shows and restores original premise fields', function () {
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
+    $parent = createApprovedParentContract('Johor', 1000);
+    $parent->premise->update(['daerah' => 'Muar']);
+
+    $child = RentalContract::query()->create([
+        'parent_contract_id' => $parent->id,
+        'premise_id' => Premise::query()->create([
+            'nama_ptj' => '',
+            'negeri' => 'Johor',
+            'daerah' => 'Muar',
+            'alamat_penuh' => '',
+            'jenis_bangunan' => null,
+            'nama_pemilik' => null,
+        ])->id,
+        'tarikh_mula' => RentalContract::PLACEHOLDER_CONTRACT_DATE,
+        'tarikh_tamat' => RentalContract::PLACEHOLDER_CONTRACT_DATE,
+        'kadar_sewa_bulanan' => 0,
+        'keluasan_mp' => null,
+        'status_aktif' => 'dalam_proses',
+        'workflow_tahap' => RentalContract::WORKFLOW_MENUNGGU_PROCEED_NEGERI,
+        'kategori_permohonan' => ApplicationCategories::LANJUTAN,
+        'admin_negeri_user_id' => $admin->id,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('application.edit', $child))
+        ->assertSuccessful()
+        ->assertSee('value="AADK Daerah Muar"', false)
+        ->assertSee('value="Pemilik Lama"', false)
+        ->assertSee('value="150.50"', false)
+        ->assertSee('Tingkat 2, Plaza Lama')
+        ->assertSee('readonly', false);
+
+    $this->actingAs($admin)->put(route('application.update', $child), [
+        'negeri' => 'Johor',
+        'daerah' => 'Muar',
+        'nama_ptj' => 'Premis Ditukar',
+        'alamat_penuh' => 'Alamat ditukar',
+        'nama_pemilik' => 'Pemilik Ditukar',
+        'jenis_bangunan' => \App\Support\BuildingTypes::KOMERSIAL,
+        'kadar_sewa' => 1300,
+        'keluasan_mp' => 40,
+        'tarikh_mula_tawaran' => now()->toDateString(),
+        'sah_sehingga' => now()->addMonths(6)->toDateString(),
+        'remark' => 'Kekalkan premis asal.',
+    ])->assertRedirect(route('application.edit', $child));
+
+    $child->refresh();
+
+    expect($child->premise->nama_ptj)->toBe('AADK Daerah Muar')
+        ->and($child->premise->alamat_penuh)->toBe('Tingkat 2, Plaza Lama')
+        ->and($child->premise->nama_pemilik)->toBe('Pemilik Lama')
+        ->and($child->premise->jenis_bangunan)->toBe(\App\Support\BuildingTypes::KOMPLEKS_KERAJAAN)
+        ->and((float) $child->keluasan_mp)->toBe(150.5);
 });
 
 test('kontrak sewaan follow-up link opens review after submission to hq', function () {
