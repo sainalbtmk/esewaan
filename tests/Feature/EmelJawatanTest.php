@@ -27,7 +27,8 @@ test('ibu pejabat sees jawatan names and emails on the user list', function () {
         ->get(route('users.index'))
         ->assertSuccessful()
         ->assertSee('Salinan Emel Jawatan')
-        ->assertSee('notifikasi aliran kerja permohonan')
+        ->assertSee('tidak menerima notifikasi aliran kerja permohonan')
+        ->assertSee('Senarai Ruang Pejabat Hampir Tamat Tempoh dan Perlu Tindakan SEGERA')
         ->assertSee('Nama Jawatan')
         ->assertSee('Ketua Pengarah')
         ->assertSee('TKPP')
@@ -104,7 +105,9 @@ test('contract warnings copy the jawatan emails saved by ibu pejabat', function 
         'email' => 'kpp.baharu@aadk.gov.my',
     ]);
 
-    $copies = app(ContractExpiryReminderMailer::class)->warningCcRecipients([]);
+    config(['mail.test_recipient' => null]);
+
+    $copies = app(ContractExpiryReminderMailer::class)->positionWarningRecipients();
 
     expect($copies)->toContain('kpp.baharu@aadk.gov.my')
         ->and($copies)->toContain('ruslin@aadk.gov.my')

@@ -70,25 +70,29 @@ test('weekly reminder emails negeri admins for under three month contracts witho
     Artisan::call('contracts:send-expiry-reminders');
 
     Mail::assertSent(ContractExpiryReminderMail::class, function (ContractExpiryReminderMail $mail) use ($negeri): bool {
-        return $mail->tier === ContractExpiryReminderTier::ThreeMonth
+        return $mail->audience === ContractExpiryReminderMail::AUDIENCE_AMARAN
+            && $mail->tier === ContractExpiryReminderTier::ThreeMonth
             && $mail->hasTo($negeri->email)
             && $mail->contracts->count() === 1
             && $mail->contracts->first()?->premise?->negeri === 'Johor';
     });
 
     Mail::assertSent(ContractExpiryReminderMail::class, function (ContractExpiryReminderMail $mail) use ($otherNegeri): bool {
-        return $mail->tier === ContractExpiryReminderTier::ThreeMonth
+        return $mail->audience === ContractExpiryReminderMail::AUDIENCE_AMARAN
+            && $mail->tier === ContractExpiryReminderTier::ThreeMonth
             && $mail->hasTo($otherNegeri->email)
             && $mail->contracts->count() === 1
             && $mail->contracts->first()?->premise?->negeri === 'Melaka';
     });
 
     Mail::assertNotSent(ContractExpiryReminderMail::class, function (ContractExpiryReminderMail $mail) use ($hq): bool {
-        return $mail->hasTo($hq->email);
+        return $mail->hasTo($hq->email) || $mail->hasCc($hq->email);
     });
 
-    Mail::assertSent(ContractExpiryReminderMail::class, function (ContractExpiryReminderMail $mail) use ($hq): bool {
-        return $mail->hasCc($hq->email);
+    Mail::assertSent(ContractExpiryReminderMail::class, function (ContractExpiryReminderMail $mail): bool {
+        return $mail->audience === ContractExpiryReminderMail::AUDIENCE_SEGERA
+            && $mail->hasTo('ruslin@aadk.gov.my')
+            && $mail->contracts->count() === 2;
     });
 });
 
@@ -118,7 +122,7 @@ test('weekly reminder continues until the follow-up is sent to headquarters', fu
 
     Artisan::call('contracts:send-expiry-reminders');
 
-    Mail::assertSent(ContractExpiryReminderMail::class, 1);
+    Mail::assertSent(ContractExpiryReminderMail::class, 2);
 });
 
 test('weekly reminder skips contracts once negeri confirms hantar ke ibu pejabat', function () {
@@ -167,7 +171,7 @@ test('weekly reminder skips contracts with more than three months remaining', fu
     Mail::assertNothingSent();
 });
 
-test('under three months reminder is scheduled every monday and wednesday through the daily reminder command', function () {
+test('under three months reminder is scheduled daily at 8am malaysia time', function () {
     $events = collect(app('Illuminate\Console\Scheduling\Schedule')->events())
         ->filter(fn ($event) => str_contains($event->command ?? '', 'contracts:send-expiry-reminders'));
 
@@ -175,6 +179,6 @@ test('under three months reminder is scheduled every monday and wednesday throug
 
     $event = $events->first();
 
-    expect($event->expression)->toBe('0 9 * * *')
+    expect($event->expression)->toBe('0 8 * * *')
         ->and($event->timezone)->toBe('Asia/Kuala_Lumpur');
 });

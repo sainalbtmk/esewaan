@@ -225,7 +225,7 @@ test('firm reminder is not sent on other weekdays', function () {
     Mail::assertNothingSent();
 });
 
-test('three month warning emails negeri admins and copies headquarters on monday and wednesday', function (string $date) {
+test('three month warning emails the involved negeri and the jawatan list every day', function (string $date) {
     Mail::fake();
     Carbon::setTestNow($date);
 
@@ -243,61 +243,60 @@ test('three month warning emails negeri admins and copies headquarters on monday
         'role' => 'admin_hq',
         'email' => 'hq-amaran@example.com',
     ]);
-    $inactiveHq = User::factory()->create([
-        'role' => 'admin_hq',
-        'email' => 'hq-nyahaktif@example.com',
-        'is_active' => false,
-    ]);
     $otherNegeri = User::factory()->create([
         'role' => 'admin_negeri',
         'negeri' => 'Melaka',
         'email' => 'melaka-amaran@example.com',
     ]);
 
-    createExpiryReminderContract($negeri, 45);
+    $contract = createExpiryReminderContract($negeri, 45);
 
     Artisan::call('contracts:send-expiry-reminders');
 
-    Mail::assertSent(ContractExpiryReminderMail::class, function (ContractExpiryReminderMail $mail) use ($negeri, $colleague, $hq, $inactiveHq, $otherNegeri): bool {
-        $copiesHeadquarters = EmelJawatan::query()->orderBy('susunan')->pluck('email')
-            ->every(fn (string $email): bool => $mail->hasCc($email))
-            && $mail->hasCc($hq->email)
-            && ! $mail->hasCc($inactiveHq->email);
-
+    Mail::assertSent(ContractExpiryReminderMail::class, function (ContractExpiryReminderMail $mail) use ($negeri, $colleague, $hq, $otherNegeri, $contract): bool {
         $html = $mail->render();
 
-        return $mail->tier === ContractExpiryReminderTier::ThreeMonth
-            && str_contains($html, 'AMARAN: Kontrak Sewaan Baki 3 Bulan')
+        return $mail->audience === ContractExpiryReminderMail::AUDIENCE_AMARAN
+            && $mail->tier === ContractExpiryReminderTier::ThreeMonth
+            && str_contains($html, 'AMARAN: Senarai Ruang Pejabat Hampir Tamat Tempoh dan Perlu Tindakan SEGERA')
+            && str_contains($html, 'negeri yang terlibat sahaja')
             && str_contains($html, 'Premis Peringatan 45')
-            && str_contains($html, 'Hantar ke Ibu Pejabat')
+            && str_contains($html, 'Johor')
+            && str_contains($html, 'BAHARU')
+            && str_contains($html, $contract->contractRemainderLabel())
+            && str_contains($html, 'Tarikh Mula Kontrak')
+            && str_contains($html, 'Baki Bulan/Hari')
             && $mail->hasTo($negeri->email)
             && $mail->hasTo($colleague->email)
             && ! $mail->hasTo($hq->email)
             && ! $mail->hasTo($otherNegeri->email)
-            && $copiesHeadquarters
-            && $mail->envelope()->subject === 'SPEKTRA: AMARAN Kontrak Baki 3 Bulan';
+            && ! $mail->hasCc($hq->email)
+            && ! $mail->hasCc('ruslin@aadk.gov.my')
+            && $mail->contracts->count() === 1
+            && $mail->envelope()->subject === 'SPEKTRA: AMARAN Senarai Ruang Pejabat Hampir Tamat Tempoh dan Perlu Tindakan SEGERA';
+    });
+
+    Mail::assertSent(ContractExpiryReminderMail::class, function (ContractExpiryReminderMail $mail) use ($negeri, $hq): bool {
+        $html = $mail->render();
+        $reachesJawatan = EmelJawatan::query()->orderBy('susunan')->pluck('email')
+            ->every(fn (string $email): bool => $mail->hasTo($email));
+
+        return $mail->audience === ContractExpiryReminderMail::AUDIENCE_SEGERA
+            && str_contains($html, 'Senarai Ruang Pejabat Hampir Tamat Tempoh dan Perlu Tindakan SEGERA')
+            && str_contains($html, 'tindakan SEGERA.')
+            && ! str_contains($html, 'sama ada Pindah atau Lanjutan')
+            && str_contains($html, 'Premis Peringatan 45')
+            && $reachesJawatan
+            && ! $mail->hasTo($negeri->email)
+            && ! $mail->hasTo($hq->email)
+            && ! $mail->hasCc($hq->email)
+            && $mail->envelope()->subject === 'SPEKTRA: Senarai Ruang Pejabat Hampir Tamat Tempoh dan Perlu Tindakan SEGERA';
     });
 })->with([
     'isnin' => '2026-10-19 02:00:00',
+    'selasa' => '2026-10-20 02:00:00',
     'rabu' => '2026-10-21 02:00:00',
 ]);
-
-test('three month warning is not sent on other weekdays', function () {
-    Mail::fake();
-    Carbon::setTestNow('2026-10-20 02:00:00');
-
-    $negeri = User::factory()->create([
-        'role' => 'admin_negeri',
-        'negeri' => 'Johor',
-        'email' => 'negeri-bukan-rabu@example.com',
-    ]);
-
-    createExpiryReminderContract($negeri, 45);
-
-    Artisan::call('contracts:send-expiry-reminders');
-
-    Mail::assertNothingSent();
-});
 
 test('three month warning continues after a follow-up is started and stops after ya hantar', function () {
     Mail::fake();
@@ -373,9 +372,12 @@ test('warning copy stays on the test recipient when mail test override is set', 
     Mail::assertSent(ContractExpiryReminderMail::class, function (ContractExpiryReminderMail $mail) use ($negeri, $hq): bool {
         return $mail->hasTo('qa@example.com')
             && ! $mail->hasTo($negeri->email)
+            && ! $mail->hasTo($hq->email)
             && ! $mail->hasCc($hq->email)
-            && ! $mail->hasCc('ruslin@aadk.gov.my');
+            && ! $mail->hasTo('ruslin@aadk.gov.my');
     });
+
+    Mail::assertSent(ContractExpiryReminderMail::class, 2);
 });
 
 test('contracts outside the reminder windows are skipped', function () {
@@ -489,13 +491,13 @@ test('eight month reminder still includes a contract whose extension has not bee
     });
 });
 
-test('expiry reminders are scheduled daily at 9am malaysia time', function () {
+test('expiry reminders are scheduled daily at 8am malaysia time', function () {
     $events = collect(app('Illuminate\Console\Scheduling\Schedule')->events());
 
     $reminder = $events->first(fn ($event) => str_contains($event->command ?? '', 'contracts:send-expiry-reminders'));
 
     expect($reminder)->not->toBeNull()
-        ->and($reminder->expression)->toBe('0 9 * * *')
+        ->and($reminder->expression)->toBe('0 8 * * *')
         ->and($reminder->timezone)->toBe('Asia/Kuala_Lumpur');
 
     $retired = $events->filter(fn ($event) => str_contains($event->command ?? '', 'contracts:send-expiry-notification')

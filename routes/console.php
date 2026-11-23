@@ -9,5 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('contracts:send-expiry-reminders')
-    ->dailyAt('09:00')
+    ->dailyAt('08:00')
     ->timezone('Asia/Kuala_Lumpur');

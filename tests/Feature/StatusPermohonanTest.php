@@ -838,12 +838,12 @@ test('approving application by hq sends email notification to admin hq and relev
     });
 
     foreach (EmelJawatan::query()->pluck('email') as $email) {
-        Mail::assertSent(ApplicationApprovedByHqNotification::class, function (ApplicationApprovedByHqNotification $mail) use ($email): bool {
+        Mail::assertNotSent(ApplicationApprovedByHqNotification::class, function (ApplicationApprovedByHqNotification $mail) use ($email): bool {
             return $mail->hasTo($email);
         });
     }
 
-    Mail::assertSent(ApplicationApprovedByHqNotification::class, 2 + EmelJawatan::query()->count());
+    Mail::assertSent(ApplicationApprovedByHqNotification::class, 2);
 });
 
 test('approving application by hq sends email to configured test recipient when set', function () {
@@ -1224,12 +1224,12 @@ test('submitting application to hq sends email notification to active admin hq u
     });
 
     foreach (EmelJawatan::query()->pluck('email') as $email) {
-        Mail::assertSent(ApplicationSubmittedToHqNotification::class, function (ApplicationSubmittedToHqNotification $mail) use ($email): bool {
+        Mail::assertNotSent(ApplicationSubmittedToHqNotification::class, function (ApplicationSubmittedToHqNotification $mail) use ($email): bool {
             return $mail->hasTo($email);
         });
     }
 
-    Mail::assertSent(ApplicationSubmittedToHqNotification::class, 1 + EmelJawatan::query()->count());
+    Mail::assertSent(ApplicationSubmittedToHqNotification::class, 1);
     Mail::assertSent(ApplicationSubmittedToAdminNegeriNotification::class, 1);
 });
 

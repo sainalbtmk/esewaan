@@ -32,9 +32,7 @@ class ContractExpiryReminderMailer
             $sent['five_month'] = $this->sendTier(ContractExpiryReminderTier::FiveMonth, $now);
         }
 
-        if ($now->isMonday() || $now->isWednesday()) {
-            $sent['three_month'] = $this->sendTier(ContractExpiryReminderTier::ThreeMonth, $now);
-        }
+        $sent['three_month'] = $this->sendTier(ContractExpiryReminderTier::ThreeMonth, $now);
 
         return $sent;
     }
@@ -48,6 +46,10 @@ class ContractExpiryReminderMailer
             return 0;
         }
 
+        if ($tier === ContractExpiryReminderTier::ThreeMonth) {
+            return $this->sendThreeMonthWarnings($contracts, $today);
+        }
+
         $sent = 0;
 
         foreach ($contracts->groupBy(fn (RentalContract $contract): string => (string) ($contract->premise?->negeri ?? '')) as $group) {
@@ -57,12 +59,8 @@ class ContractExpiryReminderMailer
                 continue;
             }
 
-            $cc = $tier === ContractExpiryReminderTier::ThreeMonth
-                ? $this->warningCcRecipients($recipients)
-                : [];
-
             try {
-                $this->deliver($recipients, $cc, $group, $tier);
+                $this->deliver($recipients, [], $group, $tier);
             } catch (Throwable $exception) {
                 report($exception);
 
@@ -80,6 +78,70 @@ class ContractExpiryReminderMailer
         }
 
         return $sent;
+    }
+
+    /**
+     * @param  Collection<int, RentalContract>  $contracts
+     */
+    private function sendThreeMonthWarnings(Collection $contracts, string $today): int
+    {
+        $notified = [];
+
+        $positionRecipients = $this->positionWarningRecipients();
+
+        if ($positionRecipients !== []) {
+            try {
+                $this->deliver(
+                    $positionRecipients,
+                    [],
+                    $contracts,
+                    ContractExpiryReminderTier::ThreeMonth,
+                    ContractExpiryReminderMail::AUDIENCE_SEGERA,
+                );
+
+                foreach ($contracts as $contract) {
+                    $notified[$contract->id] = $contract;
+                }
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        }
+
+        foreach ($contracts->groupBy(fn (RentalContract $contract): string => (string) ($contract->premise?->negeri ?? '')) as $group) {
+            $recipients = $this->negeriRecipients($group);
+
+            if ($recipients === []) {
+                continue;
+            }
+
+            try {
+                $this->deliver(
+                    $recipients,
+                    [],
+                    $group,
+                    ContractExpiryReminderTier::ThreeMonth,
+                    ContractExpiryReminderMail::AUDIENCE_AMARAN,
+                );
+            } catch (Throwable $exception) {
+                report($exception);
+
+                continue;
+            }
+
+            foreach ($group as $contract) {
+                $notified[$contract->id] = $contract;
+            }
+        }
+
+        foreach ($notified as $contract) {
+            ContractExpiryReminderSend::query()->firstOrCreate([
+                'rental_contract_id' => $contract->id,
+                'tier' => ContractExpiryReminderTier::ThreeMonth,
+                'sent_on' => $today,
+            ]);
+        }
+
+        return count($notified);
     }
 
     /**
@@ -172,43 +234,19 @@ class ContractExpiryReminderMailer
     }
 
     /**
-     * @param  list<string>  $to
      * @return list<string>
      */
-    public function warningCcRecipients(array $to): array
+    public function positionWarningRecipients(): array
     {
-        if (filled(config('mail.test_recipient'))) {
-            return [];
+        $testRecipient = config('mail.test_recipient');
+
+        if (filled($testRecipient)) {
+            return $this->usableEmails([(string) $testRecipient]);
         }
 
-        $toLookup = collect($to)
-            ->map(fn (string $email): string => strtolower($email))
-            ->all();
-
-        $hqEmails = User::query()
-            ->where('role', 'admin_hq')
-            ->where('is_active', true)
-            ->whereNotNull('email')
-            ->pluck('email');
-
-        $seen = [];
-        $cc = [];
-
-        $positionEmails = EmelJawatan::query()->orderBy('susunan')->pluck('email');
-
-        foreach ($positionEmails->merge($hqEmails) as $email) {
-            $email = trim((string) $email);
-            $key = strtolower($email);
-
-            if ($email === '' || isset($seen[$key]) || in_array($key, $toLookup, true)) {
-                continue;
-            }
-
-            $seen[$key] = true;
-            $cc[] = $email;
-        }
-
-        return $this->usableEmails($cc);
+        return $this->usableEmails(
+            EmelJawatan::query()->orderBy('susunan')->pluck('email')->all(),
+        );
     }
 
     /**
@@ -247,14 +285,19 @@ class ContractExpiryReminderMailer
      * @param  list<string>  $cc
      * @param  Collection<int, RentalContract>  $contracts
      */
-    private function deliver(array $to, array $cc, Collection $contracts, ContractExpiryReminderTier $tier): void
-    {
+    private function deliver(
+        array $to,
+        array $cc,
+        Collection $contracts,
+        ContractExpiryReminderTier $tier,
+        string $audience = ContractExpiryReminderMail::AUDIENCE_STANDARD,
+    ): void {
         $pending = Mail::to($to);
 
         if ($cc !== []) {
             $pending->cc($cc);
         }
 
-        $pending->send(new ContractExpiryReminderMail($contracts->values(), $tier));
+        $pending->send(new ContractExpiryReminderMail($contracts->values(), $tier, $audience));
     }
 }

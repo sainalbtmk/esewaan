@@ -6,7 +6,6 @@ use App\Mail\ApplicationApprovedByHqNotification;
 use App\Mail\ApplicationSubmittedToAdminNegeriNotification;
 use App\Mail\ApplicationSubmittedToHqNotification;
 use App\Mail\ApplicationWorkflowStageNotification;
-use App\Models\EmelJawatan;
 use App\Models\RentalContract;
 use App\Models\User;
 use Illuminate\Mail\Mailable;
@@ -32,10 +31,6 @@ class ApplicationWorkflowMailer
             $this->deliver($email, new ApplicationSubmittedToHqNotification($contract, $submittedBy));
         }
 
-        foreach ($this->additionalPositionRecipients($headquarters) as $email) {
-            $this->deliver($email, new ApplicationSubmittedToHqNotification($contract, $submittedBy));
-        }
-
         foreach ($this->adminNegeriNotificationRecipients($contract) as $email) {
             $this->deliver($email, new ApplicationSubmittedToAdminNegeriNotification($contract, $submittedBy));
         }
@@ -53,10 +48,6 @@ class ApplicationWorkflowMailer
         }
 
         foreach ($headquarters as $email) {
-            $this->deliver($email, new ApplicationApprovedByHqNotification($contract, $approvedBy, 'hq'));
-        }
-
-        foreach ($this->additionalPositionRecipients([...$negeri, ...$headquarters]) as $email) {
             $this->deliver($email, new ApplicationApprovedByHqNotification($contract, $approvedBy, 'hq'));
         }
     }
@@ -196,7 +187,7 @@ class ApplicationWorkflowMailer
         $alreadySent = [];
 
         if ($headquarters !== null) {
-            foreach ($this->headquartersNoticeRecipients() as $email) {
+            foreach ($this->adminHqNotificationRecipients() as $email) {
                 $this->deliver($email, new ApplicationWorkflowStageNotification($contract, $actedBy, $headquarters));
                 $alreadySent[strtolower($email)] = true;
             }
@@ -224,45 +215,6 @@ class ApplicationWorkflowMailer
 
             report($exception);
         }
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function headquartersNoticeRecipients(): array
-    {
-        return $this->deliverableEmails(array_merge(
-            $this->adminHqNotificationRecipients(),
-            $this->positionNotificationRecipients(),
-        ));
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function positionNotificationRecipients(): array
-    {
-        if (filled(config('mail.test_recipient'))) {
-            return [];
-        }
-
-        return $this->deliverableEmails(
-            EmelJawatan::query()->orderBy('susunan')->pluck('email')->all(),
-        );
-    }
-
-    /**
-     * @param  list<string>  $alreadyNotified
-     * @return list<string>
-     */
-    private function additionalPositionRecipients(array $alreadyNotified): array
-    {
-        $skip = array_map(strtolower(...), $alreadyNotified);
-
-        return array_values(array_filter(
-            $this->positionNotificationRecipients(),
-            fn (string $email): bool => ! in_array(strtolower($email), $skip, true),
-        ));
     }
 
     /**

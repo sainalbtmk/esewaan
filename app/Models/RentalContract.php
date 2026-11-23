@@ -1191,6 +1191,39 @@ class RentalContract extends Model
         return '–';
     }
 
+    public function contractRemainderLabel(): string
+    {
+        $end = $this->contractEndDate()?->copy()->startOfDay();
+
+        if ($end === null) {
+            return '–';
+        }
+
+        $today = Carbon::today();
+
+        if ($end->lt($today)) {
+            return 'Tamat tempoh ('.(int) $end->diffInDays($today).' hari lalu)';
+        }
+
+        if ($end->equalTo($today)) {
+            return 'Tamat hari ini';
+        }
+
+        $months = (int) $today->diffInMonths($end, false);
+        $days = (int) $today->copy()->addMonths(max($months, 0))->diffInDays($end, false);
+        $parts = [];
+
+        if ($months > 0) {
+            $parts[] = $months.' bulan';
+        }
+
+        if ($days > 0) {
+            $parts[] = $days.' hari';
+        }
+
+        return $parts === [] ? 'Tamat hari ini' : implode(' ', $parts);
+    }
+
     public function daysUntilContractEndLabel(): string
     {
         $end = $this->contractEndDate();

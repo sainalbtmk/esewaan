@@ -13,7 +13,7 @@ enum ContractExpiryReminderTier: string
         return match ($this) {
             self::EightMonth => 'SPEKTRA: PERINGATAN PENGHANTARAN PERMOHONAN PELANJUTAN SEWAAN RUANG PEJABAT AADK UNTUK KONTRAK YANG AKAN TAMAT DALAM TEMPOH LAPAN (8) BULAN',
             self::FiveMonth => 'SPEKTRA: Peringatan Tegas Kontrak Bawah 5 Bulan',
-            self::ThreeMonth => 'SPEKTRA: AMARAN Kontrak Baki 3 Bulan',
+            self::ThreeMonth => 'SPEKTRA: AMARAN Senarai Ruang Pejabat Hampir Tamat Tempoh dan Perlu Tindakan SEGERA',
         };
     }
 
@@ -22,7 +22,7 @@ enum ContractExpiryReminderTier: string
         return match ($this) {
             self::EightMonth => 'Peringatan: Kontrak Sewaan Bawah 8 Bulan',
             self::FiveMonth => 'Peringatan Tegas: Kontrak Sewaan Bawah 5 Bulan',
-            self::ThreeMonth => 'AMARAN: Kontrak Sewaan Baki 3 Bulan',
+            self::ThreeMonth => 'AMARAN: Senarai Ruang Pejabat Hampir Tamat Tempoh dan Perlu Tindakan SEGERA',
         };
     }
 
@@ -31,7 +31,7 @@ enum ContractExpiryReminderTier: string
         return match ($this) {
             self::EightMonth => 'Kontrak sewaan berikut berbaki kurang daripada 8 bulan sebelum tamat. Sila rancang tindakan lanjutan atau pindah premis.',
             self::FiveMonth => 'Ini ialah peringatan tegas. Kontrak sewaan berikut berbaki kurang daripada 5 bulan. Sila ambil tindakan lanjutan atau pindah dengan segera.',
-            self::ThreeMonth => 'AMARAN. Kontrak sewaan berikut berbaki 3 bulan atau kurang. Sila lengkapkan permohonan lanjutan atau pindah, kemudian tekan Hantar ke Ibu Pejabat dan sahkan Ya, Hantar.',
+            self::ThreeMonth => 'AMARAN untuk negeri yang terlibat sahaja. Ruang pejabat berikut berbaki 3 bulan atau kurang dan memerlukan tindakan Pindah atau Lanjutan.',
         };
     }
 
@@ -40,7 +40,7 @@ enum ContractExpiryReminderTier: string
         return match ($this) {
             self::EightMonth => 'Emel peringatan ini dihantar sebanyak 3 kali dalam 3 hari kepada pentadbir negeri yang terlibat. Penghantaran berhenti apabila baki tempoh kontrak mencecah 5 bulan.',
             self::FiveMonth => 'Emel peringatan tegas ini dihantar setiap hari Isnin kepada pentadbir negeri yang terlibat. Penghantaran berhenti apabila baki tempoh kontrak mencecah 3 bulan.',
-            self::ThreeMonth => 'Emel amaran ini dihantar setiap hari Isnin dan Rabu kepada pentadbir negeri yang terlibat, dengan salinan kepada Ibu Pejabat. Penghantaran berhenti selepas permohonan dihantar ke Ibu Pejabat.',
+            self::ThreeMonth => 'Emel ini dihantar setiap hari pada jam 8:00 pagi kepada negeri yang terlibat sebagai amaran, dan senarai penuh dihantar kepada Ketua Pengarah, TKPP, PKP dan KPP. Penghantaran berhenti selepas tindakan Pindah atau Lanjutan dihantar ke Ibu Pejabat.',
         };
     }
 

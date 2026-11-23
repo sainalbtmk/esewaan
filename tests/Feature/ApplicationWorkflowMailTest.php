@@ -55,10 +55,8 @@ function assertStageMailSentToHqAndNegeri(User $hq, User $negeri, string $subjec
     });
 
     foreach (EmelJawatan::query()->orderBy('susunan')->pluck('email') as $email) {
-        Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($email, $subjectContains, $bodyContains): bool {
-            return $mail->hasTo($email)
-                && str_contains($mail->envelope()->subject, $subjectContains)
-                && ($bodyContains === null || str_contains($mail->render(), $bodyContains));
+        Mail::assertNotSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($email): bool {
+            return $mail->hasTo($email);
         });
     }
 }
@@ -237,9 +235,8 @@ test('hq final confirmation emails both roles for selesai stage', function () {
     });
 
     foreach (EmelJawatan::query()->orderBy('susunan')->pluck('email') as $email) {
-        Mail::assertSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($email): bool {
-            return $mail->hasTo($email)
-                && str_contains($mail->envelope()->subject, 'SELESAI DIMATI SETEM');
+        Mail::assertNotSent(ApplicationWorkflowStageNotification::class, function (ApplicationWorkflowStageNotification $mail) use ($email): bool {
+            return $mail->hasTo($email);
         });
     }
 
@@ -269,7 +266,7 @@ test('hq final confirmation emails both roles for selesai stage', function () {
     });
 });
 
-test('workflow mail reaches every active negeri admin and the four jawatan mailboxes', function () {
+test('workflow mail reaches every active negeri admin and skips the jawatan mailboxes', function () {
     Mail::fake();
     Storage::fake('local');
 

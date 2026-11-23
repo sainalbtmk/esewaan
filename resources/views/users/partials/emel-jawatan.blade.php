@@ -1,7 +1,7 @@
 <section id="emel-jawatan" class="glass-card glass-table overflow-hidden">
     <div class="glass-divider-soft border-b px-4 py-3">
         <h2 class="text-base font-semibold text-slate-900">Salinan Emel Jawatan</h2>
-        <p class="mt-0.5 text-xs text-slate-500">Emel ini disalin pada notifikasi aliran kerja permohonan dan pada amaran kontrak yang berbaki 3 bulan. Tukar emel di sini jika penyandang jawatan bertukar.</p>
+        <p class="mt-0.5 text-xs text-slate-500">Emel ini hanya menerima notifikasi Senarai Ruang Pejabat Hampir Tamat Tempoh dan Perlu Tindakan SEGERA apabila kontrak berbaki 3 bulan atau kurang. Emel ini tidak menerima notifikasi aliran kerja permohonan. Tukar emel di sini jika penyandang jawatan bertukar.</p>
     </div>
     <form method="POST" action="{{ route('users.emel-jawatan.update') }}">
         @csrf
