@@ -7,8 +7,8 @@ Agensi Antidadah Kebangsaan
 | Medan | Butiran |
 | --- | --- |
 | No. dokumen | AADK/CP/SPEKTRA/FAT/001 |
-| Versi | 1.0 |
-| Tarikh | 28 Oktober 2026 |
+| Versi | 1.1 |
+| Tarikh | 20 November 2026 |
 | Status | Untuk pelaksanaan FAT |
 | Klasifikasi | Terhad |
 | Pemilik sistem | Cawangan Pembangunan, AADK |
@@ -61,6 +61,7 @@ FAT membuktikan binaan yang akan diserahkan boleh dipasang, dikonfigurasi, dan m
 | Versi | Tarikh | Penyedia | Ringkasan perubahan |
 | --- | --- | --- | --- |
 | 1.0 | 28 Oktober 2026 | Pasukan pembangunan | Terbitan pertama skrip FAT berdasarkan binaan sistem semasa, termasuk pemasangan, keselamatan, pemakluman dan aliran permohonan. |
+| 1.1 | 20 November 2026 | Pasukan pembangunan | Kemas kini pengesahan Ibu Pejabat selepas mati setem, senarai semak kelulusan, subjek emel, peringatan lapan bulan, kod QR tempatan, carian senarai, dan medan lanjutan yang dikunci. |
 
 ### Identiti binaan yang diuji
 
@@ -106,11 +107,12 @@ Jika label pada skrin berbeza daripada dokumen rujukan, label skrin binaan yang 
 - Konfigurasi aplikasi, sesi, pengesahan dua faktor, mel, giliran dan had muat naik.
 - Suite ujian automatik dan semakan gaya kod.
 - Header keselamatan, token borang, had kadar, log masuk gagal dan storan peribadi.
-- Log masuk, log keluar, lupa kata laluan dan pengesahan dua faktor.
+- Log masuk, log keluar, lupa kata laluan dan pengesahan dua faktor, termasuk kod QR yang dijana dalam sistem.
 - Profil, penampilan, pengguna, jejak audit dan emel jawatan.
 - Papan pemuka dan pecahan status tindakan.
-- Permohonan baharu, pindah dan lanjutan, termasuk daerah, langkah tindakan dan dokumen sokongan.
-- Semakan Ibu Pejabat, draf perjanjian, semakan PUU, pengesahan tandatangan dan mati setem.
+- Permohonan baharu, pindah dan lanjutan, termasuk daerah, maklumat kontrak sedia ada, langkah tindakan dan dokumen sokongan.
+- Semakan Ibu Pejabat, draf perjanjian, semakan PUU, pengesahan tandatangan, mati setem dan pengesahan akhir Ibu Pejabat.
+- Carian pada senarai permohonan.
 - Tarik semula, padam dan batal permohonan susulan.
 - Senarai kontrak sewaan.
 - Laporan Ibu Pejabat, penapis negeri dan daerah, serta muat turun PDF.
@@ -120,7 +122,7 @@ Jika label pada skrin berbeza daripada dokumen rujukan, label skrin binaan yang 
 ### Luar skop
 
 - Ujian beban, penembusan keselamatan berbayar dan audit kod sumber baris demi baris.
-- Proses luar sistem: kelulusan MOF, Kementerian Ekonomi, BPH, tandatangan fizikal TKPP, ProMIS dan LHDN. Sistem merekod pengakuan bahawa tindakan itu telah dibuat.
+- Proses luar sistem: kelulusan MOF, Kementerian Ekonomi, BPH, tandatangan fizikal TKPP, muat naik Sistem PROMIS dan LHDN. Sistem merekod pengakuan bahawa tindakan itu telah dibuat.
 - Penerimaan bisnes oleh pentadbir negeri. Itu skop UAT.
 - Perubahan dasar atau borang yang belum dibina dalam binaan yang diuji.
 
@@ -128,8 +130,8 @@ Jika label pada skrin berbeza daripada dokumen rujukan, label skrin binaan yang 
 
 | Peranan sistem | Label pada skrin | Kuasa utama |
 | --- | --- | --- |
-| `admin_hq` | Ibu Pejabat | Semua negeri. Semak permohonan, lulus atau batalkan semakan PUU, sahkan tandatangan, urus status pengguna, emel jawatan dan laporan. |
-| `admin_negeri` | Negeri | Negeri sendiri sahaja. Cipta dan kemaskini permohonan, lengkapkan langkah tindakan, muat naik dokumen dan draf perjanjian, sahkan pengakuan negeri serta mati setem. |
+| `admin_hq` | Ibu Pejabat | Semua negeri. Semak permohonan, lulus atau batalkan semakan PUU, sahkan tandatangan, sahkan penerimaan salinan mati setem dan muat naik Sistem PROMIS, urus status pengguna, emel jawatan dan laporan. |
+| `admin_negeri` | Negeri | Negeri sendiri sahaja. Cipta dan kemaskini permohonan, lengkapkan langkah tindakan, muat naik dokumen dan draf perjanjian, sahkan pengakuan negeri, serta hantar mati setem kepada Ibu Pejabat. |
 
 Pentadbir Negeri hanya melihat dan bertindak ke atas rekod negerinya. Pentadbir Negeri hanya boleh mendaftarkan pengguna Negeri bagi negeri yang sama. Ibu Pejabat boleh mendaftarkan pengguna Ibu Pejabat dan pengguna Negeri bagi mana-mana negeri. Ibu Pejabat tidak mempunyai menu **Permohonan Baharu**.
 
@@ -141,8 +143,8 @@ Pentadbir Negeri hanya melihat dan bertindak ke atas rekod negerinya. Pentadbir 
 4. **Dalam tindakan PUU** — Ibu Pejabat menekan **Luluskan** atau **Semak Semula**. Kedua-dua tindakan memerlukan PDF yang sah. Setiap muat naik negeri menambah pusingan Semakan PUU 1, Semakan PUU 2, dan seterusnya.
 5. **Draf Lulus** — status senarai ialah *Draf Perjanjian dikembalikan ke Pentadbir Negeri untuk dapatkan Tandatangan Pemilik Premis*. Negeri mengesahkan empat perkara, kemudian mengembalikan dokumen.
 6. **Pengesahan dan Tandatangan** — status senarai selepas dikembalikan ialah *Dokumen Perjanjian dikembalikan ke Cawangan Pembangunan untuk tindakan Tandatangan Penyewa*. Ibu Pejabat mengesahkan empat perkara.
-7. **Mati Setem** — status senarai ialah *Menunggu Mati Setem*. Negeri mengesahkan tiga perkara.
-8. **Selesai** — rekod masuk ke Senarai Kontrak Sewaan.
+7. **Mati Setem** — status senarai ialah *Menunggu Mati Setem*. Negeri mengesahkan tiga perkara, kemudian menekan **Hantar ke Ibu Pejabat**. Status menjadi *Menunggu pengesahan Ibu Pejabat*. Penunjuk kemajuan masih berada pada Mati Setem.
+8. **Selesai** — Ibu Pejabat mengesahkan dua perkara pada skrin Tindakan Ibu Pejabat, kemudian menekan **Selesai**. Rekod masuk ke Senarai Kontrak Sewaan.
 
 ### Kategori dan langkah tindakan
 
@@ -165,6 +167,12 @@ Item Surat kepada agensi yang memerlukan tarikh:
 
 Pelan Lantai dan Gambar Bangunan Terkini tidak memerlukan tarikh.
 
+Permohonan pindah atau lanjutan memaparkan bahagian **Maklumat Kontrak Sedia Ada**: nama premis lama, kadar sewa lama, tarikh mula lama, tarikh akhir tempoh tawaran lama, baki bulan, jenis bangunan lama, pemilik lama dan alamat lama. Bahagian **Maklumat Baharu** diisi untuk permohonan susulan.
+
+Bagi lanjutan, nama premis, jenis bangunan, alamat penuh, nama pemilik dan keluasan dikunci kepada nilai kontrak asal. Kadar sewa, tarikh, daerah dan catatan masih boleh diubah. Percubaan menukar medan yang dikunci tidak mengubah rekod.
+
+Bagi pindah, butiran premis baharu boleh disimpan. Apabila kadar sewa baharu diisi, sistem memaparkan notis perbezaan: *Perbezaan < RM500* atau *Perbezaan ≥ RM500*, bersama kadar lama, kadar baharu, beza ringgit dan peratus.
+
 Permohonan pindah atau lanjutan memerlukan catatan sebelum boleh dihantar ke Ibu Pejabat. Selepas permohonan susulan diluluskan Ibu Pejabat, kontrak asal ditandakan diganti.
 
 Daerah pada borang permohonan wajib dan mesti wujud dalam senarai daerah AADK bagi negeri pentadbir. Jenis bangunan yang sah ialah Kompleks kerajaan, Komersial atau Rumah Kediaman.
@@ -173,17 +181,25 @@ Daerah pada borang permohonan wajib dan mesti wujud dalam senarai daerah AADK ba
 
 Setiap item merekod tarikh apabila ditanda. Item MOF dan KE memaparkan ruang catatan selepas ditanda.
 
-| Item pada skrin | Catatan status senarai |
+| Item pada skrin | Peraturan |
 | --- | --- |
-| Kelulusan Pengurusan Tertinggi | Ditanda awal untuk kategori Baru jika senarai semak belum pernah disimpan. |
-| Permohonan kepada Kementerian Kewangan (MOF) untuk permohonan Baru / Pindah / Pelanjutan dengan Kenaikan Sewa Lebih 10% @ minimum RM500 | Selagi belum ditanda, status senarai ialah *Permohonan kepada MOF*. |
-| Permohonan kepada Kementerian Ekonomi (KE) (jika keluasan melebihi 465 mps) — untuk permohonan perpindahan ruang pejabat / ruang pejabat baharu | Ditanda awal jika keluasan melebihi 465 meter persegi dan senarai semak belum pernah disimpan. Selagi belum ditanda, dan MOF sudah ditanda, status senarai ialah *Permohonan kepada KE*. |
-| Cawangan Pembangunan AADK menerima ulasan daripada Kementerian Ekonomi (KE) | |
-| Cawangan Pembangunan AADK menerima Kelulusan daripada MOF melalui KDN | |
-| Cawangan Pembangunan AADK mengemukakan permohonan Bahagian Hartanah (BPH) Jabatan Perdana Menteri untuk mendapatkan kelulusan | Selagi belum ditanda, dan MOF serta KE sudah ditanda, status senarai ialah *Pertimbangan BPH*. |
-| Cawangan Pembangunan AADK terima surat kelulusan daripada BPH | |
+| Kelulusan Pengurusan Tertinggi | Laluan kenaikan sewa. Dinyahaktifkan bagi lanjutan yang tidak memenuhi ambang di bawah. |
+| Permohonan kepada Kementerian Kewangan (MOF) untuk permohonan Baru / Pindah / Pelanjutan dengan Kenaikan Sewa Lebih 10% @ minimum RM500 | Ruang catatan dipaparkan selepas ditanda. |
+| Cawangan Pembangunan AADK menerima Kelulusan daripada MOF melalui KDN | Status *Permohonan ke MOF* kekal sehingga item ini ditanda, jika laluan kenaikan sewa terpakai. |
+| Permohonan kepada Kementerian Ekonomi (KE) (jika keluasan melebihi 465 mps) — untuk permohonan perpindahan ruang pejabat / ruang pejabat baharu | Bagi pindah di bawah 465 meter persegi, item ini dan item ulasan KE dinyahaktifkan. |
+| Cawangan Pembangunan AADK menerima ulasan daripada Kementerian Ekonomi (KE) | Status *Permohonan ke KE* kekal sehingga item ini ditanda, jika laluan KE terpakai. |
+| Cawangan Pembangunan AADK mengemukakan permohonan Bahagian Hartanah (BPH) Jabatan Perdana Menteri untuk mendapatkan kelulusan | Ruang catatan tidak dipaparkan. |
+| Cawangan Pembangunan AADK terima surat kelulusan daripada BPH | Status *Permohonan ke BPH* kekal sehingga item ini ditanda, selepas sekurang-kurangnya satu item lain ditanda. |
 
-Ambang kenaikan sewa yang digunakan sistem untuk perbandingan kontrak susulan ialah lebih daripada atau sama dengan RM500.
+Status senarai semasa menunggu semakan Ibu Pejabat:
+
+- *Minit Ceraian Kelulusan Kos* apabila laluan kenaikan sewa terpakai dan Kelulusan Pengurusan Tertinggi belum ditanda.
+- *Permohonan ke MOF* selepas itu, sehingga kelulusan MOF melalui KDN ditanda.
+- *Permohonan ke KE* bagi kategori Baru atau Pindah yang keluasannya melebihi 465 meter persegi, sehingga ulasan KE ditanda.
+- *Semakan Ibu Pejabat* apabila tiada laluan di atas dan belum ada item yang ditanda.
+- *Permohonan ke BPH* selepas sekurang-kurangnya satu item ditanda dan surat kelulusan BPH belum ditanda.
+
+Laluan kenaikan sewa bagi Baru atau Pindah terpakai apabila ada kadar sewa kontrak asal yang lebih daripada sifar, kenaikan sekurang-kurangnya RM500, dan peratus kenaikan lebih daripada 10. Bagi Lanjutan, laluan ini terpakai apabila kenaikan sekurang-kurangnya RM499 dan sekurang-kurangnya 10 peratus. Jika ambang lanjutan tidak dipenuhi, Kelulusan Pengurusan Tertinggi, permohonan MOF dan penerimaan kelulusan MOF dinyahaktifkan. Lanjutan tidak melalui laluan KE.
 
 ### Pengakuan negeri selepas draf lulus
 
@@ -199,13 +215,20 @@ Ambang kenaikan sewa yang digunakan sistem untuk perbandingan kontrak susulan ia
 - Perjanjian dihantar ke Pejabat TKPP untuk tandatangan Penyewa.
 - Perjanjian dikembalikan ke AADK Negeri untuk tindakan mati setem dan edaran kepada Pemilik Premis.
 
-### Pengakuan negeri untuk menutup permohonan
+### Pengakuan negeri untuk mati setem
 
 - 3 Salinan Dokumen Perjanjian telah dimatikan setem di LHDN.
 - 1 Salinan Dokumen Perjanjian telah diedar kepada Pemilik Premis.
 - Salinan dihantar ke Cawangan Pembangunan melalui Pos/Kourier.
 
-Tarikh pengakuan diisi dengan tarikh semasa waktu Malaysia apabila kotak ditanda, dan boleh ditukar.
+Butang pada peringkat ini ialah **Hantar ke Ibu Pejabat**, bukan penutup terus ke senarai kontrak.
+
+### Pengakuan Ibu Pejabat selepas mati setem
+
+- 1 Salinan Dokumen Perjanjian yang telah dimatikan setem diterima dari AADK Negeri.
+- Perjanjian telah dimuat naik ke dalam Sistem PROMIS.
+
+Kedua-dua pengakuan wajib sebelum **Selesai**. Tarikh diisi dengan tarikh semasa waktu Malaysia apabila kotak ditanda, dan boleh ditukar. Peraturan tarikh yang sama terpakai pada pengakuan negeri dan tandatangan.
 
 ### Peringatan tamat kontrak
 
@@ -213,11 +236,11 @@ Arahan `contracts:send-expiry-reminders` dijadualkan setiap hari pada jam 9.00 p
 
 | Baki tempoh | Subjek | Penerima | Kekerapan | Berhenti apabila |
 | --- | --- | --- | --- | --- |
-| Bawah 8 bulan hingga 5 bulan | SPEKTRA: Peringatan Kontrak Bawah 8 Bulan | Pentadbir negeri terlibat | 3 kali dalam 3 hari | Baki mencecah 5 bulan, atau 3 penghantaran selesai |
+| Bawah 8 bulan hingga 5 bulan | SPEKTRA: PERINGATAN PENGHANTARAN PERMOHONAN PELANJUTAN SEWAAN RUANG PEJABAT AADK UNTUK KONTRAK YANG AKAN TAMAT DALAM TEMPOH LAPAN (8) BULAN | Pentadbir negeri terlibat | 3 kali dalam 3 hari | Baki mencecah 5 bulan, 3 penghantaran selesai, atau permohonan susulan dihantar ke Ibu Pejabat |
 | Bawah 5 bulan hingga 3 bulan | SPEKTRA: Peringatan Tegas Kontrak Bawah 5 Bulan | Pentadbir negeri terlibat | Setiap Isnin | Baki mencecah 3 bulan |
-| 3 bulan atau kurang | SPEKTRA: AMARAN Kontrak Baki 3 Bulan | Pentadbir negeri, salinan kepada Ibu Pejabat | Setiap Isnin dan Rabu | Permohonan dihantar ke Ibu Pejabat |
+| 3 bulan atau kurang | SPEKTRA: AMARAN Kontrak Baki 3 Bulan | Pentadbir negeri, salinan kepada Ibu Pejabat dan emel jawatan | Setiap Isnin dan Rabu | Permohonan dihantar ke Ibu Pejabat |
 
-Jika `MAIL_TEST_RECIPIENT` diisi, pemakluman aliran kerja dihantar ke alamat itu dan bukannya ke peti sebenar jawatan atau pengguna.
+Jika `MAIL_TEST_RECIPIENT` diisi, pemakluman aliran kerja dan peringatan dihantar ke alamat itu. Salinan emel jawatan dan salinan amaran tiga bulan tidak dihantar secara berasingan. Jika pemboleh ubah itu kosong, emel jawatan Ketua Pengarah, TKPP, PKP dan KPP menerima salinan pemakluman yang ditujukan kepada Ibu Pejabat, dan menerima salinan amaran baki 3 bulan.
 
 ## 6. Persekitaran kilang
 
@@ -254,7 +277,7 @@ Data premis ialah data fiksyen. Jangan guna premis sebenar yang sulit dalam tang
 | `APP_ENV` | Persekitaran yang diisytiharkan untuk FAT. Simulasi pengeluaran menggunakan `production`. |
 | `APP_DEBUG` | `false` |
 | `APP_KEY` | Diisi dan tidak dikongsi dalam dokumen ini |
-| `APP_URL` | URL sebenar persekitaran yang diuji |
+| `APP_URL` | URL sebenar persekitaran yang diuji. Pada `production`, hos yang dipercayai ialah hos URL ini sahaja. |
 | `LOG_LEVEL` | `warning` atau lebih ketat pada simulasi pengeluaran |
 | `SESSION_DRIVER` | `database` |
 | `SESSION_LIFETIME` | 120 |
@@ -339,17 +362,18 @@ Binaan dicadangkan untuk serahan UAT apabila semua syarat berikut dipenuhi:
 | Draf dan PUU | F-DRAF-01 hingga F-DRAF-04 | 4 | Kritikal |
 | Pengesahan negeri | F-ACK-01 hingga F-ACK-02 | 2 | Kritikal |
 | Tandatangan Ibu Pejabat | F-SIGN-01 | 1 | Kritikal |
-| Mati setem | F-STEM-01 | 1 | Kritikal |
+| Mati setem dan pengesahan akhir | F-STEM-01 hingga F-STEM-02 | 2 | Kritikal |
 | Pindah dan lanjutan | F-FOL-01 hingga F-FOL-04 | 4 | Kritikal |
 | Tarik semula dan padam | F-WD-01 hingga F-WD-06 | 6 | Tinggi |
 | Kontrak sewaan | F-KON-01 hingga F-KON-04 | 4 | Tinggi |
 | Laporan | F-LAP-01 hingga F-LAP-05 | 5 | Tinggi |
 | Peti masuk | F-NOT-01 hingga F-NOT-03 | 3 | Tinggi |
 | Kawalan akses skrin | F-SEC-01 hingga F-SEC-03 | 3 | Kritikal |
+| Carian senarai | F-LIST-01 | 1 | Tinggi |
 | Hujung ke hujung | F-E2E-01 hingga F-E2E-03 | 3 | Kritikal |
-| **Jumlah** | | **138** | |
+| **Jumlah** | | **140** | |
 
-Semakan pelayar di Seksyen 13 ialah bukti tambahan dan tidak dikira dalam 138 kes.
+Semakan pelayar di Seksyen 13 ialah bukti tambahan dan tidak dikira dalam 140 kes.
 
 ## 10. Skrip ujian teknikal
 
@@ -427,14 +451,14 @@ Jalankan kes ini dengan peti ujian atau log mel. Jika `MAIL_TEST_RECIPIENT` diis
 
 | ID | Keutamaan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| MAIL-01 | Kritikal | 1. Negeri menekan Hantar ke Ibu Pejabat dan mengesahkan Ya, Hantar. | Emel *SPEKTRA: Permohonan Baharu Menunggu Semakan Ibu Pejabat* sampai kepada Ibu Pejabat. Emel *SPEKTRA: Permohonan Dihantar ke Ibu Pejabat* sampai kepada pentadbir negeri permohonan. | | | | |
-| MAIL-02 | Tinggi | 1. Ibu Pejabat mengesahkan permohonan ke penyediaan draf. | Emel *SPEKTRA: Permohonan Disahkan oleh Ibu Pejabat* sampai kepada negeri dan Ibu Pejabat. | | | | |
-| MAIL-03 | Tinggi | 1. Negeri memuat naik draf PDF yang sah. | Emel *SPEKTRA: Draf Perjanjian Dihantar untuk Semakan PUU* dihantar. Badan emel menyebut label pusingan, contoh Semakan PUU 1. | | | | |
-| MAIL-04 | Tinggi | 1. Ibu Pejabat meluluskan semakan PUU dengan PDF yang sah. | Emel *SPEKTRA: Draf Perjanjian Diluluskan* dihantar. | | | | |
-| MAIL-05 | Tinggi | 1. Pada pusingan lain, Ibu Pejabat menekan Semak Semula dengan PDF yang sah. | Emel *SPEKTRA: Semakan PUU Memerlukan Pindaan* dihantar. | | | | |
-| MAIL-06 | Tinggi | 1. Negeri mengembalikan dokumen selepas empat pengakuan lengkap. | Emel *SPEKTRA: Dokumen Dikembalikan untuk Pengesahan & Tandatangan* dihantar. | | | | |
-| MAIL-07 | Tinggi | 1. Ibu Pejabat menghantar perjanjian untuk mati setem selepas empat pengakuan lengkap. | Emel *SPEKTRA: Perjanjian Dihantar untuk Mati Setem* dihantar. | | | | |
-| MAIL-08 | Tinggi | 1. Negeri menyelesaikan mati setem selepas tiga pengakuan lengkap. | Emel *SPEKTRA: Permohonan Selesai — Dalam Senarai Kontrak Sewaan* dihantar. | | | | |
+| MAIL-01 | Kritikal | 1. Negeri menekan Hantar ke Ibu Pejabat dan mengesahkan Ya, Hantar. | Emel *SPEKTRA: PERMOHONAN BAHARU UNTUK SEMAKAN IBU PEJABAT* sampai kepada Ibu Pejabat. Emel *SPEKTRA: PERMOHONAN DIHANTAR KE IBU PEJABAT UNTUK SEMAKAN* sampai kepada pentadbir negeri. Jika `MAIL_TEST_RECIPIENT` kosong, emel jawatan turut menerima subjek Ibu Pejabat. | | | | |
+| MAIL-02 | Tinggi | 1. Ibu Pejabat mengesahkan permohonan ke penyediaan draf. | Emel *SPEKTRA: PERMOHONAN DILULUSKAN OLEH BAHAGIAN PENGURUSAN HARTANAH, JABATAN PERDANA MENTERI* sampai kepada negeri dan Ibu Pejabat. Emel jawatan turut menerima salinan apabila peti ujian tidak ditetapkan. | | | | |
+| MAIL-03 | Tinggi | 1. Negeri memuat naik draf PDF yang sah. | Ibu Pejabat menerima *SPEKTRA: DRAF PERJANJIAN UNTUK SEMAKAN PENASIHAT UNDANG-UNDANG*. Negeri menerima *SPEKTRA: DRAF PERJANJIAN DIHANTAR UNTUK SEMAKAN PENASIHAT UNDANG-UNDANG*. Badan emel menyebut pusingan, contoh semakan PUU 1. | | | | |
+| MAIL-04 | Tinggi | 1. Ibu Pejabat meluluskan semakan PUU dengan PDF yang sah. | Subjek kepada kedua-dua pihak ialah *SPEKTRA: DRAF PERJANJIAN DILULUSKAN OLEH PENASIHAT UNDANG-UNDANG*. Badan emel negeri meminta tiga salinan ditandatangani pemilik dalam tempoh tujuh hari bekerja. | | | | |
+| MAIL-05 | Tinggi | 1. Pada pusingan lain, Ibu Pejabat menekan Semak Semula dengan PDF yang sah. | Subjek *SPEKTRA: KUIRI OLEH PENASIHAT UNDANG-UNDANG* dihantar. Badan emel negeri meminta dokumen sokongan dalam tempoh tujuh hari bekerja. | | | | |
+| MAIL-06 | Tinggi | 1. Negeri mengembalikan dokumen selepas empat pengakuan lengkap. | Emel *SPEKTRA: PERJANJIAN UNTUK DITANDATANGANI PENGURUSAN AADK* dihantar. | | | | |
+| MAIL-07 | Tinggi | 1. Ibu Pejabat menghantar perjanjian untuk mati setem selepas empat pengakuan lengkap. | Emel *SPEKTRA: PERJANJIAN UNTUK TINDAKAN MATI SETEM* dihantar. | | | | |
+| MAIL-08 | Tinggi | 1. Negeri menekan Hantar ke Ibu Pejabat selepas tiga pengakuan mati setem. 2. Ibu Pejabat menekan Selesai selepas dua pengakuan akhir. | Selepas langkah negeri, *SPEKTRA: PERJANJIAN SELESAI DIMATI SETEM* sampai kepada Ibu Pejabat. Selepas langkah Ibu Pejabat, *SPEKTRA: PERJANJIAN SELESAI DAN TELAH DIMASUKKAN KE DALAM SENARAI KONTRAK SEWAAN* sampai kepada negeri. | | | | |
 | MAIL-09 | Tinggi | 1. Minta set semula kata laluan untuk akaun yang wujud. 2. Buka pautan dan tetapkan kata laluan baharu. | Emel *SPEKTRA: Set Semula Kata Laluan* dihantar kepada pemilik akaun. Pautan membuka borang set semula. Pada production dengan mailer log, permintaan disekat dan kes ini hanya lulus jika mailer sebenar digunakan. | | | | |
 | MAIL-10 | Tinggi | 1. Pada satu salinan ujian, jadikan konfigurasi mel tidak sah. 2. Jalankan satu tindakan yang biasa menghantar emel, contoh hantar ke Ibu Pejabat. 3. Pulihkan konfigurasi mel. | Rekod permohonan kekal dan statusnya berubah mengikut tindakan. Kegagalan emel direkod dalam log. Konfigurasi dipulihkan sebelum kes seterusnya. | | | | |
 
@@ -442,9 +466,9 @@ Jalankan kes ini dengan peti ujian atau log mel. Jika `MAIL_TEST_RECIPIENT` diis
 
 | ID | Keutamaan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| JOB-01 | Tinggi | 1. Sediakan kontrak aktif berbaki bawah 8 bulan hingga 5 bulan. 2. Jalankan `php artisan contracts:send-expiry-reminders` pada tiga hari yang berturutan, atau gunakan tarikh ujian yang menggerakkan penghantaran. 3. Jalankan sekali lagi pada hari yang sama. | Subjek *SPEKTRA: Peringatan Kontrak Bawah 8 Bulan* dihantar kepada pentadbir negeri. Penghantaran berhenti selepas 3 kali. Ulangan pada hari yang sama tidak menambah penghantaran di luar peraturan. | | | | |
+| JOB-01 | Tinggi | 1. Sediakan kontrak aktif berbaki bawah 8 bulan hingga 5 bulan. 2. Jalankan `php artisan contracts:send-expiry-reminders` pada tiga hari yang berturutan, atau gunakan tarikh ujian yang menggerakkan penghantaran. 3. Jalankan sekali lagi pada hari yang sama. 4. Hantar permohonan susulan kontrak itu ke Ibu Pejabat dan jalankan arahan sekali lagi. | Subjek peringatan lapan bulan dalam Seksyen 5 dihantar kepada pentadbir negeri. Penghantaran berhenti selepas 3 kali, apabila baki mencecah 5 bulan, atau selepas permohonan susulan dihantar ke Ibu Pejabat. Ulangan pada hari yang sama tidak menambah penghantaran. | | | | |
 | JOB-02 | Tinggi | 1. Sediakan kontrak berbaki bawah 5 bulan hingga 3 bulan. 2. Jalankan arahan pada hari Isnin dan pada satu hari yang bukan Isnin. | Subjek *SPEKTRA: Peringatan Tegas Kontrak Bawah 5 Bulan* dihantar pada Isnin kepada pentadbir negeri. Hari lain tidak menghantar bagi julat ini. | | | | |
-| JOB-03 | Kritikal | 1. Sediakan kontrak berbaki 3 bulan atau kurang. 2. Jalankan arahan pada Isnin atau Rabu. 3. Hantar permohonan lanjutan atau pindah ke Ibu Pejabat. 4. Jalankan arahan sekali lagi pada hari jadual berikutnya. | Subjek *SPEKTRA: AMARAN Kontrak Baki 3 Bulan* dihantar kepada pentadbir negeri dengan salinan Ibu Pejabat. Selepas permohonan dihantar ke Ibu Pejabat, peringatan kontrak itu berhenti. | | | | |
+| JOB-03 | Kritikal | 1. Sediakan kontrak berbaki 3 bulan atau kurang. 2. Jalankan arahan pada Isnin atau Rabu. 3. Hantar permohonan lanjutan atau pindah ke Ibu Pejabat. 4. Jalankan arahan sekali lagi pada hari jadual berikutnya. | Subjek *SPEKTRA: AMARAN Kontrak Baki 3 Bulan* dihantar kepada pentadbir negeri. Salinan pergi kepada Ibu Pejabat dan emel jawatan apabila `MAIL_TEST_RECIPIENT` kosong. Selepas permohonan dihantar ke Ibu Pejabat, peringatan kontrak itu berhenti. | | | | |
 | JOB-04 | Tinggi | 1. Pada pelayan FAT, sahkan penjadual sistem memanggil `php artisan schedule:run` setiap minit, atau rekod bahawa penjadual belum dipasang. | Jika FAT mensimulasikan pelayan serahan, penjadual terpasang dan zon masa 09:00 dibuktikan melalui `schedule:list`. Jika penjadual belum dipasang, kes ditanda Gagal untuk serahan pelayan atau Disekat dengan tindakan susulan bertulis. | | | | |
 
 ### 10.9 Sandaran dan pulihan
@@ -484,7 +508,7 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan, 
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | F-MFA-01 | Kritikal | Pengguna baharu | 1. Log masuk akaun yang belum mengesahkan dua faktor. | Sistem membawa pengguna ke persediaan pengesahan. Menu kerja tidak boleh digunakan sebelum pengesahan selesai. | | | | |
-| F-MFA-02 | Kritikal | Semua | 1. Imbas atau masukkan kunci ke aplikasi pengesah. 2. Simpan lapan kod pemulihan di tempat selamat ujian. 3. Masukkan kod 6 digit semasa. | Kod yang sah mengesahkan akaun. Kod pemulihan dipaparkan sekali. Log masuk seterusnya meminta kod pengesah. | | | | |
+| F-MFA-02 | Kritikal | Semua | 1. Imbas kod QR pada halaman persediaan. 2. Jika imbasan gagal, buka kunci persediaan manual. 3. Simpan lapan kod pemulihan di tempat selamat ujian. 4. Masukkan kod 6 digit semasa. | Kod QR dipaparkan sebagai imej dalam halaman, tanpa permintaan ke perkhidmatan luar. Kunci manual boleh dibuka. Kod yang sah mengesahkan akaun. Kod pemulihan dipaparkan sekali. Log masuk seterusnya meminta kod pengesah. | | | | |
 | F-MFA-03 | Tinggi | Semua | 1. Pada cabaran log masuk, masukkan kod yang salah. | Mesej kod tidak sah dipaparkan. Sesi kerja tidak terbuka. | | | | |
 | F-MFA-04 | Kritikal | Semua | 1. Pada cabaran log masuk, gunakan satu kod pemulihan yang disimpan. | Kod pemulihan yang sah membuka sesi. Kod itu tidak lagi boleh digunakan. | | | | |
 | F-MFA-05 | Tinggi | Semua | 1. Guna semula kod pemulihan yang sama. | Kod yang telah digunakan ditolak. | | | | |
@@ -516,7 +540,7 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan, 
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | F-DASH-01 | Tinggi | Ibu Pejabat | 1. Buka Papan Pemuka. 2. Bandingkan kiraan permohonan, kontrak aktif dan pecahan status dengan senarai berkaitan. 3. Klik satu baris Status Tindakan. | Kad dan pecahan status dipaparkan untuk semua negeri. Angka sepadan dengan senarai selepas penapis yang sama. Klik baris membuka senarai projek pada status itu. | | | | |
 | F-DASH-02 | Kritikal | Negeri | 1. Buka Papan Pemuka sebagai Negeri A. 2. Ulang sebagai Negeri B. | Setiap papan pemuka hanya mengira premis negeri sendiri. | | | | |
-| F-DASH-03 | Tinggi | Semua pentadbir | 1. Semak senarai status tindakan. 2. Klik setiap baris yang mempunyai data. | Label berikut dipaparkan: Belum Terima Permohonan, Semakan Cawangan Pembangunan Sebelum ke BPH, Minit Ceraian Kelulusan Kos, Pertimbangan MOF, Pertimbangan KE, Pertimbangan BPH/SUPS, Sedia Draf Perjanjian, Semakan Cawangan Pembangunan Sebelum ke PUU, Semakan PUU, Kuiri PUU, Pindaan Berdasarkan Syor PUU dan Tandatangan Pemilik Premis, Tandatangan Penyewa (AADK), Tindakan Mati Setem. | | | | |
+| F-DASH-03 | Tinggi | Semua pentadbir | 1. Semak senarai status tindakan. 2. Klik setiap baris yang mempunyai data. | Label berikut dipaparkan: Belum Terima Permohonan, Semakan Cawangan Pembangunan, Minit Ceraian Kelulusan Kos, Pertimbangan MOF, Pertimbangan KE, Pertimbangan BPH/SUPS, Sedia Draf Perjanjian, Semakan Cawangan Pembangunan Sebelum ke PUU, Semakan PUU, Kuiri PUU, Pindaan Berdasarkan Syor PUU dan Tandatangan Pemilik Premis, Tandatangan Penyewa (AADK), Tindakan Mati Setem. | | | | |
 | F-DASH-04 | Tinggi | Semua pentadbir | 1. Semak bahagian kontrak yang akan tamat. | Kontrak aktif dibahagi kepada baki 3 bulan atau kurang, baki bawah 8 bulan tetapi lebih 3 bulan, dan baki lebih 8 bulan. Senarai amaran paling hampir tamat dipaparkan dahulu. | | | | |
 
 ### 11.6 Permohonan baharu
@@ -538,7 +562,7 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan, 
 | F-PROC-02 | Kritikal | Negeri | 1. Buka permohonan kategori Lanjutan. 2. Semak langkah yang dipaparkan. | Hanya Notis kepada pemilik premis, Borang JRP dan Surat kepada agensi dipaparkan. | | | | |
 | F-PROC-03 | Kritikal | Negeri | 1. Pada permohonan yang langkahnya belum lengkap, tekan Hantar ke Ibu Pejabat dan sahkan Ya, Hantar. | Penghantaran ditolak. Status kekal menunggu langkah tindakan. | | | | |
 | F-PROC-04 | Tinggi | Negeri | 1. Pada Surat kepada agensi, tanda surat JPPH tanpa tarikh. 2. Tanda Pelan Lantai dan Gambar Bangunan Terkini tanpa tarikh. 3. Lengkapkan tarikh bagi enam item yang memerlukannya. | Item bertarikh tidak boleh disimpan sebagai lengkap tanpa tarikh. Pelan lantai dan gambar bangunan tidak memerlukan tarikh. | | | | |
-| F-PROC-05 | Kritikal | Negeri | 1. Pada permohonan pindah atau lanjutan yang langkahnya sudah lengkap, kosongkan catatan. 2. Cuba hantar ke Ibu Pejabat. 3. Isi catatan dan hantar semula. | Penghantaran ditolak selagi catatan kosong. Selepas catatan diisi dan Ya, Hantar disahkan, status senarai menjadi Permohonan kepada MOF. | | | | |
+| F-PROC-05 | Kritikal | Negeri | 1. Pada permohonan pindah atau lanjutan yang langkahnya sudah lengkap, kosongkan catatan. 2. Cuba hantar ke Ibu Pejabat. 3. Isi catatan dan hantar semula. | Penghantaran ditolak selagi catatan kosong. Selepas catatan diisi dan Ya, Hantar disahkan, status senarai mengikut peraturan Seksyen 5. Permohonan baharu tanpa kontrak induk dan berkeluasan 465 meter persegi atau kurang menjadi Semakan Ibu Pejabat. | | | | |
 
 ### 11.8 Dokumen sokongan
 
@@ -553,8 +577,8 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan, 
 
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| F-HQ-01 | Kritikal | Ibu Pejabat | 1. Buka permohonan yang menunggu semakan. 2. Semak status senarai bermula Permohonan kepada MOF, kemudian Permohonan kepada KE, kemudian Pertimbangan BPH, mengikut item yang belum ditanda. 3. Tanda senarai semak bersama tarikh. 4. Isi catatan pada MOF dan KE selepas item ditanda. 5. Sahkan permohonan. | Butiran negeri dipaparkan sebagai baca sahaja. Status senarai bertukar mengikut item yang masih terbuka. Selepas sah, status menjadi penyediaan draf perjanjian. Pemakluman MAIL-02 wujud. | | | | |
-| F-HQ-02 | Tinggi | Ibu Pejabat | 1. Buka permohonan baharu berkeluasan 465 meter persegi atau kurang yang senarai semaknya belum disimpan. 2. Ulang dengan permohonan melebihi 465 meter persegi. | Item KE dipaparkan pada kedua-dua permohonan. Pada permohonan melebihi 465 meter persegi, item KE ditanda awal. Kelulusan Pengurusan Tertinggi ditanda awal untuk kategori Baru. | | | | |
+| F-HQ-01 | Kritikal | Ibu Pejabat | 1. Buka permohonan baharu tanpa kontrak induk, berkeluasan 465 meter persegi atau kurang. 2. Sahkan status senarai ialah Semakan Ibu Pejabat. 3. Tanda item permohonan BPH bersama tarikh. 4. Isi catatan pada item MOF atau KE selepas item itu ditanda, jika item itu aktif. 5. Lengkapkan senarai semak yang aktif dan sahkan permohonan. | Butiran negeri dipaparkan sebagai baca sahaja. Selepas item BPH ditanda dan kelulusan BPH belum ditanda, status menjadi Permohonan ke BPH. Selepas sah, status menjadi penyediaan draf perjanjian. Pemakluman MAIL-02 wujud. | | | | |
+| F-HQ-02 | Kritikal | Ibu Pejabat | 1. Buka pindah berkeluasan di bawah 465 meter persegi. 2. Buka Baru atau Pindah yang melebihi 465 meter persegi. 3. Buka lanjutan dengan kenaikan bawah 10 peratus atau bawah RM499. 4. Buka lanjutan dengan kenaikan sekurang-kurangnya 10 peratus dan sekurang-kurangnya RM499. | Pada pindah di bawah 465, dua item KE dinyahaktifkan. Pada keluasan melebihi 465 bagi Baru atau Pindah, status ialah Permohonan ke KE sehingga ulasan KE ditanda. Pada lanjutan di bawah ambang, Kelulusan Pengurusan Tertinggi, permohonan MOF dan penerimaan kelulusan MOF dinyahaktifkan, dan status awal ialah Semakan Ibu Pejabat. Pada lanjutan yang memenuhi ambang, status ialah Minit Ceraian Kelulusan Kos sehingga Kelulusan Pengurusan Tertinggi ditanda, kemudian Permohonan ke MOF sehingga kelulusan MOF ditanda. | | | | |
 | F-HQ-03 | Tinggi | Negeri | 1. Semasa status masih menunggu semakan Ibu Pejabat, cuba sahkan permohonan. | Tindakan kelulusan Ibu Pejabat tidak tersedia kepada Negeri. | | | | |
 | F-HQ-04 | Sederhana | Ibu Pejabat | 1. Tanda sebahagian senarai semak. 2. Tunggu autosimpan. 3. Keluar dan buka semula. | Tanda, tarikh dan catatan yang telah disimpan kekal. | | | | |
 
@@ -580,18 +604,19 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan, 
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | F-SIGN-01 | Kritikal | Ibu Pejabat | 1. Buka permohonan yang dikembalikan negeri. 2. Cuba hantar untuk mati setem sebelum empat pengakuan lengkap. 3. Tanda empat pengakuan dalam Seksyen 5, semak tarikh di sebelah kanan, dan sahkan. | Penghantaran disekat sehingga empat pengakuan lengkap. Tarikh diisi dengan tarikh tanda dan boleh diubah. Selepas sah, status menjadi Menunggu Mati Setem. | | | | |
 
-### 11.13 Mati setem
+### 11.13 Mati setem dan pengesahan akhir
 
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| F-STEM-01 | Kritikal | Negeri | 1. Pada Mati Setem, cuba selesaikan dengan kurang daripada tiga pengakuan. 2. Tanda ketiga-tiga pengakuan dalam Seksyen 5, semak tarikh, dan tekan Selesai. 3. Buka Senarai Kontrak Sewaan. | Pengakuan yang tidak lengkap tidak menutup permohonan. Selepas ketiga-tiganya ditanda, permohonan hilang daripada senarai kerja aktif dan muncul sebagai kontrak sewaan. Mesej kejayaan dipaparkan. | | | | |
+| F-STEM-01 | Kritikal | Negeri | 1. Pada Mati Setem, cuba hantar dengan kurang daripada tiga pengakuan. 2. Tanda ketiga-tiga pengakuan dalam Seksyen 5, semak tarikh, dan tekan Hantar ke Ibu Pejabat. 3. Buka Senarai Kontrak Sewaan. | Pengakuan yang tidak lengkap tidak mengubah peringkat. Selepas ketiga-tiganya ditanda, status menjadi Menunggu pengesahan Ibu Pejabat. Rekod belum masuk Senarai Kontrak Sewaan. Mesej menyatakan permohonan dihantar untuk pengesahan akhir. | | | | |
+| F-STEM-02 | Kritikal | Ibu Pejabat | 1. Buka permohonan yang menunggu pengesahan Ibu Pejabat. 2. Cuba tekan Selesai dengan kurang daripada dua pengakuan. 3. Tanda penerimaan salinan daripada negeri dan muat naik Sistem PROMIS, tukar salah satu tarikh, dan tekan Selesai. 4. Buka Senarai Kontrak Sewaan. | Selesai disekat selagi ada pengakuan yang belum ditanda. Selepas kedua-duanya ditanda, permohonan hilang daripada senarai kerja aktif dan muncul sebagai kontrak sewaan. Mesej kejayaan dipaparkan. | | | | |
 
 ### 11.14 Pindah dan lanjutan
 
 | ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| F-FOL-01 | Kritikal | Negeri | 1. Pada kontrak aktif negeri sendiri, cipta permohonan Lanjutan. | Borang susulan terbuka dengan kaitan kepada kontrak asal. Kategori ialah Lanjutan. Langkah yang dipaparkan ialah notis, JRP dan surat agensi. | | | | |
-| F-FOL-02 | Kritikal | Negeri | 1. Pada kontrak aktif yang lain, cipta permohonan Pindah. 2. Kemaskini nama premis, alamat, daerah, pemilik, kadar sewa, keluasan dan tarikh kepada nilai baharu. | Kategori ialah Pindah. Butiran baharu boleh disimpan. Langkah yang dipaparkan ialah surat niat, JRP dan surat agensi. | | | | |
+| F-FOL-01 | Kritikal | Negeri | 1. Pada kontrak aktif negeri sendiri, cipta permohonan Lanjutan. 2. Semak Maklumat Kontrak Sedia Ada. 3. Cuba tukar nama premis, jenis bangunan, alamat, pemilik dan keluasan. 4. Tukar kadar sewa, daerah dan tarikh, kemudian simpan. | Borang memaparkan maklumat lama dan Maklumat Baharu. Medan identiti premis dan keluasan kekal seperti kontrak asal selepas simpan. Kadar sewa, daerah dan tarikh baharu tersimpan. Notis perbezaan sewa dipaparkan. Langkah yang dipaparkan ialah notis, JRP dan surat agensi. | | | | |
+| F-FOL-02 | Kritikal | Negeri | 1. Pada kontrak aktif yang lain, cipta permohonan Pindah. 2. Kemaskini nama premis, alamat, daerah, pemilik, kadar sewa, keluasan dan tarikh kepada nilai baharu. | Kategori ialah Pindah. Butiran baharu boleh disimpan. Notis perbezaan sewa memaparkan kadar lama, kadar baharu, beza ringgit dan peratus. Langkah yang dipaparkan ialah surat niat, JRP dan surat agensi. | | | | |
 | F-FOL-03 | Tinggi | Negeri | 1. Pada permohonan susulan yang masih di langkah tindakan, pilih Batal dan Kembali ke Kontrak Asal. | Permohonan susulan dibatalkan. Kontrak asal kembali ke senarai kontrak. Butang Padam biasa tidak menggantikan tindakan ini. | | | | |
 | F-FOL-04 | Kritikal | Ibu Pejabat | 1. Hantar satu permohonan lanjutan atau pindah yang lengkap. 2. Ibu Pejabat sahkan permohonan. 3. Semak kontrak asal. | Kontrak asal ditandakan diganti oleh permohonan baharu. Ia tidak lagi dikira sebagai kontrak aktif semasa. | | | | |
 
@@ -641,15 +666,21 @@ Jalankan modul ini apabila pengesahan dua faktor dihidupkan. Jika ia dimatikan, 
 | F-SEC-02 | Kritikal | Negeri | 1. Salin pautan semakan permohonan Negeri A. 2. Buka pautan itu semasa log masuk sebagai Negeri B. | Permohonan tidak dibuka. Akses ditolak atau halaman tidak dijumpai, tanpa mendedahkan butiran. | | | | |
 | F-SEC-03 | Tinggi | Semua | 1. Pada telefon, buka menu. 2. Semak halaman utama setiap peranan. 3. Kecilkan tetingkap desktop. | Menu boleh dibuka dan ditutup. Tajuk, jadual dan borang utama boleh digunakan. Tindakan penting tidak terpotong. | | | | |
 
+### 11.20 Carian senarai permohonan
+
+| ID | Keutamaan | Peranan | Langkah | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| F-LIST-01 | Tinggi | Semua pentadbir | 1. Pada Status Permohonan, cari nama premis, negeri, pemilik dan kategori. 2. Kosongkan carian. 3. Sebagai Negeri A, cari premis Negeri B. | Hasil sepadan dengan teks yang ditaip, termasuk label status yang dipaparkan. Carian kosong memulangkan senarai asal. Negeri A tidak melihat rekod Negeri B. | | | | |
+
 ## 12. Kes hujung ke hujung
 
 Gunakan premis fiksyen yang baharu bagi setiap kes. Catat nama premis dalam keputusan sebenar.
 
 | ID | Keutamaan | Senario | Langkah ringkas | Keputusan dijangka | Keputusan sebenar | Status | Penguji | Tarikh |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| F-E2E-01 | Kritikal | Permohonan baharu hingga kontrak aktif | 1. Negeri mencipta permohonan Baru, memilih daerah negeri sendiri, dan memuat naik dokumen sokongan. 2. Negeri melengkapkan surat niat, JRP dan surat agensi. 3. Negeri menekan Hantar ke Ibu Pejabat dan mengesahkan Ya, Hantar. 4. Ibu Pejabat menyemak senarai semak dan meneruskan ke draf. 5. Negeri memuat naik PDF draf. 6. Ibu Pejabat meluluskan Semakan PUU 1 dengan PDF. 7. Negeri mengesahkan empat pengakuan dan mengembalikan dokumen. 8. Ibu Pejabat mengesahkan empat pengakuan tandatangan. 9. Negeri mengesahkan tiga pengakuan mati setem. | Satu kontrak baharu muncul dalam Senarai Kontrak Sewaan negeri tersebut dan dalam laporan Ibu Pejabat. Papan pemuka kedua-dua peranan berubah dengan betul. Pemakluman MAIL-01 hingga MAIL-04 dan MAIL-06 hingga MAIL-08 wujud. Fail draf berada di storan peribadi. | | | | |
-| F-E2E-02 | Kritikal | Lanjutan kontrak | 1. Negeri mencipta Lanjutan daripada kontrak aktif. 2. Negeri mengisi catatan, notis pemilik, JRP dan surat agensi. 3. Ulang langkah semakan hingga mati setem seperti F-E2E-01, dengan langkah lanjutan. | Kontrak asal diganti selepas kelulusan Ibu Pejabat. Kontrak lanjutan yang selesai menjadi kontrak aktif. | | | | |
-| F-E2E-03 | Kritikal | Pindah premis, termasuk satu pembatalan semakan PUU | 1. Negeri mencipta Pindah dan mengisi butiran premis baharu, termasuk daerah. 2. Lengkapkan surat niat, JRP, surat agensi dan catatan, kemudian hantar. 3. Ibu Pejabat meneruskan ke draf. 4. Negeri memuat naik draf pertama. 5. Ibu Pejabat menekan Semak Semula dengan PDF pindaan. 6. Negeri memuat naik draf kedua. 7. Ibu Pejabat meluluskan Semakan PUU 2 dengan PDF. 8. Siapkan pengesahan negeri, tandatangan Ibu Pejabat dan mati setem. | Pusingan kedua direkod sebagai Semakan PUU 2. Kontrak pindah yang selesai aktif. Kontrak premis lama tidak lagi aktif. | | | | |
+| F-E2E-01 | Kritikal | Permohonan baharu hingga kontrak aktif | 1. Negeri mencipta permohonan Baru, memilih daerah negeri sendiri, dan memuat naik dokumen sokongan. 2. Negeri melengkapkan surat niat, JRP dan surat agensi. 3. Negeri menekan Hantar ke Ibu Pejabat dan mengesahkan Ya, Hantar. 4. Ibu Pejabat menyemak senarai semak dan meneruskan ke draf. 5. Negeri memuat naik PDF draf. 6. Ibu Pejabat meluluskan Semakan PUU 1 dengan PDF. 7. Negeri mengesahkan empat pengakuan dan mengembalikan dokumen. 8. Ibu Pejabat mengesahkan empat pengakuan tandatangan. 9. Negeri mengesahkan tiga pengakuan mati setem dan menekan Hantar ke Ibu Pejabat. 10. Ibu Pejabat mengesahkan penerimaan salinan dan muat naik Sistem PROMIS, kemudian menekan Selesai. | Satu kontrak baharu muncul dalam Senarai Kontrak Sewaan negeri tersebut dan dalam laporan Ibu Pejabat hanya selepas langkah 10. Papan pemuka kedua-dua peranan berubah dengan betul. Pemakluman MAIL-01 hingga MAIL-04 dan MAIL-06 hingga MAIL-08 wujud. Fail draf berada di storan peribadi. | | | | |
+| F-E2E-02 | Kritikal | Lanjutan kontrak | 1. Negeri mencipta Lanjutan daripada kontrak aktif. 2. Negeri mengisi catatan, notis pemilik, JRP dan surat agensi tanpa mengubah identiti premis yang dikunci. 3. Ulang langkah semakan hingga pengesahan akhir Ibu Pejabat seperti F-E2E-01, dengan langkah lanjutan. | Kontrak asal diganti selepas kelulusan Ibu Pejabat. Nama premis, alamat, pemilik, jenis bangunan dan keluasan kekal seperti kontrak asal. Kontrak lanjutan yang selesai menjadi kontrak aktif. | | | | |
+| F-E2E-03 | Kritikal | Pindah premis, termasuk satu pembatalan semakan PUU | 1. Negeri mencipta Pindah dan mengisi butiran premis baharu, termasuk daerah. 2. Lengkapkan surat niat, JRP, surat agensi dan catatan, kemudian hantar. 3. Ibu Pejabat meneruskan ke draf. 4. Negeri memuat naik draf pertama. 5. Ibu Pejabat menekan Semak Semula dengan PDF pindaan. 6. Negeri memuat naik draf kedua. 7. Ibu Pejabat meluluskan Semakan PUU 2 dengan PDF. 8. Siapkan pengesahan negeri, tandatangan Ibu Pejabat, mati setem negeri dan pengesahan akhir Ibu Pejabat. | Pusingan kedua direkod sebagai Semakan PUU 2. Kontrak pindah yang selesai aktif. Kontrak premis lama tidak lagi aktif. | | | | |
 
 ## 13. Semakan pelayar
 
@@ -667,16 +698,18 @@ Penguji menanda apabila emel atau rekod log wujud. Alamat sebenar jawatan tidak 
 
 | Peristiwa | Subjek atau penerima yang dijangka | Bukti | Status |
 | --- | --- | --- | --- |
-| Permohonan dihantar ke Ibu Pejabat | SPEKTRA: Permohonan Baharu Menunggu Semakan Ibu Pejabat | | |
-| Salinan penghantaran kepada negeri | SPEKTRA: Permohonan Dihantar ke Ibu Pejabat | | |
-| Ibu Pejabat meneruskan ke draf | SPEKTRA: Permohonan Disahkan oleh Ibu Pejabat | | |
-| Draf dimuat naik | SPEKTRA: Draf Perjanjian Dihantar untuk Semakan PUU | | |
-| Semakan PUU diluluskan | SPEKTRA: Draf Perjanjian Diluluskan | | |
-| Semakan PUU dikembalikan untuk pindaan | SPEKTRA: Semakan PUU Memerlukan Pindaan | | |
-| Dokumen dikembalikan ke Cawangan Pembangunan | SPEKTRA: Dokumen Dikembalikan untuk Pengesahan & Tandatangan | | |
-| Dihantar untuk mati setem | SPEKTRA: Perjanjian Dihantar untuk Mati Setem | | |
-| Permohonan selesai | SPEKTRA: Permohonan Selesai — Dalam Senarai Kontrak Sewaan | | |
-| Peringatan bawah 8 bulan | SPEKTRA: Peringatan Kontrak Bawah 8 Bulan | | |
+| Permohonan dihantar ke Ibu Pejabat | SPEKTRA: PERMOHONAN BAHARU UNTUK SEMAKAN IBU PEJABAT | | |
+| Salinan penghantaran kepada negeri | SPEKTRA: PERMOHONAN DIHANTAR KE IBU PEJABAT UNTUK SEMAKAN | | |
+| Ibu Pejabat meneruskan ke draf | SPEKTRA: PERMOHONAN DILULUSKAN OLEH BAHAGIAN PENGURUSAN HARTANAH, JABATAN PERDANA MENTERI | | |
+| Draf dimuat naik kepada Ibu Pejabat | SPEKTRA: DRAF PERJANJIAN UNTUK SEMAKAN PENASIHAT UNDANG-UNDANG | | |
+| Draf dimuat naik kepada negeri | SPEKTRA: DRAF PERJANJIAN DIHANTAR UNTUK SEMAKAN PENASIHAT UNDANG-UNDANG | | |
+| Semakan PUU diluluskan | SPEKTRA: DRAF PERJANJIAN DILULUSKAN OLEH PENASIHAT UNDANG-UNDANG | | |
+| Semakan PUU dikembalikan untuk pindaan | SPEKTRA: KUIRI OLEH PENASIHAT UNDANG-UNDANG | | |
+| Dokumen dikembalikan ke Cawangan Pembangunan | SPEKTRA: PERJANJIAN UNTUK DITANDATANGANI PENGURUSAN AADK | | |
+| Dihantar untuk mati setem | SPEKTRA: PERJANJIAN UNTUK TINDAKAN MATI SETEM | | |
+| Negeri menghantar selepas mati setem | SPEKTRA: PERJANJIAN SELESAI DIMATI SETEM | | |
+| Ibu Pejabat menyelesaikan permohonan | SPEKTRA: PERJANJIAN SELESAI DAN TELAH DIMASUKKAN KE DALAM SENARAI KONTRAK SEWAAN | | |
+| Peringatan bawah 8 bulan | Subjek penuh dalam Seksyen 5 | | |
 | Peringatan bawah 5 bulan | SPEKTRA: Peringatan Tegas Kontrak Bawah 5 Bulan | | |
 | Amaran baki 3 bulan | SPEKTRA: AMARAN Kontrak Baki 3 Bulan | | |
 | Set semula kata laluan | SPEKTRA: Set Semula Kata Laluan | | |
@@ -718,11 +751,12 @@ Kes teknikal ENV, CFG, REG, SEC, DATA, FILE, MAIL, JOB, BAK dan ERR ialah bukti 
 | F-APP-06 | — | Daerah wajib dan mesti milik negeri pentadbir. |
 | F-PROC-01 hingga F-PROC-05 | PROC-01 hingga PROC-05 | |
 | F-DOC-01 hingga F-DOC-04 | DOC-01 hingga DOC-04 | |
-| F-HQ-01 hingga F-HQ-04 | HQ-01 hingga HQ-04 | F-HQ-02 merekod item KE yang dipaparkan dan ditanda awal apabila keluasan melebihi 465 meter persegi. |
+| F-HQ-01 hingga F-HQ-04 | HQ-01 hingga HQ-04 | F-HQ-02 merekod laluan MOF, KE dan item yang dinyahaktifkan. |
 | F-DRAF-01 hingga F-DRAF-04 | DRAF-01 hingga DRAF-04 | Lulus dan Semak Semula memerlukan PDF. |
 | F-ACK-01 hingga F-ACK-02 | ACK-01 hingga ACK-02 | |
 | F-SIGN-01 | SIGN-01 | Empat label pengakuan mengikut Seksyen 5 dokumen ini. |
-| F-STEM-01 | STEM-01 | Tiga label pengakuan mengikut Seksyen 5, termasuk salinan ke Cawangan Pembangunan. |
+| F-STEM-01 | STEM-01 | Negeri menghantar ke Ibu Pejabat. Rekod belum menjadi kontrak. |
+| F-STEM-02 | — | Pengesahan akhir Ibu Pejabat dan muat naik Sistem PROMIS. |
 | F-FOL-01 hingga F-FOL-04 | FOL-01 hingga FOL-04 | |
 | F-WD-01 hingga F-WD-06 | WD-01 hingga WD-06 | F-WD-02 turut menguji alasan melebihi 2,000 aksara. |
 | F-KON-01 hingga F-KON-04 | KON-01 hingga KON-04 | |
@@ -730,13 +764,14 @@ Kes teknikal ENV, CFG, REG, SEC, DATA, FILE, MAIL, JOB, BAK dan ERR ialah bukti 
 | F-LAP-05 | — | Penapis daerah pada laporan. |
 | F-NOT-01 hingga F-NOT-03 | NOT-01 hingga NOT-03 | |
 | F-SEC-01 hingga F-SEC-03 | SEC-01 hingga SEC-03 | |
+| F-LIST-01 | — | Carian senarai permohonan. |
 | F-E2E-01 hingga F-E2E-03 | E2E-01 hingga E2E-03 | |
 
 ## 18. Rumusan keputusan
 
 | Perkara | Bilangan |
 | --- | --- |
-| Jumlah kes | 138 |
+| Jumlah kes | 140 |
 | Lulus | |
 | Gagal | |
 | Disekat | |
@@ -826,4 +861,4 @@ Saya mengesahkan bahawa kes ujian dalam dokumen ini telah dijalankan pada binaan
 
 ---
 
-*Tamat dokumen AADK/CP/SPEKTRA/FAT/001, versi 1.0.*
+*Tamat dokumen AADK/CP/SPEKTRA/FAT/001, versi 1.1.*

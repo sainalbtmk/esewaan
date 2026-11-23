@@ -14,5 +14,10 @@
         <a href="{{ route('users.index') }}" class="sidebar-nav-sublink {{ request()->routeIs('users.index') ? 'is-active' : '' }}">
             Senarai Pengguna
         </a>
+        @if(auth()->user()->isAdminHq())
+            <a href="{{ route('users.audit-log') }}" class="sidebar-nav-sublink {{ request()->routeIs('users.audit-log') ? 'is-active' : '' }}">
+                Log Audit
+            </a>
+        @endif
     </div>
 </details>

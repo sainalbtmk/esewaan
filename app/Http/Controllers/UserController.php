@@ -240,7 +240,7 @@ class UserController extends Controller
             ->each(function (ActivityLog $log) use ($items): void {
                 $items->push([
                     'occurred_at' => $this->normalizeOccurredAt($log->created_at),
-                    'title' => $this->actionLabel($log->action),
+                    'title' => $log->activityLabel(),
                     'description' => $log->description,
                     'performed_by' => $log->performedBy?->name,
                     'source' => 'Log Sistem',
@@ -361,25 +361,6 @@ class UserController extends Controller
         }
 
         return Carbon::parse($value);
-    }
-
-    private function actionLabel(string $action): string
-    {
-        return match ($action) {
-            'login' => 'Log masuk',
-            'logout' => 'Log keluar',
-            'profile_updated' => 'Kemaskini profil',
-            'password_reset' => 'Reset kata laluan',
-            'role_updated' => 'Ubah peranan',
-            'account_activated' => 'Aktifkan akaun',
-            'account_deactivated' => 'Nyahaktif akaun',
-            'user_created' => 'Akaun didaftarkan',
-            'emel_jawatan_updated' => 'Kemaskini emel jawatan',
-            'application_submitted' => 'Hantar permohonan',
-            'document_uploaded' => 'Muat naik dokumen',
-            'contract_status_updated' => 'Kemaskini status kontrak',
-            default => ucfirst(str_replace('_', ' ', $action)),
-        };
     }
 
     private function roleLabel(string $role): string

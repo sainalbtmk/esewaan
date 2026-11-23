@@ -33,6 +33,8 @@ class AuthController extends Controller
                 'ip' => $request->ip(),
             ]);
 
+            $this->recordFailedLogin($request);
+
             RateLimiter::hit($this->loginLockKey($request), 15 * 60);
 
             if (RateLimiter::tooManyAttempts($this->loginLockKey($request), 5)) {
@@ -47,6 +49,17 @@ class AuthController extends Controller
         }
 
         if (! $request->user()?->isActive()) {
+            $inactive = $request->user();
+
+            if ($inactive instanceof User) {
+                ActivityLogger::log(
+                    $inactive,
+                    'login_blocked',
+                    'Log masuk ditolak kerana akaun dinyahaktifkan.',
+                    performedBy: $inactive,
+                );
+            }
+
             Auth::logout();
 
             throw ValidationException::withMessages([
@@ -131,6 +144,23 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    private function recordFailedLogin(LoginRequest $request): void
+    {
+        $email = strtolower(trim((string) $request->input('email')));
+        $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+
+        if (! $user instanceof User) {
+            return;
+        }
+
+        ActivityLogger::log(
+            $user,
+            'login_failed',
+            'Percubaan log masuk gagal.',
+            performedBy: $user,
+        );
     }
 
     private function ensureLoginIsNotLocked(LoginRequest $request): void

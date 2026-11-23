@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ConfirmTwoFactorRequest;
+use App\Services\ActivityLogger;
 use App\Support\QrCode;
 use App\Support\Totp;
 use Illuminate\Http\RedirectResponse;
@@ -65,6 +66,13 @@ class TwoFactorSetupController extends Controller
         $user->forceFill([
             'two_factor_confirmed_at' => now(),
         ])->save();
+
+        ActivityLogger::log(
+            $user,
+            'two_factor_confirmed',
+            'Pengesahan dua faktor diaktifkan.',
+            performedBy: $user,
+        );
 
         return redirect()->route('two-factor.recovery');
     }

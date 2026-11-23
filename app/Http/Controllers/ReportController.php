@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\GenerateReportRequest;
 use App\Models\AadkDaerah;
+use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\HqReportService;
 use App\Support\MalaysianStates;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -33,6 +35,21 @@ class ReportController extends Controller
     {
         $filters = $request->filters();
         $report = $this->reports->build($filters['jenis'], $filters['negeri'], $filters['daerah']);
+        $user = $request->user();
+
+        if ($user instanceof User) {
+            ActivityLogger::log(
+                $user,
+                'report_exported',
+                'Laporan '.$report['jenisLabel'].' ('.$report['scopeLabel'].') dimuat turun.',
+                [
+                    'jenis' => $report['jenis'],
+                    'negeri' => $report['negeri'],
+                    'daerah' => $report['daerah'],
+                ],
+                $user,
+            );
+        }
 
         $filename = 'laporan-spektra-'.now()->format('Ymd-His').'.pdf';
         $paper = in_array($report['jenis'], [

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminProceedController;
 use App\Http\Controllers\AppearanceController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -44,7 +45,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
         ->middleware(['admin.hq', 'throttle:form-actions']);
     Route::get('/pengguna/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('/pengguna/{user}', [UserController::class, 'update'])->name('users.update');
-    Route::get('/pengguna/{user}/audit-trail', [UserController::class, 'auditTrail'])->name('users.audit-trail');
+    Route::get('/pengguna/{user}/audit-trail', [UserController::class, 'auditTrail'])->name('users.audit-trail')->middleware('admin.hq');
     Route::get('/pengguna/daftar', [AuthController::class, 'showRegisterForm'])->name('users.create');
     Route::post('/pengguna/daftar', [AuthController::class, 'storeUser'])->name('users.store')->middleware('throttle:form-actions');
     Route::get('/status-permohonan', [StatusPermohonanController::class, 'index'])->name('status-permohonan.index');
@@ -87,6 +88,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
 });
 
 Route::middleware(['auth', 'admin.hq'])->group(function () {
+    Route::get('/pengguna/log-audit', [AuditLogController::class, 'index'])->name('users.audit-log');
     Route::patch('/pengguna/{user}/status', [UserController::class, 'toggleStatus'])->name('users.toggle-status')->middleware('throttle:form-actions');
     Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/laporan/pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
