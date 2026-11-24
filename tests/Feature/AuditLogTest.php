@@ -6,13 +6,14 @@ use App\Services\ActivityLogger;
 use App\Support\Totp;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
 test('admin ibu pejabat can view every user activity in the audit log', function () {
-    $this->travelTo('2026-11-23 08:15:42');
+    $this->travelTo(Carbon::parse('2026-11-23 08:15:42', 'Asia/Kuala_Lumpur'));
 
     $admin = User::factory()->create(['role' => 'admin_hq', 'name' => 'Admin Ibu Pejabat']);
     $actor = User::factory()->create(['role' => 'admin_negeri', 'name' => 'Siti Aminah', 'negeri' => 'Johor']);
@@ -30,7 +31,9 @@ test('admin ibu pejabat can view every user activity in the audit log', function
         ->assertSee('Log Audit')
         ->assertSee('Siti Aminah')
         ->assertSee('23/11/2026 08:15:42')
+        ->assertDontSee('23/11/2026 00:15:42')
         ->assertSee('Cap Masa')
+        ->assertSee('Cetak PDF')
         ->assertSee('Log masuk')
         ->assertSee('Pengguna log masuk ke sistem.')
         ->assertSee('Rekod tidak boleh dikemaskini atau dipadam.')
@@ -283,4 +286,65 @@ test('blocked login, password reset, two factor, and report download are audited
         ->assertSee('Pentadbir Dua Faktor')
         ->assertSee('Pengesahan dua faktor diaktifkan')
         ->assertSee('Laporan dimuat turun');
+});
+
+test('admin ibu pejabat can print the audit log for a date range as pdf', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq', 'name' => 'Admin Cetak']);
+    $actor = User::factory()->create(['role' => 'admin_negeri', 'name' => 'Pengguna Cetak', 'negeri' => 'Johor']);
+
+    $this->travelTo(Carbon::parse('2026-11-23 00:30:00', 'Asia/Kuala_Lumpur'));
+    ActivityLogger::log($actor, 'login', 'Aktiviti awal hari.', performedBy: $actor);
+
+    $this->travelTo(Carbon::parse('2026-11-23 23:30:00', 'Asia/Kuala_Lumpur'));
+    ActivityLogger::log($actor, 'logout', 'Aktiviti hujung hari.', performedBy: $actor);
+
+    $this->travelTo(Carbon::parse('2026-11-24 00:15:00', 'Asia/Kuala_Lumpur'));
+    ActivityLogger::log($actor, 'login', 'Aktiviti hari seterusnya.', performedBy: $actor);
+
+    $matched = ActivityLog::query()
+        ->whereStartedBetween(
+            Carbon::parse('2026-11-23', 'Asia/Kuala_Lumpur'),
+            Carbon::parse('2026-11-23', 'Asia/Kuala_Lumpur'),
+        )
+        ->pluck('description');
+
+    expect($matched->all())
+        ->toContain('Aktiviti awal hari.')
+        ->toContain('Aktiviti hujung hari.')
+        ->not->toContain('Aktiviti hari seterusnya.');
+
+    $this->actingAs($admin)
+        ->get(route('users.audit-log.pdf', [
+            'tarikh_mula' => '2026-11-23',
+            'tarikh_akhir' => '2026-11-23',
+        ]))
+        ->assertSuccessful()
+        ->assertHeader('content-type', 'application/pdf')
+        ->assertDownload('log-audit-20261123-20261123.pdf');
+
+    expect(ActivityLog::query()->where('action', 'audit_log_printed')->exists())->toBeTrue();
+});
+
+test('audit log pdf rejects an end date before the start date', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+
+    $this->actingAs($admin)
+        ->from(route('users.audit-log'))
+        ->get(route('users.audit-log.pdf', [
+            'tarikh_mula' => '2026-11-24',
+            'tarikh_akhir' => '2026-11-23',
+        ]))
+        ->assertRedirect(route('users.audit-log'))
+        ->assertSessionHasErrors('tarikh_akhir');
+});
+
+test('admin negeri cannot print the audit log', function () {
+    $negeri = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
+
+    $this->actingAs($negeri)
+        ->get(route('users.audit-log.pdf', [
+            'tarikh_mula' => '2026-11-23',
+            'tarikh_akhir' => '2026-11-23',
+        ]))
+        ->assertForbidden();
 });

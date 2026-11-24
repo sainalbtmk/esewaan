@@ -4,8 +4,10 @@ namespace App\Models;
 
 use App\Models\Builders\ActivityLogBuilder;
 use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use RuntimeException;
 
 #[UseEloquentBuilder(ActivityLogBuilder::class)]
@@ -66,6 +68,27 @@ class ActivityLog extends Model
     public function delete(): bool
     {
         throw new RuntimeException(self::IMMUTABLE_MESSAGE);
+    }
+
+    public function startedAt(): ?Carbon
+    {
+        return $this->created_at?->copy()->timezone('Asia/Kuala_Lumpur');
+    }
+
+    /**
+     * @param  Builder<ActivityLog>  $query
+     * @return Builder<ActivityLog>
+     */
+    public function scopeWhereStartedBetween(Builder $query, Carbon $start, Carbon $end): Builder
+    {
+        $from = $start->copy()->timezone('Asia/Kuala_Lumpur')->startOfDay()->format('Y-m-d H:i:s');
+        $to = $end->copy()->timezone('Asia/Kuala_Lumpur')->endOfDay()->format('Y-m-d H:i:s');
+        $driver = $query->getConnection()->getDriverName();
+        $expression = in_array($driver, ['mysql', 'mariadb'], true)
+            ? 'DATE_ADD(created_at, INTERVAL 8 HOUR) between ? and ?'
+            : "datetime(created_at, '+8 hours') between ? and ?";
+
+        return $query->whereRaw($expression, [$from, $to]);
     }
 
     public function displayName(): string
@@ -138,6 +161,7 @@ class ActivityLog extends Model
             'follow_up_application_drafted' => 'Permohonan susulan dicipta',
             'follow_up_application_reverted' => 'Permohonan susulan dibatalkan',
             'report_exported' => 'Laporan dimuat turun',
+            'audit_log_printed' => 'Log audit dicetak',
         ];
     }
 

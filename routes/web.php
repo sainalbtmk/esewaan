@@ -89,6 +89,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
 Route::middleware(['auth', 'admin.hq'])->group(function () {
     Route::get('/pengguna/log-audit', [AuditLogController::class, 'index'])->name('users.audit-log');
+    Route::get('/pengguna/log-audit/pdf', [AuditLogController::class, 'exportPdf'])->name('users.audit-log.pdf');
     Route::patch('/pengguna/{user}/status', [UserController::class, 'toggleStatus'])->name('users.toggle-status')->middleware('throttle:form-actions');
     Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/laporan/pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');

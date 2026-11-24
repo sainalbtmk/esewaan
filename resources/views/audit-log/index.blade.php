@@ -10,6 +10,36 @@
         Log audit ini untuk paparan sahaja. Rekod tidak boleh dikemaskini atau dipadam.
     </div>
 
+    <form method="GET" action="{{ route('users.audit-log.pdf') }}" class="glass-card p-4">
+        <p class="text-sm font-medium text-slate-800">Cetak mengikut tarikh</p>
+        <p class="mt-1 text-xs text-slate-500">PDF memaparkan aktiviti yang bermula dalam julat tarikh ini, mengikut waktu Malaysia.</p>
+        <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div>
+                <label for="tarikh-mula" class="mb-1 block text-sm font-medium text-slate-700">Tarikh mula</label>
+                <input
+                    type="date"
+                    id="tarikh-mula"
+                    name="tarikh_mula"
+                    value="{{ old('tarikh_mula', $tarikhMula) }}"
+                    required
+                    class="glass-input rounded-xl px-3 py-2.5 text-sm"
+                >
+            </div>
+            <div>
+                <label for="tarikh-akhir" class="mb-1 block text-sm font-medium text-slate-700">Tarikh akhir</label>
+                <input
+                    type="date"
+                    id="tarikh-akhir"
+                    name="tarikh_akhir"
+                    value="{{ old('tarikh_akhir', $tarikhAkhir) }}"
+                    required
+                    class="glass-input rounded-xl px-3 py-2.5 text-sm"
+                >
+            </div>
+            <button type="submit" class="glass-btn-primary rounded-xl px-4 py-2.5 text-sm font-medium">Cetak PDF</button>
+        </div>
+    </form>
+
     <form method="GET" action="{{ route('users.audit-log') }}" class="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div class="relative w-full sm:max-w-md">
             <label for="audit-log-search" class="sr-only">Cari log audit</label>
@@ -52,7 +82,7 @@
                     @forelse($logs as $log)
                         <tr class="glass-row-hover">
                             <td class="px-4 py-3 font-medium text-slate-800">{{ $log->displayName() }}</td>
-                            <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ $log->created_at?->format('d/m/Y H:i:s') ?? '–' }}</td>
+                            <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ $log->startedAt()?->format('d/m/Y H:i:s') ?? '–' }}</td>
                             <td class="px-4 py-3 text-slate-700">
                                 <p class="font-medium text-slate-800">{{ $log->activityLabel() }}</p>
                                 <p class="mt-1 text-slate-600">{{ $log->description }}</p>
