@@ -41,6 +41,27 @@ expect()->extend('toBeOne', function () {
 |
 */
 
+function pdfContainsText(string $binary, string $needle): bool
+{
+    if (str_contains($binary, $needle)) {
+        return true;
+    }
+
+    if (! preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $binary, $matches)) {
+        return false;
+    }
+
+    foreach ($matches[1] as $stream) {
+        $decoded = @gzuncompress($stream);
+
+        if (is_string($decoded) && str_contains($decoded, $needle)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function hqJrpChecklistFor(\App\Models\RentalContract $contract, bool $withMofOrEpu = false): array
 {
     $checklist = [

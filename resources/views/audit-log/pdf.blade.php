@@ -15,6 +15,7 @@
     </style>
 </head>
 <body>
+    @include('partials.pdf-sulit')
     @if (is_file(public_path('images/spektra-logo.jpg')))
         <img src="{{ str_replace('\\', '/', public_path('images/spektra-logo.jpg')) }}" alt="SPEKTRA" style="height: 62px; margin: 0 0 12px;">
     @endif
@@ -23,7 +24,7 @@
     <p class="meta">
         Aktiviti yang bermula dari {{ $tarikhMula->format('d/m/Y') }} hingga {{ $tarikhAkhir->format('d/m/Y') }}
         · Waktu Malaysia
-        · Dicetak pada {{ $generatedAt->format('d/m/Y H:i:s') }}
+        · Dijana oleh {{ $generatedBy }} pada {{ $generatedAt->timezone('Asia/Kuala_Lumpur')->format('d/m/Y H:i:s') }}
         · {{ $logs->count() }} rekod
     </p>
 

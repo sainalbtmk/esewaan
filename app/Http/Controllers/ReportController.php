@@ -7,9 +7,11 @@ use App\Models\AadkDaerah;
 use App\Models\User;
 use App\Services\ActivityLogger;
 use App\Services\HqReportService;
+use App\Support\ClassifiedPdf;
 use App\Support\MalaysianStates;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -56,11 +58,18 @@ class ReportController extends Controller
             HqReportService::TYPE_KONTRAK_NEGERI,
             HqReportService::TYPE_STATUS_SEWAAN,
         ], true) ? 'a3' : 'a4';
+        $generatedAt = Carbon::now('Asia/Kuala_Lumpur');
+        $generatedBy = $user instanceof User ? $user->name : 'Pengguna tidak diketahui';
 
-        return Pdf::loadView('reports.pdf', [
-            'report' => $report,
-        ])
-            ->setPaper($paper, 'landscape')
-            ->download($filename);
+        return ClassifiedPdf::download(
+            Pdf::loadView('reports.pdf', [
+                'report' => $report,
+                'generatedBy' => $generatedBy,
+                'generatedAt' => $generatedAt,
+            ])->setPaper($paper, 'landscape'),
+            $filename,
+            $generatedBy,
+            $generatedAt,
+        );
     }
 }

@@ -12,6 +12,7 @@ use App\Support\ContractNegeriReport;
 use App\Support\HqJrpChecklist;
 use App\Support\RentalStatusReport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 
 uses(RefreshDatabase::class);
 
@@ -504,6 +505,21 @@ test('admin hq can export laporan kontrak mengikut negeri as pdf', function () {
         ]))
         ->assertSuccessful()
         ->assertHeader('content-type', 'application/pdf');
+});
+
+test('report pdf carries a sulit watermark, generator name, and timestamp', function () {
+    $this->travelTo(Carbon::parse('2026-11-24 09:25:00', 'Asia/Kuala_Lumpur'));
+
+    $admin = User::factory()->create(['role' => 'admin_hq', 'name' => 'Penjana Laporan']);
+
+    $response = $this->actingAs($admin)->get(route('reports.pdf'));
+
+    $response->assertSuccessful()
+        ->assertHeader('content-type', 'application/pdf');
+
+    expect(pdfContainsText($response->getContent(), 'SULIT'))->toBeTrue()
+        ->and(pdfContainsText($response->getContent(), 'Penjana Laporan'))->toBeTrue()
+        ->and(pdfContainsText($response->getContent(), '24/11/2026 09:25:00'))->toBeTrue();
 });
 
 test('admin hq can export report as pdf', function () {

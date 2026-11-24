@@ -6,6 +6,7 @@ use App\Http\Requests\PrintAuditLogRequest;
 use App\Models\ActivityLog;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Support\ClassifiedPdf;
 use App\Support\ListSearch;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -78,14 +79,20 @@ class AuditLogController extends Controller
         }
 
         $filename = 'log-audit-'.$start->format('Ymd').'-'.$end->format('Ymd').'.pdf';
+        $generatedAt = Carbon::now('Asia/Kuala_Lumpur');
+        $generatedBy = $user instanceof User ? $user->name : 'Pengguna tidak diketahui';
 
-        return Pdf::loadView('audit-log.pdf', [
-            'logs' => $logs,
-            'tarikhMula' => $start,
-            'tarikhAkhir' => $end,
-            'generatedAt' => Carbon::now('Asia/Kuala_Lumpur'),
-        ])
-            ->setPaper('a4', 'landscape')
-            ->download($filename);
+        return ClassifiedPdf::download(
+            Pdf::loadView('audit-log.pdf', [
+                'logs' => $logs,
+                'tarikhMula' => $start,
+                'tarikhAkhir' => $end,
+                'generatedBy' => $generatedBy,
+                'generatedAt' => $generatedAt,
+            ])->setPaper('a4', 'landscape'),
+            $filename,
+            $generatedBy,
+            $generatedAt,
+        );
     }
 }

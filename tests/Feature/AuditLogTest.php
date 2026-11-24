@@ -313,14 +313,19 @@ test('admin ibu pejabat can print the audit log for a date range as pdf', functi
         ->toContain('Aktiviti hujung hari.')
         ->not->toContain('Aktiviti hari seterusnya.');
 
-    $this->actingAs($admin)
+    $response = $this->actingAs($admin)
         ->get(route('users.audit-log.pdf', [
             'tarikh_mula' => '2026-11-23',
             'tarikh_akhir' => '2026-11-23',
-        ]))
-        ->assertSuccessful()
+        ]));
+
+    $response->assertSuccessful()
         ->assertHeader('content-type', 'application/pdf')
         ->assertDownload('log-audit-20261123-20261123.pdf');
+
+    expect(pdfContainsText($response->getContent(), 'SULIT'))->toBeTrue()
+        ->and(pdfContainsText($response->getContent(), 'Admin Cetak'))->toBeTrue()
+        ->and(pdfContainsText($response->getContent(), '24/11/2026 00:15:00'))->toBeTrue();
 
     expect(ActivityLog::query()->where('action', 'audit_log_printed')->exists())->toBeTrue();
 });

@@ -31,6 +31,7 @@
     </style>
 </head>
 <body>
+    @include('partials.pdf-sulit')
     @if (is_file(public_path('images/spektra-logo.jpg')))
         <img src="{{ str_replace('\\', '/', public_path('images/spektra-logo.jpg')) }}" alt="SPEKTRA" style="height: 62px; margin: 0 0 12px;">
     @endif
@@ -50,7 +51,7 @@
     </h1>
     <p class="meta">
         {{ $report['jenisLabel'] }}
-        · Dijana pada {{ $report['generatedAt'] }}
+        · Dijana oleh {{ $generatedBy }} pada {{ $generatedAt->timezone('Asia/Kuala_Lumpur')->format('d/m/Y H:i:s') }}
         · Skop: {{ $report['scopeLabel'] }}
         @if(($report['jenis'] ?? '') === \App\Services\HqReportService::TYPE_KONTRAK_NEGERI)
             · Laporan secara individu beserta kronologi
