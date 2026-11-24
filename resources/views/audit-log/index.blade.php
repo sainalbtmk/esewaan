@@ -40,12 +40,11 @@
 
     <div class="glass-card glass-table overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full min-w-[48rem] text-sm">
+            <table class="w-full min-w-[40rem] text-sm">
                 <thead>
                     <tr class="glass-divider-soft border-b bg-white/40">
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Nama</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Tarikh</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Masa</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Cap Masa</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Aktiviti</th>
                     </tr>
                 </thead>
@@ -53,8 +52,7 @@
                     @forelse($logs as $log)
                         <tr class="glass-row-hover">
                             <td class="px-4 py-3 font-medium text-slate-800">{{ $log->displayName() }}</td>
-                            <td class="px-4 py-3 text-slate-600">{{ $log->created_at?->format('d/m/Y') ?? '–' }}</td>
-                            <td class="px-4 py-3 text-slate-600">{{ $log->created_at?->format('H:i:s') ?? '–' }}</td>
+                            <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ $log->created_at?->format('d/m/Y H:i:s') ?? '–' }}</td>
                             <td class="px-4 py-3 text-slate-700">
                                 <p class="font-medium text-slate-800">{{ $log->activityLabel() }}</p>
                                 <p class="mt-1 text-slate-600">{{ $log->description }}</p>
@@ -65,7 +63,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-4 py-16 text-center text-slate-500">
+                            <td colspan="3" class="px-4 py-16 text-center text-slate-500">
                                 Tiada rekod audit dijumpai.
                             </td>
                         </tr>

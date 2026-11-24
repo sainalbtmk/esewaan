@@ -7,14 +7,21 @@ Agensi Antidadah Kebangsaan
 | Medan | Butiran |
 | --- | --- |
 | No. dokumen | AADK/CP/SPEKTRA/MANUAL/001 |
-| Versi | 1.0 |
-| Tarikh | 22 Oktober 2026 |
+| Versi | 1.1 |
+| Tarikh | 23 November 2026 |
 | Status | Untuk kegunaan pengguna |
 | Klasifikasi | Terhad |
 | Pemilik sistem | Cawangan Pembangunan, AADK |
 | Pembaca | Pentadbir Ibu Pejabat dan Pentadbir Negeri |
 
 Manual ini menerangkan cara menggunakan setiap fungsi yang dipaparkan pada skrin. Nama butang, menu dan status ditulis sama seperti yang kelihatan dalam sistem.
+
+### Sejarah pindaan
+
+| Versi | Tarikh | Ringkasan |
+| --- | --- | --- |
+| 1.0 | 22 Oktober 2026 | Terbitan pertama manual pengguna. |
+| 1.1 | 23 November 2026 | Pengesahan Ibu Pejabat selepas mati setem, Log Audit, status semakan Ibu Pejabat, dan jadual peringatan SPEKTRA dikemas kini. |
 
 ---
 
@@ -77,13 +84,14 @@ Ibu Pejabat boleh:
 - Menyemak permohonan yang dihantar negeri, mengisi senarai semak, dan meneruskan ke penyediaan draf.
 - Meluluskan atau membatalkan semakan PUU.
 - Mengesahkan tandatangan dan menghantar dokumen untuk mati setem.
+- Mengesahkan penerimaan salinan yang telah dimatikan setem dan muat naik ke PROMIS sebelum kontrak selesai.
 - Meluluskan atau menolak permohonan tarik semula.
 - Melihat sejarah permohonan yang dipadam.
 - Menjana dan memuat turun laporan.
 - Mendaftarkan pengguna Ibu Pejabat dan pengguna Negeri bagi mana-mana negeri.
 - Mengaktifkan atau menyahaktifkan akaun pengguna lain.
 - Mengemaskini emel jawatan Ketua Pengarah, TKPP, PKP dan KPP.
-- Membuka jejak audit pengguna.
+- Membuka **Log Audit** seluruh sistem dan jejak audit setiap pengguna.
 
 Ibu Pejabat tidak mencipta permohonan baharu. Menu **Permohonan Baharu** tidak dipaparkan.
 
@@ -96,14 +104,14 @@ Negeri boleh:
 - Memulakan permohonan pindah atau lanjutan daripada kontrak aktif negeri sendiri.
 - Mengisi borang, melengkapkan langkah tindakan, memuat naik dokumen sokongan dan draf perjanjian.
 - Menghantar permohonan ke Ibu Pejabat.
-- Mengesahkan pengakuan selepas draf lulus, dan pengakuan mati setem.
+- Mengesahkan pengakuan selepas draf lulus, dan menghantar pengakuan mati setem kepada Ibu Pejabat.
 - Memohon tarik semula semasa permohonan menunggu semakan Ibu Pejabat.
 - Memadam permohonan yang masih belum dihantar, dengan alasan.
 - Membatalkan permohonan susulan yang masih di peringkat langkah tindakan.
 - Mendaftarkan pengguna Negeri bagi negeri yang sama sahaja.
-- Mengemaskini profil pengguna negeri sendiri dan melihat jejak audit mereka.
+- Mengemaskini profil pengguna negeri sendiri.
 
-Negeri tidak boleh membuka rekod negeri lain, menjana laporan, menukar status aktif akaun, atau mengemaskini emel jawatan.
+Negeri tidak boleh membuka rekod negeri lain, menjana laporan, menukar status aktif akaun, mengemaskini emel jawatan, atau membuka Log Audit dan jejak audit.
 
 ---
 
@@ -123,7 +131,7 @@ Selepas log masuk, skrin mempunyai tiga bahagian:
 | Pengurusan Permohonan | Permohonan Baharu, dan Status Permohonan atau Senarai Permohonan | Permohonan Baharu untuk Negeri sahaja. Senarai untuk semua |
 | Kontrak Sewaan | Senarai Kontrak Sewaan | Semua |
 | Jana Laporan | Laporan Ibu Pejabat | Ibu Pejabat sahaja |
-| Pengurusan Pengguna | Pendaftaran Pengguna dan Senarai Pengguna | Semua pentadbir, dengan had kuasa berbeza |
+| Pengurusan Pengguna | Pendaftaran Pengguna, Senarai Pengguna, dan Log Audit | Semua pentadbir, dengan had kuasa berbeza. Log Audit untuk Ibu Pejabat sahaja |
 
 Nombor merah pada menu ialah lencana. Ia memberitahu bilangan item yang menunggu tindakan. Lencana pada **Pengurusan Permohonan** mengira permohonan yang perlu dilihat. Bagi Ibu Pejabat, lencana ini juga mengira permohonan tarik semula yang belum diputuskan. Lencana pada **Kontrak Sewaan** mengira kontrak baharu dalam senarai. Lencana berkurang selepas item dibuka atau selesai, dan selepas menu disegarkan.
 
@@ -295,7 +303,7 @@ Setiap hirisan menunjukkan bilangan dan peratus. Jadual di sebelahnya menyenarai
 Senarai ini mengira kontrak mengikut status kerja semasa. Label yang dipaparkan, mengikut turutan:
 
 1. Belum Terima Permohonan
-2. Semakan Cawangan Pembangunan Sebelum ke BPH
+2. Semakan Cawangan Pembangunan
 3. Minit Ceraian Kelulusan Kos
 4. Pertimbangan MOF
 5. Pertimbangan KE
@@ -328,9 +336,9 @@ Setiap permohonan melalui lapan peringkat. Peringkat semasa dipaparkan pada bar 
 | 3 | Penyediaan Draf | Negeri | Draf perjanjian PDF dimuat naik |
 | 4 | Dalam tindakan PUU | Ibu Pejabat | Semakan diluluskan, atau dibatalkan supaya draf baharu dimuat naik |
 | 5 | Draf Lulus | Negeri | Empat pengakuan ditanda, dokumen dikembalikan ke Cawangan Pembangunan |
-| 6 | Pengesahan & Tandatangan | Ibu Pejabat | Tiga pengakuan ditanda, dokumen dihantar untuk mati setem |
-| 7 | Mati Setem | Negeri | Dua pengakuan ditanda |
-| 8 | Selesai | Sistem | Rekod masuk ke Senarai Kontrak Sewaan |
+| 6 | Pengesahan & Tandatangan | Ibu Pejabat | Empat pengakuan ditanda, dokumen dihantar untuk mati setem |
+| 7 | Mati Setem | Negeri, kemudian Ibu Pejabat | Negeri menanda tiga pengakuan dan menghantar ke Ibu Pejabat. Ibu Pejabat menanda dua pengakuan |
+| 8 | Selesai | Sistem | Rekod masuk ke Senarai Kontrak Sewaan selepas pengesahan Ibu Pejabat |
 
 ### Kategori permohonan
 
@@ -525,9 +533,29 @@ Bahagian **Langkah Tindakan Pegawai Negeri** memaparkan langkah yang telah dilen
 
 ## 15. Semakan Ibu Pejabat
 
-Apabila permohonan menunggu semakan Ibu Pejabat, Ibu Pejabat membuka permohonan dan mengisi senarai semak pada **Pengesahan Ibu Pejabat**. Lajur status pada senarai bertukar mengikut item MOF, KE dan BPH yang belum ditanda.
+Apabila permohonan menunggu semakan Ibu Pejabat, Ibu Pejabat membuka permohonan dan mengisi senarai semak pada **Pengesahan Ibu Pejabat**. Lajur status pada senarai bertukar mengikut item yang belum selesai.
 
 Tanda, tarikh dan catatan disimpan secara automatik. Keluar dan buka semula: nilai yang telah disimpan kekal.
+
+### Status semasa menunggu Ibu Pejabat
+
+| Status pada senarai | Bila dipaparkan |
+| --- | --- |
+| Semakan Ibu Pejabat | Belum ada item yang ditanda, atau surat kelulusan BPH sudah ditanda |
+| Minit Ceraian Kelulusan Kos | Kenaikan sewa melepasi ambang, dan Kelulusan Pengurusan Tertinggi belum ditanda |
+| Permohonan ke MOF | Ambang kenaikan dipenuhi dan kelulusan pengurusan tertinggi sudah ditanda, tetapi kelulusan MOF belum ditanda |
+| Permohonan ke KE | Permohonan Baru atau Pindah melebihi 465 meter persegi, dan ulasan KE belum ditanda |
+| Permohonan ke BPH | Sekurang-kurangnya satu item lain sudah ditanda, dan surat kelulusan BPH belum ditanda |
+
+Ambang kenaikan sewa:
+
+- Baru atau Pindah: kenaikan lebih daripada 10 peratus dan sekurang-kurangnya RM500 berbanding sewa asal.
+- Lanjutan: kenaikan sekurang-kurangnya 10 peratus dan sekurang-kurangnya RM499.
+
+Item yang tidak berkenaan dikunci dan tidak boleh ditanda:
+
+- Lanjutan yang tidak melepasi ambang itu tidak melalui MOF. Kelulusan Pengurusan Tertinggi, permohonan MOF dan kelulusan MOF dikunci.
+- Pindah dengan keluasan di bawah 465 meter persegi tidak melalui KE. Kedua-dua item KE dikunci.
 
 ### Item senarai semak
 
@@ -618,15 +646,30 @@ Tarikh di sebelah kanan setiap kotak diisi dengan tarikh tanda dan boleh diubah.
 
 ## 19. Mati setem
 
+Peringkat ini ada dua bahagian. Negeri menyiapkan mati setem dahulu. Ibu Pejabat mengesahkan penerimaan sebelum kontrak selesai.
+
+### Tindakan Negeri
+
 Negeri membuka permohonan berstatus **Menunggu Mati Setem** dan menandakan:
 
 1. 3 Salinan Dokumen Perjanjian telah dimatikan setem di LHDN.
 2. 1 Salinan Dokumen Perjanjian telah diedar kepada Pemilik Premis.
 3. Salinan dihantar ke Cawangan Pembangunan melalui Pos/Kourier.
 
-Tarikh di sebelah kanan setiap kotak diisi dengan tarikh tanda dan boleh diubah. Nyah tanda memadam tarikh itu. Satu pengakuan tidak mencukupi. Selepas ketiga-tiganya ditanda, tekan **Selesai**.
+Tarikh di sebelah kanan setiap kotak diisi dengan tarikh tanda dan boleh diubah. Nyah tanda memadam tarikh itu. Satu pengakuan tidak mencukupi. Tekan **Simpan** untuk menyimpan tanpa menghantar, atau **Hantar ke Ibu Pejabat** selepas ketiga-tiganya lengkap.
 
-Permohonan keluar daripada senarai kerja aktif dan muncul dalam **Senarai Kontrak Sewaan**. Mesej kejayaan dipaparkan. Papan pemuka dan laporan Ibu Pejabat mengira kontrak baharu itu. Pemakluman selesai dihantar kepada pihak yang ditetapkan.
+Status menjadi **Menunggu pengesahan Ibu Pejabat**. Ibu Pejabat menerima emel untuk mengesahkan penerimaan.
+
+### Tindakan Ibu Pejabat
+
+Ibu Pejabat melihat pengakuan negeri sebagai baca sahaja, kemudian menandakan dua perkara pada **Tindakan Ibu Pejabat**:
+
+1. 1 Salinan Dokumen Perjanjian yang telah dimatikan setem diterima dari AADK Negeri.
+2. Perjanjian telah dimuat naik ke dalam Sistem PROMIS.
+
+Setiap kotak mempunyai tarikh. Tekan **Simpan** untuk menyimpan draf tanda, atau **Selesai** selepas kedua-duanya lengkap.
+
+Permohonan keluar daripada senarai kerja aktif dan muncul dalam **Senarai Kontrak Sewaan**. Mesej kejayaan dipaparkan. Papan pemuka dan laporan Ibu Pejabat mengira kontrak baharu itu. Negeri menerima pemakluman bahawa perjanjian selesai dan telah dimuat naik ke ProMIS.
 
 ---
 
@@ -791,17 +834,32 @@ Ibu Pejabat melihat dua jadual: **Ibu Pejabat** dan **Negeri**, dengan lajur neg
 | --- | --- |
 | Status | **Aktif** atau **Nyahaktif**. Suis hijau atau merah hanya kelihatan kepada Ibu Pejabat, dan hanya untuk akaun orang lain |
 | Urus profil | Membuka **Kemaskini profil** pengguna itu: nama, emel, peranan, negeri dan kata laluan baharu |
-| Audit trail | Membuka jejak aktiviti pengguna |
+| Audit trail | Ibu Pejabat sahaja. Membuka jejak aktiviti pengguna itu |
 
 Suis status meminta pengesahan, contoh "Nyahaktifkan akaun" atau "Aktifkan semula akaun". Akaun **Nyahaktif** tidak boleh log masuk. Ibu Pejabat tidak boleh menyahaktifkan akaun yang sedang digunakan sendiri.
 
 ### Jejak audit
 
-Halaman **Audit Trail** menyenaraikan aktiviti berkaitan pengguna, yang terbaharu di atas. Setiap rekod menunjukkan tajuk, keterangan, tarikh, masa, sumber dan pelaku jika ada.
+Ikon **Audit trail** pada senarai pengguna hanya dipaparkan kepada Ibu Pejabat. Halaman **Audit Trail** menyenaraikan aktiviti berkaitan pengguna itu, yang terbaharu di atas. Setiap rekod menunjukkan tajuk, keterangan, tarikh, masa, sumber dan pelaku jika ada.
 
-Contoh tajuk: Log masuk, Log keluar, Kemaskini profil, Reset kata laluan, Ubah peranan, Aktifkan akaun, Nyahaktif akaun, Akaun didaftarkan, Kemaskini emel jawatan, Hantar permohonan dan Muat naik dokumen.
+Contoh tajuk: Log masuk, Log masuk gagal, Log keluar, Kemaskini profil, Reset kata laluan, Ubah peranan, Aktifkan akaun, Nyahaktif akaun, Akaun didaftarkan, Pengesahan dua faktor diaktifkan, Kemaskini emel jawatan, Hantar permohonan, Muat naik dokumen dan Laporan dimuat turun.
 
-Negeri tidak boleh membuka jejak pengguna negeri lain.
+Negeri tidak melihat ikon ini dan tidak boleh membuka pautan jejak audit.
+
+### Log Audit
+
+Menu: **Pengurusan Pengguna**, kemudian **Log Audit**. Fungsi ini untuk Ibu Pejabat sahaja.
+
+Halaman ini memaparkan rekod aktiviti semua pengguna. Paparan ini untuk baca sahaja. Rekod tidak boleh dikemaskini atau dipadam.
+
+| Medan | Penerangan |
+| --- | --- |
+| Cari | Cari mengikut nama atau aktiviti. **Set semula** mengosongkan carian |
+| Nama | Pengguna yang direkod |
+| Tarikh dan Masa | Masa aktiviti |
+| Aktiviti | Tajuk dan keterangan. Jika tindakan mengenai pengguna lain, baris **Terhadap** memaparkan nama pengguna itu |
+
+Senarai dipaging. Jika tiada padanan, skrin memaparkan **Tiada rekod audit dijumpai.**
 
 ### Salinan Emel Jawatan
 
@@ -826,7 +884,7 @@ Setiap item menunjukkan kategori, tajuk, mesej dan masa. Tekan item untuk membuk
 
 **Tanda semua sebagai dibaca** mengosongkan kiraan belum baca. Jika tiada item, skrin memaparkan **Tiada notifikasi baharu.**
 
-Notifikasi dalam sistem dijana apabila aliran kerja bergerak, contoh permohonan dihantar ke Ibu Pejabat, draf dimuat naik, semakan diputuskan, dokumen dikembalikan, mati setem diminta, atau permohonan selesai. Item ditujukan kepada peranan yang perlu bertindak.
+Notifikasi dalam sistem dijana apabila aliran kerja bergerak, contoh permohonan dihantar ke Ibu Pejabat, draf dimuat naik, semakan diputuskan, dokumen dikembalikan, mati setem diminta, pengesahan Ibu Pejabat diperlukan, atau permohonan selesai. Item ditujukan kepada peranan yang perlu bertindak.
 
 ### Emel aliran kerja
 
@@ -841,20 +899,21 @@ Sistem menghantar emel kepada pentadbir yang berkenaan pada peristiwa berikut:
 | Semakan PUU dibatalkan | Negeri |
 | Dokumen dikembalikan ke Cawangan Pembangunan | Ibu Pejabat |
 | Dihantar untuk mati setem | Negeri |
-| Permohonan selesai | Negeri dan pihak yang ditetapkan |
+| Mati setem dihantar untuk pengesahan Ibu Pejabat | Ibu Pejabat |
+| Permohonan selesai dan dimuat naik ke ProMIS | Negeri |
 | Set semula kata laluan | Pemilik akaun |
 
 ### Peringatan tamat kontrak
 
-Arahan berjadual dihantar pada jam 9.00 pagi waktu Malaysia. Penerima negeri ialah pentadbir negeri yang terlibat.
+Arahan berjadual dihantar pada jam 8.00 pagi waktu Malaysia. Penerima negeri ialah pentadbir negeri yang terlibat.
 
 | Baki tempoh | Subjek emel | Kekerapan | Berhenti apabila |
 | --- | --- | --- | --- |
-| Bawah 8 bulan hingga 5 bulan | SPEKTRA: Peringatan Kontrak Bawah 8 Bulan | 3 kali dalam 3 hari | Baki mencecah 5 bulan, atau 3 penghantaran selesai |
+| Bawah 8 bulan hingga 5 bulan | SPEKTRA: PERINGATAN PENGHANTARAN PERMOHONAN PELANJUTAN SEWAAN RUANG PEJABAT AADK UNTUK KONTRAK YANG AKAN TAMAT DALAM TEMPOH LAPAN (8) BULAN | 3 kali dalam 3 hari | Baki mencecah 5 bulan, atau 3 penghantaran selesai |
 | Bawah 5 bulan hingga 3 bulan | SPEKTRA: Peringatan Tegas Kontrak Bawah 5 Bulan | Setiap Isnin | Baki mencecah 3 bulan |
-| 3 bulan atau kurang | SPEKTRA: AMARAN Kontrak Baki 3 Bulan | Setiap Isnin dan Rabu, dengan salinan kepada Ibu Pejabat dan emel jawatan | Permohonan dihantar ke Ibu Pejabat |
+| 3 bulan atau kurang | SPEKTRA: AMARAN Senarai Ruang Pejabat Hampir Tamat Tempoh dan Perlu Tindakan SEGERA | Setiap hari pada jam 8.00 pagi. Negeri menerima senarai negerinya. Ketua Pengarah, TKPP, PKP dan KPP menerima senarai penuh | Permohonan pindah atau lanjutan dihantar ke Ibu Pejabat |
 
-Emel amaran 3 bulan meminta negeri melengkapkan permohonan lanjutan atau pindah, kemudian menekan **Hantar ke Ibu Pejabat** dan mengesahkan **Ya, Hantar**. Selepas permohonan dihantar, peringatan bagi kontrak itu berhenti.
+Emel amaran 3 bulan meminta negeri yang terlibat membuat tindakan Pindah atau Lanjutan, kemudian menekan **Hantar ke Ibu Pejabat** dan mengesahkan **Ya, Hantar**. Selepas permohonan dihantar, peringatan bagi kontrak itu berhenti.
 
 Peringatan tidak diulang di luar jadual di atas.
 
@@ -866,7 +925,7 @@ Peringatan tidak diulang di luar jadual di atas.
 | --- | --- |
 | Kata laluan | Sekurang-kurangnya 8 aksara, huruf besar, huruf kecil dan nombor. Dalam pengeluaran, kata laluan tercemar ditolak |
 | Dokumen sokongan | PDF, JPG atau PNG, maksimum 10 MB |
-| Draf perjanjian | PDF sahaja, had saiz yang sama |
+| Draf perjanjian | PDF sahaja, maksimum 40 MB, atau had pelayan yang lebih rendah |
 | Alasan padam dan tarik semula | Sekurang-kurangnya 10 aksara, maksimum 2,000 aksara |
 | Tarikh tawaran | Tarikh akhir mestilah selepas tarikh mula |
 | Kadar sewa dan keluasan | Nombor sifar atau lebih |
@@ -884,6 +943,7 @@ Medan wajib yang kosong dipaparkan mesej di bawah medan. Betulkan nilai itu dan 
 
 | Istilah | Maksud dalam sistem |
 | --- | --- |
+| SPEKTRA | Nama sistem pada skrin. Sistem Pemantauan Kontrak Sewaan Premis AADK |
 | AADK | Agensi Antidadah Kebangsaan |
 | BPH | Bahagian Hartanah, Jabatan Perdana Menteri |
 | Cawangan Pembangunan | Pemilik sistem di Ibu Pejabat. Label skrin bagi peranan ini ialah Ibu Pejabat |
@@ -895,16 +955,17 @@ Medan wajib yang kosong dipaparkan mesej di bawah medan. Betulkan nilai itu dan 
 | Kontrak diganti | Kontrak asal yang telah digantikan oleh permohonan pindah atau lanjutan yang diluluskan |
 | LHDN | Lembaga Hasil Dalam Negeri, tempat setem dimatikan |
 | MOF | Kementerian Kewangan |
-| Mati setem | Peringkat akhir sebelum kontrak masuk ke senarai kontrak |
+| Mati setem | Negeri menanda tiga pengakuan, kemudian Ibu Pejabat mengesahkan penerimaan dan muat naik PROMIS sebelum kontrak masuk ke senarai |
 | Negeri | Peranan pentadbir yang hanya mengurus negeri sendiri |
 | ProMIS | Sistem luar tempat salinan perjanjian dimuat naik. SPEKTRA merekod pengakuan muat naik |
 | PTJ | Pusat Tanggungjawab. Dalam borang, nama premis diisi pada medan Nama Premis |
 | PUU | Semakan perundangan ke atas draf perjanjian |
 | Remark | Catatan wajib bagi permohonan pindah dan lanjutan sebelum dihantar |
-| TKPP | Timbalan Ketua Pengarah Penguatkuasaan dan Pencegahan. Tandatangan fizikal direkod melalui pengakuan Ibu Pejabat |
+| PKP | Pejabat yang menandatangani sebagai saksi. Tindakan fizikal direkod melalui pengakuan Ibu Pejabat |
+| TKPP | Timbalan Ketua Pengarah Penguatkuasaan dan Pencegahan. Tandatangan penyewa direkod melalui pengakuan Ibu Pejabat |
 | mps | Meter persegi |
 | kps | Kaki persegi |
 
 ---
 
-*Tamat dokumen AADK/CP/SPEKTRA/MANUAL/001, versi 1.0.*
+*Tamat dokumen AADK/CP/SPEKTRA/MANUAL/001, versi 1.1.*
