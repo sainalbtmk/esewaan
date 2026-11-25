@@ -117,7 +117,7 @@ test('admin negeri can view dashboard scoped to their negeri only', function () 
     $response->assertSuccessful()
         ->assertViewHas('scopedNegeri', 'Johor')
         ->assertViewHas('permohonanBaharu', 1)
-        ->assertViewHas('progressPermohonan', 23)
+        ->assertViewHas('progressPermohonan', 3)
         ->assertViewHas('kontrakAktif', 2)
         ->assertViewHas('kontrakTigaBulan', 1)
         ->assertViewHas('kontrakLebihLapanBulan', 1)
@@ -146,7 +146,7 @@ test('dashboard shows accurate counts based on current workflow data', function 
 
     $response->assertSuccessful()
         ->assertViewHas('permohonanBaharu', 1)
-        ->assertViewHas('progressPermohonan', 33)
+        ->assertViewHas('progressPermohonan', 5)
         ->assertViewHas('kontrakAktif', 3)
         ->assertViewHas('kontrakLapanBulan', 1)
         ->assertViewHas('kontrakTigaBulan', 1)
@@ -181,11 +181,12 @@ test('dashboard shows accurate counts based on current workflow data', function 
     expect($breakdown)->toHaveCount(13)
         ->and(collect($breakdown)->firstWhere('key', StatusTindakan::SEMAKAN_CP_SEBELUM_BPH)['status'])->toBe('Semakan Cawangan Pembangunan')
         ->and(collect($breakdown)->firstWhere('key', StatusTindakan::BARU_TERIMA_PERMOHONAN)['count'])->toBe(2)
-        ->and(collect($breakdown)->firstWhere('key', StatusTindakan::SEDIA_DRAF_PERJANJIAN)['count'])->toBe(2)
-        ->and(collect($breakdown)->firstWhere('key', StatusTindakan::SEMAKAN_CP_SEBELUM_PUU)['count'])->toBe(2)
-        ->and(collect($breakdown)->firstWhere('key', StatusTindakan::SEMAKAN_PUU)['count'])->toBe(3)
+        ->and(collect($breakdown)->firstWhere('key', StatusTindakan::PERTIMBANGAN_BPH_SUPS)['count'])->toBe(1)
+        ->and(collect($breakdown)->firstWhere('key', StatusTindakan::SEDIA_DRAF_PERJANJIAN)['count'])->toBe(1)
+        ->and(collect($breakdown)->firstWhere('key', StatusTindakan::SEMAKAN_CP_SEBELUM_PUU)['count'])->toBe(0)
+        ->and(collect($breakdown)->firstWhere('key', StatusTindakan::SEMAKAN_PUU)['count'])->toBe(1)
         ->and(collect($breakdown)->firstWhere('key', StatusTindakan::KUIRI_PUU)['count'])->toBe(0)
-        ->and(collect($breakdown)->sum('count'))->toBe(33);
+        ->and(collect($breakdown)->sum('count'))->toBe(5);
 
     $tigaList = $response->viewData('alertListTigaBulan');
     $lapanList = $response->viewData('alertListLapanBulan');
@@ -234,6 +235,9 @@ test('dashboard portfolio pie groups contracts and lists urgent follow-ups', fun
     $sentParent->premise->update(['nama_ptj' => 'AADK Sudah Hantar']);
     createDashboardFollowUp($sentParent, RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
 
+    $ptj = createDashboardContract(RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN, 'Perak');
+    $ptj->premise->update(['nama_ptj' => 'AADK Sedia Draf Perak']);
+
     $response = $this->actingAs($admin)->get(route('dashboard'));
     $portfolio = $response->viewData('portfolio');
     $slices = collect($portfolio['slices'])->keyBy('key');
@@ -245,14 +249,18 @@ test('dashboard portfolio pie groups contracts and lists urgent follow-ups', fun
         ->assertSee('bg-red-600', false)
         ->assertSee('bg-amber-400', false);
 
-    expect($slices[RentalStatusReport::BUCKET_BERKUATKUASA]['count'])->toBe(1)
+    expect($slices[RentalStatusReport::BUCKET_BERKUATKUASA]['count'])->toBe(2)
+        ->and($slices[RentalStatusReport::BUCKET_BERKUATKUASA]['key'])->toBe($portfolio['slices'][0]['key'])
+        ->and($slices[RentalStatusReport::BUCKET_BELUM_TERIMA]['count'])->toBe(2)
         ->and($slices[RentalStatusReport::SECTION_PUU]['count'])->toBe(1)
         ->and($slices[RentalStatusReport::SECTION_BPH]['count'])->toBe(2)
-        ->and($slices[RentalStatusReport::SECTION_PTJ]['count'])->toBe(2)
-        ->and($portfolio['total'])->toBe(6)
+        ->and($slices[RentalStatusReport::SECTION_PTJ]['count'])->toBe(1)
+        ->and($portfolio['total'])->toBe(8)
         ->and($portfolio['urgentCount'])->toBe(2)
         ->and($portfolio['urgentRows']->pluck('id')->all())->toBe([$overdue->id, $due->id])
-        ->and($portfolio['urgentPercent'])->toBe(round((2 / 6) * 100, 1));
+        ->and($portfolio['urgentPercent'])->toBe(round((2 / 8) * 100, 1))
+        ->and(round(collect($portfolio['slices'])->sum('percent'), 1))->toBe(100.0)
+        ->and(collect($portfolio['slices'])->pluck('color')->unique()->count())->toBe(count($portfolio['slices']));
 });
 
 test('dashboard colors remaining months of three and below red and four to eight yellow', function () {
@@ -441,44 +449,47 @@ test('status tindakan counts rise after hantar ke ibu pejabat and fall when each
 
     $counts = dashboardStatusCounts($this->actingAs($admin)->get(route('dashboard')));
 
-    expect($counts[StatusTindakan::SEMAKAN_CP_SEBELUM_BPH])->toBe(13)
-        ->and($counts[StatusTindakan::MINIT_CERAIAN_KELULUSAN_KOS])->toBe(13)
-        ->and($counts[StatusTindakan::PERTIMBANGAN_MOF])->toBe(1)
+    expect($counts[StatusTindakan::SEMAKAN_CP_SEBELUM_BPH])->toBe(1)
+        ->and($counts[StatusTindakan::MINIT_CERAIAN_KELULUSAN_KOS])->toBe(0)
+        ->and($counts[StatusTindakan::PERTIMBANGAN_MOF])->toBe(0)
         ->and($counts[StatusTindakan::PERTIMBANGAN_KE])->toBe(0)
-        ->and($counts[StatusTindakan::PERTIMBANGAN_BPH_SUPS])->toBe(13)
-        ->and($counts[StatusTindakan::SEDIA_DRAF_PERJANJIAN])->toBe(9)
-        ->and($counts[StatusTindakan::SEMAKAN_CP_SEBELUM_PUU])->toBe(9)
-        ->and($counts[StatusTindakan::SEMAKAN_PUU])->toBe(11)
+        ->and($counts[StatusTindakan::PERTIMBANGAN_BPH_SUPS])->toBe(8)
+        ->and($counts[StatusTindakan::SEDIA_DRAF_PERJANJIAN])->toBe(0)
+        ->and($counts[StatusTindakan::SEMAKAN_CP_SEBELUM_PUU])->toBe(0)
+        ->and($counts[StatusTindakan::SEMAKAN_PUU])->toBe(1)
         ->and($counts[StatusTindakan::KUIRI_PUU])->toBe(1)
-        ->and($counts[StatusTindakan::PINDAAN_SYOR_PUU_TANDATANGAN_PEMILIK])->toBe(13)
-        ->and($counts[StatusTindakan::TANDATANGAN_PENYEWA_AADK])->toBe(13)
-        ->and($counts[StatusTindakan::TINDAKAN_METERI_SETEM])->toBe(13)
-        ->and($counts[StatusTindakan::BARU_TERIMA_PERMOHONAN])->toBe(0);
+        ->and($counts[StatusTindakan::PINDAAN_SYOR_PUU_TANDATANGAN_PEMILIK])->toBe(2)
+        ->and($counts[StatusTindakan::TANDATANGAN_PENYEWA_AADK])->toBe(0)
+        ->and($counts[StatusTindakan::TINDAKAN_METERI_SETEM])->toBe(1)
+        ->and($counts[StatusTindakan::BARU_TERIMA_PERMOHONAN])->toBe(0)
+        ->and(array_sum($counts))->toBe(14);
 
     $negeriAdmin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $negeriCounts = dashboardStatusCounts($this->actingAs($negeriAdmin)->get(route('dashboard')));
 
-    expect($negeriCounts[StatusTindakan::SEMAKAN_CP_SEBELUM_BPH])->toBe(12)
-        ->and($negeriCounts[StatusTindakan::SEDIA_DRAF_PERJANJIAN])->toBe(8)
-        ->and($negeriCounts[StatusTindakan::SEMAKAN_PUU])->toBe(10)
+    expect($negeriCounts[StatusTindakan::SEMAKAN_CP_SEBELUM_BPH])->toBe(1)
+        ->and($negeriCounts[StatusTindakan::PERTIMBANGAN_BPH_SUPS])->toBe(7)
+        ->and($negeriCounts[StatusTindakan::SEDIA_DRAF_PERJANJIAN])->toBe(0)
+        ->and($negeriCounts[StatusTindakan::SEMAKAN_PUU])->toBe(1)
         ->and($negeriCounts[StatusTindakan::KUIRI_PUU])->toBe(1)
-        ->and($negeriCounts[StatusTindakan::TINDAKAN_METERI_SETEM])->toBe(12);
+        ->and($negeriCounts[StatusTindakan::TINDAKAN_METERI_SETEM])->toBe(1);
 });
 
-test('pertimbangan mof and ke counts follow the application and receipt ticks', function () {
+test('pertimbangan mof and ke counts follow the portfolio placement until the reply is received', function () {
     $admin = User::factory()->create(['role' => 'admin_hq']);
-    $mof = createDashboardContract(RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ, 'Johor');
+    $parent = createDashboardContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
+        'Johor',
+        now()->addMonths(18)->toDateString(),
+    );
+    $parent->update(['kadar_sewa_bulanan' => 1000]);
+    $mof = createDashboardFollowUp($parent, RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $mof->update(['kadar_sewa_bulanan' => 2000]);
     $mof->premise->update(['nama_ptj' => 'Premis Pertimbangan MOF']);
+
     $ke = createDashboardContract(RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ, 'Johor');
+    $ke->update(['keluasan_mp' => 500]);
     $ke->premise->update(['nama_ptj' => 'Premis Pertimbangan KE']);
-
-    $before = dashboardStatusCounts($this->actingAs($admin)->get(route('dashboard')));
-
-    expect($before[StatusTindakan::PERTIMBANGAN_MOF])->toBe(0)
-        ->and($before[StatusTindakan::PERTIMBANGAN_KE])->toBe(0);
-
-    $mof->update(['hq_jrp_checklist' => [HqJrpChecklist::MOF => true]]);
-    $ke->update(['hq_jrp_checklist' => [HqJrpChecklist::EPU => true]]);
 
     $raised = dashboardStatusCounts($this->actingAs($admin)->get(route('dashboard')));
     $mofIds = $this->actingAs($admin)
@@ -580,6 +591,7 @@ test('status tindakan row opens the projects counted on that row', function () {
     $admin = User::factory()->create(['role' => 'admin_hq']);
 
     $hq = createDashboardContract(RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $puu = createDashboardContract(RentalContract::WORKFLOW_SEMAKAN_PUU);
     $approved = createDashboardContract(RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS);
     $within = createDashboardContract(
         RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_NEGERI,
@@ -615,8 +627,8 @@ test('status tindakan row opens the projects counted on that row', function () {
         ->assertSee('Semakan PUU');
 
     expect($semakan->viewData('contracts')->pluck('id')->sort()->values()->all())->toBe($semakanIds)
-        ->and($semakan->viewData('contracts')->pluck('id')->all())->toContain($hq->id)
-        ->and($semakan->viewData('contracts')->pluck('id')->all())->not->toContain($approved->id);
+        ->and($semakan->viewData('contracts')->pluck('id')->all())->toContain($puu->id)
+        ->and($semakan->viewData('contracts')->pluck('id')->all())->not->toContain($hq->id, $approved->id);
 
     $this->actingAs($admin)
         ->get(route('status-permohonan.index', [

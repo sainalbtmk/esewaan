@@ -23,6 +23,8 @@ class RentalStatusReport
 
     public const BUCKET_BERKUATKUASA = 'berkuatkuasa';
 
+    public const BUCKET_BELUM_TERIMA = 'belum_terima';
+
     /**
      * @return array<string, string>
      */
@@ -187,9 +189,10 @@ class RentalStatusReport
     }
 
     /**
-     * Portfolio slice for the dashboard pie. Active contracts that still have
-     * more than 8 months, and no follow-up already with Ibu Pejabat, stay in
-     * force. Overdue contracts that have not submitted a follow-up sit with PTJ.
+     * Dashboard pie slice. A contract that is still in force stays
+     * "berkuatkuasa", including when its follow-up is already with Ibu Pejabat.
+     * The eight-month and overdue contracts that have not sent that follow-up
+     * are "Belum Terima Permohonan", not a PTJ workflow action.
      */
     public static function portfolioBucket(RentalContract $contract): ?string
     {
@@ -197,21 +200,19 @@ class RentalStatusReport
             return null;
         }
 
-        $placement = self::placement($contract);
+        if ($contract->isHqApproved()) {
+            if (self::isUrgentFollowUp($contract)) {
+                return self::BUCKET_BELUM_TERIMA;
+            }
 
-        if ($placement !== null) {
-            return $placement['section'];
+            if ($contract->isExpired()) {
+                return null;
+            }
+
+            return self::BUCKET_BERKUATKUASA;
         }
 
-        if (! $contract->isHqApproved() || self::followUpAlreadySent($contract)) {
-            return null;
-        }
-
-        if ($contract->isExpired()) {
-            return self::SECTION_PTJ;
-        }
-
-        return self::BUCKET_BERKUATKUASA;
+        return self::placement($contract)['section'] ?? null;
     }
 
     public static function isUrgentFollowUp(RentalContract $contract): bool
@@ -256,7 +257,7 @@ class RentalStatusReport
         }
 
         $total = (int) array_sum($counts);
-        $slices = [];
+        $sliceCounts = [];
 
         foreach (self::portfolioSliceDefinitions() as $key => [$label, $color]) {
             $count = $counts[$key] ?? 0;
@@ -265,11 +266,22 @@ class RentalStatusReport
                 continue;
             }
 
+            $sliceCounts[$key] = $count;
+        }
+
+        $percents = self::slicePercents($sliceCounts, $total);
+        $slices = [];
+
+        foreach (self::portfolioSliceDefinitions() as $key => [$label, $color]) {
+            if (! array_key_exists($key, $sliceCounts)) {
+                continue;
+            }
+
             $slices[] = [
                 'key' => $key,
                 'label' => $label,
-                'count' => $count,
-                'percent' => $total > 0 ? round(($count / $total) * 100, 1) : 0.0,
+                'count' => $sliceCounts[$key],
+                'percent' => $percents[$key],
                 'color' => $color,
             ];
         }
@@ -293,18 +305,69 @@ class RentalStatusReport
     }
 
     /**
+     * One-decimal percentages that add up to 100.
+     *
+     * @param  array<string, int>  $counts
+     * @return array<string, float>
+     */
+    private static function slicePercents(array $counts, int $total): array
+    {
+        if ($total === 0 || $counts === []) {
+            return [];
+        }
+
+        $bases = [];
+        $remainders = [];
+
+        foreach ($counts as $key => $count) {
+            $exactTenths = ($count / $total) * 1000;
+            $bases[$key] = (int) floor($exactTenths);
+            $remainders[$key] = $exactTenths - $bases[$key];
+        }
+
+        $positions = array_flip(array_keys($counts));
+        $order = array_keys($counts);
+        usort($order, function (string $left, string $right) use ($remainders, $positions): int {
+            $byRemainder = $remainders[$right] <=> $remainders[$left];
+
+            if ($byRemainder !== 0) {
+                return $byRemainder;
+            }
+
+            return $positions[$left] <=> $positions[$right];
+        });
+
+        $shortfall = 1000 - array_sum($bases);
+
+        if ($shortfall > 0) {
+            for ($index = 0; $index < $shortfall; $index++) {
+                $bases[$order[$index % count($order)]]++;
+            }
+        }
+
+        $percents = [];
+
+        foreach (array_keys($counts) as $key) {
+            $percents[$key] = $bases[$key] / 10;
+        }
+
+        return $percents;
+    }
+
+    /**
      * @return array<string, array{0: string, 1: string}>
      */
     public static function portfolioSliceDefinitions(): array
     {
         return [
-            self::SECTION_BPH => ['Pertimbangan BPH', '#4a6fa5'],
-            self::SECTION_PUU => ['Semakan PUU', '#7eb6d9'],
-            self::SECTION_MOF => ['Pertimbangan MOF', '#2f5d8c'],
-            self::SECTION_KE => ['Pertimbangan KE', '#8fafc8'],
-            self::SECTION_PTJ => ['Tindakan PTJ', '#5b7c99'],
-            self::SECTION_HQ => ['Semakan Ibu Pejabat', '#3d5a80'],
-            self::BUCKET_BERKUATKUASA => ['Kontrak Sedang Berkuatkuasa', '#1e3a5f'],
+            self::BUCKET_BERKUATKUASA => ['Kontrak Sedang Berkuatkuasa', '#22C55E'],
+            self::BUCKET_BELUM_TERIMA => ['Belum Terima Permohonan', '#FB7185'],
+            self::SECTION_BPH => ['Pertimbangan BPH', '#F5B301'],
+            self::SECTION_MOF => ['Pertimbangan MOF', '#F472B6'],
+            self::SECTION_KE => ['Pertimbangan KE', '#2DD4BF'],
+            self::SECTION_PUU => ['Semakan PUU', '#A78BFA'],
+            self::SECTION_PTJ => ['Tindakan PTJ', '#FB923C'],
+            self::SECTION_HQ => ['Semakan Ibu Pejabat', '#60A5FA'],
         ];
     }
 

@@ -10,18 +10,13 @@
 @php
     $portfolioSlices = $portfolio['slices'] ?? [];
     $portfolioTotal = (int) ($portfolio['total'] ?? 0);
-    $leftSlices = [];
-    $rightSlices = [];
-    foreach ($portfolioSlices as $index => $slice) {
-        if ($index % 2 === 0) {
-            $leftSlices[] = $slice;
-        } else {
-            $rightSlices[] = $slice;
-        }
-    }
+    $sliceMidpoint = (int) ceil(count($portfolioSlices) / 2);
+    $leftSlices = array_slice($portfolioSlices, 0, $sliceMidpoint);
+    $rightSlices = array_slice($portfolioSlices, $sliceMidpoint);
     $donutRadius = 68;
     $donutCircumference = 2 * M_PI * $donutRadius;
     $donutOffset = 0;
+    $sliceGap = count($portfolioSlices) > 1 ? 2.2 : 0;
 @endphp
 
 <div class="space-y-6">
@@ -109,7 +104,8 @@
                             @else
                                 @foreach($portfolioSlices as $slice)
                                     @php
-                                        $segment = ($slice['count'] / $portfolioTotal) * $donutCircumference;
+                                        $rawSegment = ($slice['count'] / $portfolioTotal) * $donutCircumference;
+                                        $segment = max($rawSegment - $sliceGap, 0.6);
                                     @endphp
                                     <circle
                                         cx="100"
@@ -118,11 +114,12 @@
                                         fill="none"
                                         stroke="{{ $slice['color'] }}"
                                         stroke-width="28"
+                                        stroke-linecap="butt"
                                         stroke-dasharray="{{ $segment }} {{ $donutCircumference }}"
                                         stroke-dashoffset="{{ -$donutOffset }}"
                                         transform="rotate(-90 100 100)"
                                     ></circle>
-                                    @php $donutOffset += $segment; @endphp
+                                    @php $donutOffset += $rawSegment; @endphp
                                 @endforeach
                             @endif
                         </svg>
@@ -130,7 +127,7 @@
                             <div class="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-white px-2 text-center">
                                 <p class="text-[9px] font-semibold uppercase leading-tight tracking-wide text-slate-500">Jumlah<br>Keseluruhan</p>
                                 <p class="my-0.5 text-2xl font-bold leading-none text-slate-900">{{ number_format($portfolioTotal) }}</p>
-                                <p class="text-[9px] font-medium uppercase leading-tight text-slate-500">Kontrak<br>Sewaan Premis</p>
+                                <p class="text-[9px] font-medium uppercase leading-tight text-slate-500">Rekod<br>Portfolio</p>
                             </div>
                         </div>
                     </div>

@@ -96,7 +96,10 @@ class KontrakSewaanController extends Controller
         $placeholder = RentalContract::PLACEHOLDER_CONTRACT_DATE;
 
         return $this->baseQuery($user, $search)
-            ->kontrakNotExpired()
+            ->when(
+                $statusTindakan !== StatusTindakan::BARU_TERIMA_PERMOHONAN,
+                fn (Builder $query) => $query->kontrakNotExpired(),
+            )
             ->tap(fn (Builder $query) => StatusTindakan::applyFilter(
                 $query,
                 $statusTindakan,

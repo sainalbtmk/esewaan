@@ -113,27 +113,67 @@ class StatusTindakan
     }
 
     /**
+     * One current status per contract, the same placement the portfolio pie uses.
+     * A contract is not counted again on every step it has not cleared.
+     */
+    public static function currentKey(RentalContract $contract): ?string
+    {
+        if ($contract->isSuperseded()) {
+            return null;
+        }
+
+        if (RentalStatusReport::isUrgentFollowUp($contract)) {
+            return self::BARU_TERIMA_PERMOHONAN;
+        }
+
+        if ($contract->isHqApproved()) {
+            return null;
+        }
+
+        $placement = RentalStatusReport::placement($contract);
+
+        if ($placement === null) {
+            return null;
+        }
+
+        return match ($placement['rumusan']) {
+            'Pertimbangan MOF' => self::PERTIMBANGAN_MOF,
+            'Pertimbangan KE' => self::PERTIMBANGAN_KE,
+            'Pertimbangan BPH' => self::PERTIMBANGAN_BPH_SUPS,
+            'Semakan PUU' => self::SEMAKAN_PUU,
+            'Kuiri PUU' => self::KUIRI_PUU,
+            'Sedia Draf Perjanjian' => self::SEDIA_DRAF_PERJANJIAN,
+            'Pinda Perjanjian', 'Tandatangan Pemilik Premis' => self::PINDAAN_SYOR_PUU_TANDATANGAN_PEMILIK,
+            'Tandatangan Penyewa (AADK)' => self::TANDATANGAN_PENYEWA_AADK,
+            'Mati setem' => self::TINDAKAN_METERI_SETEM,
+            'Menunggu Semakan Ibu Pejabat', 'Pengesahan Ibu Pejabat' => self::SEMAKAN_CP_SEBELUM_BPH,
+            default => null,
+        };
+    }
+
+    /**
      * @return list<array{key: string, status: string, count: int}>
      */
     public static function breakdownWithCounts(?string $negeri = null, ?string $daerah = null): array
     {
-        $sentContracts = self::sentToHqContracts($negeri, $daerah);
-        $underEightMonthsCount = self::underEightMonthsActiveCount($negeri, $daerah);
+        $counts = [];
+
+        foreach (self::scopedContracts($negeri, $daerah) as $contract) {
+            $key = self::currentKey($contract);
+
+            if ($key === null) {
+                continue;
+            }
+
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
+        }
 
         return collect(self::definitions())
-            ->map(function (array $row) use ($sentContracts, $underEightMonthsCount): array {
-                $count = match ($row['key']) {
-                    self::BARU_TERIMA_PERMOHONAN => $underEightMonthsCount,
-                    self::KUIRI_PUU => $sentContracts->filter(fn (RentalContract $contract): bool => self::isKuiriPuu($contract))->count(),
-                    default => $sentContracts->reject(fn (RentalContract $contract): bool => self::isCleared($contract, $row['key']))->count(),
-                };
-
-                return [
-                    'key' => $row['key'],
-                    'status' => $row['label'],
-                    'count' => $count,
-                ];
-            })
+            ->map(fn (array $row): array => [
+                'key' => $row['key'],
+                'status' => $row['label'],
+                'count' => $counts[$row['key']] ?? 0,
+            ])
             ->values()
             ->all();
     }
@@ -182,69 +222,33 @@ class StatusTindakan
      */
     public static function matchingIds(string $key, ?string $negeri = null): array
     {
-        if ($key === self::BARU_TERIMA_PERMOHONAN) {
-            return self::underEightMonthsContracts($negeri)
-                ->pluck('id')
-                ->map(fn (mixed $id): int => (int) $id)
-                ->all();
-        }
-
-        $contracts = self::sentToHqContracts($negeri);
-        $matched = $key === self::KUIRI_PUU
-            ? $contracts->filter(fn (RentalContract $contract): bool => self::isKuiriPuu($contract))
-            : $contracts->reject(fn (RentalContract $contract): bool => self::isCleared($contract, $key));
-
-        return $matched
+        return self::scopedContracts($negeri)
+            ->filter(fn (RentalContract $contract): bool => self::currentKey($contract) === $key)
             ->pluck('id')
             ->map(fn (mixed $id): int => (int) $id)
             ->all();
     }
 
     /**
-     * Active HQ-approved contracts with remaining term under 8 months
-     * whose follow-up has not yet been sent to HQ for verification.
-     */
-    public static function underEightMonthsActiveCount(?string $negeri = null, ?string $daerah = null): int
-    {
-        return self::underEightMonthsContracts($negeri, $daerah)->count();
-    }
-
-    /**
      * @return Collection<int, RentalContract>
      */
-    private static function underEightMonthsContracts(?string $negeri, ?string $daerah = null): Collection
+    private static function scopedContracts(?string $negeri, ?string $daerah = null): Collection
     {
         return RentalContract::query()
-            ->hqApproved()
             ->notSuperseded()
-            ->kontrakNotExpired()
-            ->whereDoesntHave(
+            ->where(function (Builder $query): void {
+                $query->whereIn('workflow_tahap', self::sentToHqWorkflows())
+                    ->orWhereIn('workflow_tahap', RentalContract::hqApprovedWorkflows());
+            })
+            ->tap(fn (Builder $query) => self::scopePremise($query, $negeri, $daerah))
+            ->with([
+                'parentContract',
                 'followUpApplications',
-                fn ($query) => $query->where(
-                    'workflow_tahap',
-                    '!=',
-                    RentalContract::WORKFLOW_MENUNGGU_PROCEED_NEGERI,
-                ),
-            )
-            ->tap(fn (Builder $query) => self::scopePremise($query, $negeri, $daerah))
-            ->get()
-            ->filter(fn (RentalContract $contract): bool => $contract->isContractEndWithinEightMonths())
-            ->values();
-    }
-
-    /**
-     * @return Collection<int, RentalContract>
-     */
-    private static function sentToHqContracts(?string $negeri, ?string $daerah = null): Collection
-    {
-        return RentalContract::query()
-            ->notSuperseded()
-            ->whereIn('workflow_tahap', self::sentToHqWorkflows())
-            ->tap(fn (Builder $query) => self::scopePremise($query, $negeri, $daerah))
-            ->with(['documents' => function ($query): void {
-                $query->select(['id', 'contract_id', 'jenis', 'semakan_status'])
-                    ->where('jenis', ContractDocument::JENIS_DRAF_PERJANJIAN);
-            }])
+                'documents' => function ($query): void {
+                    $query->select(['id', 'contract_id', 'jenis', 'semakan_status'])
+                        ->where('jenis', ContractDocument::JENIS_DRAF_PERJANJIAN);
+                },
+            ])
             ->get();
     }
 
@@ -266,111 +270,5 @@ class StatusTindakan
                 $premiseQuery->where('daerah', $daerah);
             }
         });
-    }
-
-    private static function isCleared(RentalContract $contract, string $statusKey): bool
-    {
-        return match ($statusKey) {
-            self::SEMAKAN_CP_SEBELUM_BPH => self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_BPH_APPROVAL),
-            self::MINIT_CERAIAN_KELULUSAN_KOS => self::checklistChecked($contract, HqJrpChecklist::MOF),
-            self::PERTIMBANGAN_MOF => ! self::checklistChecked($contract, HqJrpChecklist::MOF)
-                || self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS),
-            self::PERTIMBANGAN_KE => HqJrpChecklist::pindahKeItemsDisabled($contract)
-                || ! self::checklistChecked($contract, HqJrpChecklist::EPU)
-                || self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS),
-            self::PERTIMBANGAN_BPH_SUPS => self::checklistChecked($contract, HqJrpChecklist::AADK_SUBMIT_BPH),
-            self::SEDIA_DRAF_PERJANJIAN, self::SEMAKAN_CP_SEBELUM_PUU => self::hasReachedSemakanOne($contract),
-            self::SEMAKAN_PUU => self::puuReviewApproved($contract),
-            self::PINDAAN_SYOR_PUU_TANDATANGAN_PEMILIK => self::acknowledgementChecked(
-                $contract->negeri_draft_acknowledgements,
-                NegeriDraftAcknowledgements::DOKUMEN_DITANDATANGANI,
-            ),
-            self::TANDATANGAN_PENYEWA_AADK => self::acknowledgementChecked(
-                $contract->hq_draft_acknowledgements,
-                HqDraftAcknowledgements::DIKEMBALIKAN_NEGERI,
-            ) || self::acknowledgementChecked(
-                $contract->hq_draft_acknowledgements,
-                HqDraftAcknowledgements::PERJANJIAN_DITANDATANGANI,
-            ),
-            self::TINDAKAN_METERI_SETEM => self::acknowledgementChecked(
-                $contract->negeri_mati_setem_acknowledgements,
-                NegeriMatiSetemAcknowledgements::MATI_SETEM_LHDN,
-            ),
-            default => false,
-        };
-    }
-
-    /**
-     * Sedia Draf and Semakan Cawangan Pembangunan Sebelum ke PUU drop once
-     * Status Semasa has reached Semakan PUU 1, including later rounds.
-     */
-    private static function hasReachedSemakanOne(RentalContract $contract): bool
-    {
-        if ((int) $contract->semakan_count >= 1) {
-            return true;
-        }
-
-        return in_array($contract->workflow_tahap, [
-            RentalContract::WORKFLOW_SEMAKAN_PUU,
-            RentalContract::WORKFLOW_PINDAAN_BERDASARKAN_PUU,
-            RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS,
-            RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ,
-            RentalContract::WORKFLOW_MATI_SETEM,
-            RentalContract::WORKFLOW_PENGESAHAN_IBU_PEJABAT,
-        ], true);
-    }
-
-    /**
-     * Semakan PUU and Kuiri PUU drop after "Ya, Luluskan".
-     */
-    private static function puuReviewApproved(RentalContract $contract): bool
-    {
-        if (in_array($contract->workflow_tahap, [
-            RentalContract::WORKFLOW_DRAF_PERJANJIAN_LULUS,
-            RentalContract::WORKFLOW_DRAF_DIKEMBALIKAN_HQ,
-            RentalContract::WORKFLOW_MATI_SETEM,
-            RentalContract::WORKFLOW_PENGESAHAN_IBU_PEJABAT,
-        ], true)) {
-            return true;
-        }
-
-        return $contract->documents->contains(
-            fn (ContractDocument $document): bool => $document->semakan_status === ContractDocument::SEMAKAN_DILULUSKAN
-        );
-    }
-
-    /**
-     * Kuiri PUU rises after "Ya, Semak Semula" and stays until PUU is approved.
-     */
-    private static function isKuiriPuu(RentalContract $contract): bool
-    {
-        $rejected = $contract->documents->contains(
-            fn (ContractDocument $document): bool => $document->semakan_status === ContractDocument::SEMAKAN_DIBATALKAN
-        );
-
-        return $rejected && ! self::puuReviewApproved($contract);
-    }
-
-    private static function checklistChecked(RentalContract $contract, string $key): bool
-    {
-        $checklist = $contract->hq_jrp_checklist;
-
-        if (! is_array($checklist)) {
-            return false;
-        }
-
-        return filter_var($checklist[$key] ?? false, FILTER_VALIDATE_BOOLEAN) === true;
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $acknowledgements
-     */
-    private static function acknowledgementChecked(?array $acknowledgements, string $key): bool
-    {
-        if (! is_array($acknowledgements)) {
-            return false;
-        }
-
-        return filter_var($acknowledgements[$key] ?? false, FILTER_VALIDATE_BOOLEAN) === true;
     }
 }
