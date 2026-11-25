@@ -77,7 +77,22 @@ test('permohonan baru form allows selecting kategori', function () {
         ->assertSee('Petaling')
         ->assertSee('>Baru</option>', false)
         ->assertSee('>Pindah</option>', false)
-        ->assertSee('>Lanjutan</option>', false);
+        ->assertSee('>Lanjutan</option>', false)
+        ->assertSee('value="rumah kedai"', false)
+        ->assertSee('>Rumah Kedai</option>', false);
+});
+
+test('admin negeri can submit permohonan with rumah kedai', function () {
+    $admin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Selangor']);
+    $payload = validApplicationPayload('Selangor');
+    $payload['jenis_bangunan'] = 'rumah kedai';
+
+    $this->actingAs($admin)
+        ->post(route('application.store'), $payload)
+        ->assertRedirect(route('admin-proceed.show', RentalContract::query()->first()))
+        ->assertSessionHas('success');
+
+    expect(RentalContract::query()->first()?->premise?->jenis_bangunan)->toBe('rumah kedai');
 });
 
 test('admin negeri can submit permohonan with selected kategori', function () {

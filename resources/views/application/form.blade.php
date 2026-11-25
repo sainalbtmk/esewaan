@@ -226,7 +226,7 @@
                                 <span>Jenis Bangunan *</span>
                                 @include('partials.form-field-hint', ['text' => $isLanjutan
                                     ? 'Jenis bangunan dikunci mengikut kontrak sedia ada untuk permohonan lanjutan.'
-                                    : 'Pilih kategori bangunan premis: kompleks kerajaan atau komersial.'])
+                                    : 'Pilih kategori bangunan premis: kompleks kerajaan, komersial, rumah kediaman, atau rumah kedai.'])
                             </label>
                             @if($isLanjutan)
                                 <select id="jenis_bangunan" required disabled class="glass-input w-full cursor-not-allowed rounded-xl px-3 py-2 text-sm opacity-70">

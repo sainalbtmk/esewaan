@@ -10,6 +10,8 @@ class BuildingTypes
 
     public const RUMAH_KEDIAMAN = 'rumah kediaman';
 
+    public const RUMAH_KEDAI = 'rumah kedai';
+
     /**
      * @return array<string, string>
      */
@@ -19,6 +21,7 @@ class BuildingTypes
             self::KOMPLEKS_KERAJAAN => 'Kompleks kerajaan',
             self::KOMERSIAL => 'Komersial',
             self::RUMAH_KEDIAMAN => 'Rumah Kediaman',
+            self::RUMAH_KEDAI => 'Rumah Kedai',
         ];
     }
 
