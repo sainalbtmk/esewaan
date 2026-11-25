@@ -338,7 +338,7 @@ class RentalStatusReport
             return self::row(self::SECTION_MOF, 'Pertimbangan MOF', 'MOF', true);
         }
 
-        if (HqJrpChecklist::requiresEpuCheckbox($contract) && ! self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS)) {
+        if (HqJrpChecklist::requiresKePath($contract) && ! self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS)) {
             return self::row(self::SECTION_KE, 'Pertimbangan KE', 'KE', true);
         }
 

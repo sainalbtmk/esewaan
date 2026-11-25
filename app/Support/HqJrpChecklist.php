@@ -115,9 +115,9 @@ class HqJrpChecklist
      * No checklist action stays on Semakan Ibu Pejabat. Kelulusan Pengurusan Tertinggi
      * alone shows Minit Ceraian. The MOF application shows Permohonan ke MOF until the
      * MOF approval receipt is ticked. Baharu or Pindah above 465 mps then shows
-     * Permohonan ke KE until the KE reply is ticked. Below 465 mps those two KE items
-     * stay inactive, and the next status is Permohonan ke BPH until the BPH approval
-     * is ticked.
+     * Permohonan ke KE until the KE reply is ticked. Below 465 mps, and for every
+     * Lanjutan application, those two KE items stay inactive. The next status is
+     * Permohonan ke BPH until the BPH approval is ticked.
      */
     public static function pendingHqReviewStatusLabel(RentalContract $contract): string
     {
@@ -202,11 +202,15 @@ class HqJrpChecklist
     }
 
     /**
-     * The KE application and the KE comments receipt stay inactive when the floor
-     * area is below 465 mps.
+     * The KE application and the KE comments receipt stay inactive for Lanjutan,
+     * and for Baharu or Pindah when the floor area is below 465 mps.
      */
     public static function pindahKeItemsDisabled(RentalContract $contract): bool
     {
+        if ($contract->kategori_permohonan === ApplicationCategories::LANJUTAN) {
+            return true;
+        }
+
         $keluasan = $contract->keluasan_mp;
 
         return $keluasan !== null

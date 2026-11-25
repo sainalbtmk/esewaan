@@ -471,6 +471,35 @@ test('laporan status sewaan places large premises under pertimbangan ke', functi
         ->assertSee('Pertimbangan KE');
 });
 
+test('laporan status sewaan keeps lanjutan out of pertimbangan ke', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+
+    $contract = createReportContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ,
+        'Perak',
+        now()->addMonths(5)->toDateString(),
+    );
+    $contract->update([
+        'kategori_permohonan' => ApplicationCategories::LANJUTAN,
+        'keluasan_mp' => 800,
+    ]);
+    $contract->premise->update(['nama_ptj' => 'AADK Lanjutan Perak']);
+
+    expect(RentalStatusReport::placement($contract->fresh()))
+        ->section->toBe(RentalStatusReport::SECTION_BPH)
+        ->rumusan->toBe('Pertimbangan BPH');
+
+    $this->actingAs($admin)
+        ->get(route('reports.index', [
+            'jenis' => HqReportService::TYPE_STATUS_SEWAAN,
+            'negeri' => 'Perak',
+        ]))
+        ->assertSuccessful()
+        ->assertSee('Pertimbangan BPH (1)')
+        ->assertSee('AADK Lanjutan Perak')
+        ->assertDontSee('Pertimbangan KE');
+});
+
 test('admin hq can export laporan status sewaan as pdf', function () {
     $admin = User::factory()->create(['role' => 'admin_hq']);
 

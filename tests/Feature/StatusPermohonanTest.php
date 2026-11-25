@@ -762,6 +762,73 @@ test('pindah below 465 mps disables the ke checklist items', function () {
     expect($exactEpu[0] ?? '')->not->toContain('data-jrp-locked="1"');
 });
 
+test('lanjutan disables the ke checklist items regardless of floor area', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+
+    $above = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $above->update([
+        'kategori_permohonan' => ApplicationCategories::LANJUTAN,
+        'keluasan_mp' => 500,
+        'hq_jrp_checklist' => [
+            HqJrpChecklist::EPU => true,
+            HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS => true,
+        ],
+    ]);
+
+    $unknown = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $unknown->update(['kategori_permohonan' => ApplicationCategories::LANJUTAN]);
+
+    $pindah = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $pindah->update([
+        'kategori_permohonan' => ApplicationCategories::PINDAH,
+        'keluasan_mp' => 500,
+    ]);
+
+    expect(HqJrpChecklist::pindahKeItemsDisabled($above->fresh()))->toBeTrue()
+        ->and(HqJrpChecklist::pindahKeItemsDisabled($unknown->fresh()))->toBeTrue()
+        ->and(HqJrpChecklist::pindahKeItemsDisabled($pindah->fresh()))->toBeFalse()
+        ->and(HqJrpChecklist::requiresKePath($above->fresh()))->toBeFalse()
+        ->and($above->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_SEMAKAN_IBU_PEJABAT);
+
+    $normalized = HqJrpChecklist::normalizeInput([
+        HqJrpChecklist::EPU => '1',
+        HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS => '1',
+        HqJrpChecklist::AADK_SUBMIT_BPH => '1',
+        'dates' => [
+            HqJrpChecklist::EPU => '2026-11-25',
+            HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS => '2026-11-25',
+            HqJrpChecklist::AADK_SUBMIT_BPH => '2026-11-25',
+        ],
+        'notes' => [
+            HqJrpChecklist::EPU => 'Catatan KE',
+        ],
+    ], $above->fresh());
+
+    expect($normalized[HqJrpChecklist::EPU])->toBeFalse()
+        ->and($normalized[HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS])->toBeFalse()
+        ->and($normalized[HqJrpChecklist::AADK_SUBMIT_BPH])->toBeTrue()
+        ->and($normalized['dates'][HqJrpChecklist::EPU])->toBeNull()
+        ->and($normalized['dates'][HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS])->toBeNull()
+        ->and($normalized['notes'][HqJrpChecklist::EPU])->toBeNull()
+        ->and($normalized['dates'][HqJrpChecklist::AADK_SUBMIT_BPH])->toBe('2026-11-25');
+
+    $html = $this->actingAs($admin)
+        ->get(route('status-permohonan.review', $above))
+        ->assertSuccessful()
+        ->getContent();
+
+    foreach (HqJrpChecklist::keAcknowledgementKeys() as $key) {
+        preg_match('/<input\b[^>]*data-jrp-key="'.$key.'"[^>]*>/s', $html, $input);
+
+        expect($input[0] ?? '')->toContain('data-jrp-locked="1"')
+            ->and($input[0] ?? '')->not->toContain('checked');
+    }
+
+    preg_match('/<input\b[^>]*data-jrp-key="aadk_development_submit_bph"[^>]*>/s', $html, $bphInput);
+
+    expect($bphInput[0] ?? '')->not->toContain('data-jrp-locked="1"');
+});
+
 test('admin hq can approve application after review', function () {
     $admin = User::factory()->create(['role' => 'admin_hq']);
     $contract = createStatusListContract('Melaka', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
