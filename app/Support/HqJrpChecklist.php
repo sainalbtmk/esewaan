@@ -116,10 +116,12 @@ class HqJrpChecklist
      * with an increase of at least 10 percent and RM499, shows Minit Ceraian until
      * Kelulusan Pengurusan Tertinggi is ticked, then Permohonan ke MOF until the MOF reply
      * is ticked. Baharu or Pindah above 465 mps shows Permohonan ke KE until the KE reply
-     * is ticked. Pindah below 465 mps leaves both KE checklist items disabled. Permohonan
-     * ke BPH follows once those paths are done, or for Lanjutan without that rent increase
-     * after Ibu Pejabat ticks another action. Lanjutan in that case does not pass through
-     * MOF or KE. Anything still untouched, and outside those paths, stays on Semakan Ibu Pejabat.
+     * is ticked. A Baharu application with no checklist action yet stays on Semakan Ibu
+     * Pejabat even when the floor area is above 465 mps. Pindah below 465 mps leaves both
+     * KE checklist items disabled. Permohonan ke BPH follows once those paths are done, or
+     * for Lanjutan without that rent increase after Ibu Pejabat ticks another action.
+     * Lanjutan in that case does not pass through MOF or KE. Anything still untouched, and
+     * outside those paths, stays on Semakan Ibu Pejabat.
      */
     public static function pendingHqReviewStatusLabel(RentalContract $contract): string
     {
@@ -134,7 +136,9 @@ class HqJrpChecklist
             return self::STATUS_PERMOHONAN_MOF;
         }
 
-        if ($kePath && ! self::checklistChecked($contract, self::AADK_RECEIVE_EPU_COMMENTS)) {
+        if ($kePath
+            && ! self::checklistChecked($contract, self::AADK_RECEIVE_EPU_COMMENTS)
+            && ! self::baruAwaitingFirstChecklistAction($contract)) {
             return self::STATUS_PERMOHONAN_KE;
         }
 
@@ -254,6 +258,16 @@ class HqJrpChecklist
         }
 
         return self::requiresEpuCheckbox($contract);
+    }
+
+    /**
+     * Baharu stays on Semakan Ibu Pejabat until Ibu Pejabat records a checklist action,
+     * even when the floor area already requires the KE path.
+     */
+    private static function baruAwaitingFirstChecklistAction(RentalContract $contract): bool
+    {
+        return $contract->kategori_permohonan === ApplicationCategories::BARU
+            && ! self::anyChecklistChecked($contract);
     }
 
     private static function checklistChecked(RentalContract $contract, string $key): bool

@@ -965,6 +965,12 @@ test('hq review status follows the page five conditions for negeri and hq', func
         'keluasan_mp' => 500,
     ]);
 
+    $baruBeforeTick = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    $baruBeforeTick->update([
+        'kategori_permohonan' => ApplicationCategories::BARU,
+        'keluasan_mp' => 1010.94,
+    ]);
+
     $minit = createStatusListContract('Johor', RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
     attachStatusParentRent($minit, 1000, 1600);
     $minit->update([
@@ -1027,6 +1033,7 @@ test('hq review status follows the page five conditions for negeri and hq', func
     expect($unticked->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_SEMAKAN_IBU_PEJABAT)
         ->and($minitBeforeTick->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_MINIT_CERAIAN)
         ->and($keBeforeTick->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_PERMOHONAN_KE)
+        ->and($baruBeforeTick->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_SEMAKAN_IBU_PEJABAT)
         ->and($minit->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_MINIT_CERAIAN)
         ->and($mof->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_PERMOHONAN_MOF)
         ->and($ke->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_PERMOHONAN_KE)
