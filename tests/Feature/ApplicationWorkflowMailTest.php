@@ -94,7 +94,8 @@ test('uploading draft agreement emails hq and negeri for puu stage', function ()
             && $mail->envelope()->subject === 'SPEKTRA: DRAF PERJANJIAN DIHANTAR UNTUK SEMAKAN PENASIHAT UNDANG-UNDANG'
             && str_contains($html, 'berjaya dimuat naik')
             && str_contains($html, 'semakan lanjut')
-            && str_contains($html, (string) $negeri->id);
+            && str_contains($html, 'dikemukakan oleh '.$negeri->name)
+            && ! str_contains($html, 'dikemukakan oleh '.$negeri->id);
     });
 });
 

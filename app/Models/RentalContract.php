@@ -527,15 +527,15 @@ class RentalContract extends Model
         return '–';
     }
 
-    public function pemohonUserId(): string
+    public function displayPemohonName(): string
     {
         $user = $this->submittedBy ?? $this->adminNegeriUser;
 
-        if ($user === null) {
+        if ($user === null || ! filled($user->name)) {
             return '–';
         }
 
-        return (string) $user->id;
+        return (string) $user->name;
     }
 
     /**

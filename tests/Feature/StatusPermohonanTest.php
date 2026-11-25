@@ -1296,7 +1296,8 @@ test('submitting application to hq sends email notification to active admin hq u
             && $mail->contract->is($contract)
             && $mail->submittedBy->is($admin)
             && str_contains($html, 'Semakan Permohonan (Ibu Pejabat)')
-            && str_contains($html, (string) $admin->id)
+            && str_contains($html, 'dikemukakan oleh '.$admin->name)
+            && ! str_contains($html, 'dikemukakan oleh '.$admin->id)
             && ! str_contains($html, 'semakan lanjut')
             && ! str_contains($html, 'No. Fail Rujukan');
     });

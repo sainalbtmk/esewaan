@@ -13,7 +13,7 @@
 <body>
     <p>Assalamualaikum dan Salam Sejahtera,</p>
     <p>Tuan/Puan,</p>
-    <p>Merujuk kepada Permohonan Sewaan yang telah dikemukakan oleh {{ $contract->pemohonUserId() }}, dengan butiran seperti berikut:</p>
+    <p>Merujuk kepada Permohonan Sewaan yang telah dikemukakan oleh {{ $contract->displayPemohonName() }}, dengan butiran seperti berikut:</p>
 
     <table>
         <tr>
