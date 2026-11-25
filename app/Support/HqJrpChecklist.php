@@ -112,45 +112,46 @@ class HqJrpChecklist
     /**
      * Status while the application is with Ibu Pejabat. Negeri and HQ share this label.
      *
-     * Baharu or Pindah with an increase above 10 percent and at least RM500, and Lanjutan
-     * with an increase of at least 10 percent and RM499, shows Minit Ceraian until
-     * Kelulusan Pengurusan Tertinggi is ticked, then Permohonan ke MOF until the MOF reply
-     * is ticked. Baharu or Pindah above 465 mps shows Permohonan ke KE until the KE reply
-     * is ticked. A Baharu application with no checklist action yet stays on Semakan Ibu
-     * Pejabat even when the floor area is above 465 mps. Pindah below 465 mps leaves both
-     * KE checklist items disabled. Permohonan ke BPH follows once those paths are done, or
-     * for Lanjutan without that rent increase after Ibu Pejabat ticks another action.
-     * Lanjutan in that case does not pass through MOF or KE. Anything still untouched, and
-     * outside those paths, stays on Semakan Ibu Pejabat.
+     * No checklist action stays on Semakan Ibu Pejabat. Kelulusan Pengurusan Tertinggi
+     * alone shows Minit Ceraian. The MOF application shows Permohonan ke MOF until the
+     * MOF approval receipt is ticked. Baharu or Pindah above 465 mps then shows
+     * Permohonan ke KE until the KE reply is ticked. Below 465 mps those two KE items
+     * stay inactive, and the next status is Permohonan ke BPH until the BPH approval
+     * is ticked.
      */
     public static function pendingHqReviewStatusLabel(RentalContract $contract): string
     {
-        $rentPath = self::requiresRentIncreasePath($contract);
-        $kePath = self::requiresKePath($contract);
-
-        if ($rentPath && ! self::checklistChecked($contract, self::KP)) {
-            return self::STATUS_MINIT_CERAIAN;
-        }
-
-        if ($rentPath && ! self::checklistChecked($contract, self::AADK_RECEIVE_MOF_COMMENTS)) {
-            return self::STATUS_PERMOHONAN_MOF;
-        }
-
-        if ($kePath
-            && ! self::checklistChecked($contract, self::AADK_RECEIVE_EPU_COMMENTS)
-            && ! self::baruAwaitingFirstChecklistAction($contract)) {
-            return self::STATUS_PERMOHONAN_KE;
-        }
-
         if (! self::anyChecklistChecked($contract)) {
             return self::STATUS_SEMAKAN_IBU_PEJABAT;
         }
 
-        if (! self::checklistChecked($contract, self::AADK_RECEIVE_BPH_APPROVAL)) {
-            return self::STATUS_PERMOHONAN_BPH;
+        $kp = self::recordedChecklistAction($contract, self::KP);
+        $mof = self::recordedChecklistAction($contract, self::MOF);
+        $mofReply = self::recordedChecklistAction($contract, self::AADK_RECEIVE_MOF_COMMENTS);
+        $keApplication = self::recordedChecklistAction($contract, self::EPU);
+        $keReply = self::recordedChecklistAction($contract, self::AADK_RECEIVE_EPU_COMMENTS);
+        $bphSubmit = self::recordedChecklistAction($contract, self::AADK_SUBMIT_BPH);
+        $bphApproval = self::recordedChecklistAction($contract, self::AADK_RECEIVE_BPH_APPROVAL);
+
+        if ($bphApproval) {
+            return self::STATUS_SEMAKAN_IBU_PEJABAT;
         }
 
-        return self::STATUS_SEMAKAN_IBU_PEJABAT;
+        if ($mof && ! $mofReply) {
+            return self::STATUS_PERMOHONAN_MOF;
+        }
+
+        $movedPastKp = $mofReply || $keApplication || $keReply || $bphSubmit;
+
+        if (self::requiresKePath($contract) && ! $keReply && $movedPastKp) {
+            return self::STATUS_PERMOHONAN_KE;
+        }
+
+        if ($kp && ! $mof && ! $mofReply && ! $keApplication && ! $bphSubmit) {
+            return self::STATUS_MINIT_CERAIAN;
+        }
+
+        return self::STATUS_PERMOHONAN_BPH;
     }
 
     public static function requiresRentIncreasePath(RentalContract $contract): bool
@@ -201,15 +202,14 @@ class HqJrpChecklist
     }
 
     /**
-     * Pindah leaves the KE application and the KE comments receipt unticked when the
-     * floor area is below 465 mps.
+     * The KE application and the KE comments receipt stay inactive when the floor
+     * area is below 465 mps.
      */
     public static function pindahKeItemsDisabled(RentalContract $contract): bool
     {
         $keluasan = $contract->keluasan_mp;
 
-        return $contract->kategori_permohonan === ApplicationCategories::PINDAH
-            && $keluasan !== null
+        return $keluasan !== null
             && (float) $keluasan < self::KELUASAN_THRESHOLD;
     }
 
@@ -260,14 +260,13 @@ class HqJrpChecklist
         return self::requiresEpuCheckbox($contract);
     }
 
-    /**
-     * Baharu stays on Semakan Ibu Pejabat until Ibu Pejabat records a checklist action,
-     * even when the floor area already requires the KE path.
-     */
-    private static function baruAwaitingFirstChecklistAction(RentalContract $contract): bool
+    private static function recordedChecklistAction(RentalContract $contract, string $key): bool
     {
-        return $contract->kategori_permohonan === ApplicationCategories::BARU
-            && ! self::anyChecklistChecked($contract);
+        if (self::checklistItemDisabled($contract, $key)) {
+            return false;
+        }
+
+        return self::checklistChecked($contract, $key);
     }
 
     private static function checklistChecked(RentalContract $contract, string $key): bool
