@@ -35,6 +35,13 @@ class TwoFactorSetupController extends Controller
                     ->all(),
             ])->save();
 
+            ActivityLogger::log(
+                $user,
+                'two_factor_setup_started',
+                'Persediaan pengesahan dua faktor dimulakan.',
+                performedBy: $user,
+            );
+
             $request->session()->put('two_factor.recovery_plain', $plainCodes);
         }
 

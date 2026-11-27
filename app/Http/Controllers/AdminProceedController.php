@@ -43,10 +43,12 @@ class AdminProceedController extends Controller
         $allInput = $request->validated('proceed_steps');
         $stepKey = AdminProceedSteps::keyForStep($currentStep);
         $stepInput = $allInput[$stepKey] ?? [];
+        $before = $this->proceedState($contract);
 
         AdminProceedSteps::syncDraftFromInput($contract, $allInput);
 
         $contract = $contract->fresh(['premise', 'submittedBy']);
+        $draftChanged = $before !== $this->proceedState($contract);
 
         if (AdminProceedSteps::shouldCompleteStepFromInput($stepInput, $stepKey, $contract)) {
             AdminProceedSteps::completeStepFromInput(
@@ -62,6 +64,13 @@ class AdminProceedController extends Controller
                 $request->user(),
                 'admin_proceed_step_completed',
                 'Langkah tindakan '.$currentStep.' untuk premis '.$contract->premise?->nama_ptj.' disimpan.',
+                ['contract_id' => $contract->id, 'step' => $currentStep],
+            );
+        } elseif ($draftChanged) {
+            ActivityLogger::log(
+                $request->user(),
+                'admin_proceed_draft_saved',
+                'Draf langkah tindakan '.$currentStep.' untuk premis '.$contract->premise?->nama_ptj.' dikemaskini.',
                 ['contract_id' => $contract->id, 'step' => $currentStep],
             );
         }
@@ -115,6 +124,19 @@ class AdminProceedController extends Controller
             'nextStep' => $nextStep,
             'currentStep' => $currentStep,
         ]);
+    }
+
+    private function proceedState(RentalContract $contract): string
+    {
+        $tarikhSurat = $contract->tarikh_surat_niat;
+
+        return json_encode([
+            'progress' => $contract->admin_proceed_progress,
+            'no_fail_rujukan' => $contract->no_fail_rujukan,
+            'tarikh_surat_niat' => $tarikhSurat instanceof \DateTimeInterface
+                ? $tarikhSurat->format('Y-m-d')
+                : (filled($tarikhSurat) ? (string) $tarikhSurat : null),
+        ], JSON_THROW_ON_ERROR);
     }
 
     private function ensureAccessible(Request $request, RentalContract $contract): void

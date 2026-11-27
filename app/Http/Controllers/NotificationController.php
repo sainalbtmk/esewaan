@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\SidebarNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,6 +35,16 @@ class NotificationController extends Controller
         abort_unless($user->isAdmin(), 403, 'Akses ditolak.');
 
         $marked = $service->markInboxAsViewed($user);
+
+        if ($marked > 0) {
+            ActivityLogger::log(
+                $user,
+                'notifications_marked_read',
+                'Semua notifikasi ditanda sebagai dibaca.',
+                ['count' => $marked],
+                performedBy: $user,
+            );
+        }
 
         return redirect()
             ->route('notifications.index')

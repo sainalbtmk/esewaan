@@ -436,12 +436,23 @@ class StatusPermohonanController extends Controller
 
     public function autosaveChecklist(AutosaveHqJrpChecklistRequest $request, RentalContract $contract): JsonResponse
     {
+        $before = $contract->hq_jrp_checklist;
+
         $contract->commit([
             'hq_jrp_checklist' => HqJrpChecklist::normalizeInput(
                 $request->validated('jrp_checklist') ?? [],
                 $contract,
             ),
         ]);
+
+        $this->logWhenChanged(
+            $request->user(),
+            $contract,
+            $before,
+            $contract->fresh()->hq_jrp_checklist,
+            'checklist_updated',
+            'Checklist JRP bagi premis '.$this->premiseName($contract).' dikemaskini.',
+        );
 
         return response()->json([
             'success' => true,
@@ -452,11 +463,22 @@ class StatusPermohonanController extends Controller
 
     public function autosaveNegeriDraftAcknowledgements(AutosaveNegeriDraftAcknowledgementsRequest $request, RentalContract $contract): JsonResponse
     {
+        $before = $contract->negeri_draft_acknowledgements;
+
         $contract->commit([
             'negeri_draft_acknowledgements' => NegeriDraftAcknowledgements::normalizeInput(
                 $request->validated('acknowledgements') ?? [],
             ),
         ]);
+
+        $this->logWhenChanged(
+            $request->user(),
+            $contract,
+            $before,
+            $contract->fresh()->negeri_draft_acknowledgements,
+            'draft_acknowledgement_updated',
+            'Pengesahan draf negeri bagi premis '.$this->premiseName($contract).' dikemaskini.',
+        );
 
         return response()->json([
             'success' => true,
@@ -467,11 +489,22 @@ class StatusPermohonanController extends Controller
 
     public function autosaveHqDraftAcknowledgements(AutosaveHqDraftAcknowledgementsRequest $request, RentalContract $contract): JsonResponse
     {
+        $before = $contract->hq_draft_acknowledgements;
+
         $contract->commit([
             'hq_draft_acknowledgements' => HqDraftAcknowledgements::normalizeInput(
                 $request->validated('acknowledgements') ?? [],
             ),
         ]);
+
+        $this->logWhenChanged(
+            $request->user(),
+            $contract,
+            $before,
+            $contract->fresh()->hq_draft_acknowledgements,
+            'draft_acknowledgement_updated',
+            'Pengesahan draf Ibu Pejabat bagi premis '.$this->premiseName($contract).' dikemaskini.',
+        );
 
         return response()->json([
             'success' => true,
@@ -482,11 +515,22 @@ class StatusPermohonanController extends Controller
 
     public function autosaveNegeriMatiSetemAcknowledgements(AutosaveNegeriMatiSetemAcknowledgementsRequest $request, RentalContract $contract): JsonResponse
     {
+        $before = $contract->negeri_mati_setem_acknowledgements;
+
         $contract->commit([
             'negeri_mati_setem_acknowledgements' => NegeriMatiSetemAcknowledgements::normalizeInput(
                 $request->validated('acknowledgements') ?? [],
             ),
         ]);
+
+        $this->logWhenChanged(
+            $request->user(),
+            $contract,
+            $before,
+            $contract->fresh()->negeri_mati_setem_acknowledgements,
+            'mati_setem_acknowledgement_updated',
+            'Pengesahan mati setem negeri bagi premis '.$this->premiseName($contract).' dikemaskini.',
+        );
 
         return response()->json([
             'success' => true,
@@ -497,11 +541,22 @@ class StatusPermohonanController extends Controller
 
     public function autosaveHqMatiSetemAcknowledgements(AutosaveHqMatiSetemAcknowledgementsRequest $request, RentalContract $contract): JsonResponse
     {
+        $before = $contract->hq_mati_setem_acknowledgements;
+
         $contract->commit([
             'hq_mati_setem_acknowledgements' => HqMatiSetemAcknowledgements::normalizeInput(
                 $request->validated('acknowledgements') ?? [],
             ),
         ]);
+
+        $this->logWhenChanged(
+            $request->user(),
+            $contract,
+            $before,
+            $contract->fresh()->hq_mati_setem_acknowledgements,
+            'mati_setem_acknowledgement_updated',
+            'Pengesahan mati setem Ibu Pejabat bagi premis '.$this->premiseName($contract).' dikemaskini.',
+        );
 
         return response()->json([
             'success' => true,
@@ -684,6 +739,28 @@ class StatusPermohonanController extends Controller
             'status-permohonan.index',
             'Permohonan telah dihantar kepada Ibu Pejabat untuk semakan.',
         );
+    }
+
+    private function logWhenChanged(User $user, RentalContract $contract, mixed $before, mixed $after, string $action, string $description): void
+    {
+        if ($before == $after) {
+            return;
+        }
+
+        ActivityLogger::log(
+            $user,
+            $action,
+            $description,
+            ['contract_id' => $contract->id],
+            performedBy: $user,
+        );
+    }
+
+    private function premiseName(RentalContract $contract): string
+    {
+        $contract->loadMissing('premise');
+
+        return $contract->premise?->nama_ptj ?? '–';
     }
 
     private function redirectWithWorkflowNotice(string $route, string $message, mixed $parameters = []): RedirectResponse

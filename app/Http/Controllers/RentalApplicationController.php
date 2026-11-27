@@ -135,6 +135,7 @@ class RentalApplicationController extends Controller
         }
 
         $validated = $this->preserveLanjutanOriginals($validated, $contract);
+        $before = $this->applicationState($premise, $contract);
 
         if (! $partial || array_key_exists('nama_ptj', $validated)) {
             $premise->update([
@@ -192,16 +193,49 @@ class RentalApplicationController extends Controller
             AdminProceedSteps::syncDraftFromInput($contract, $validated['proceed_steps']);
         }
 
-        if (! $partial) {
+        $premise->refresh();
+        $contract->refresh();
+        $changed = $before !== $this->applicationState($premise, $contract);
+
+        if (! $partial || $changed) {
             ActivityLogger::log(
                 $admin,
                 'application_updated',
-                'Maklumat permohonan premis '.$premise->fresh()->nama_ptj.' dikemaskini.',
+                ($partial ? 'Draf permohonan premis ' : 'Maklumat permohonan premis ').$premise->nama_ptj.' dikemaskini.',
                 ['contract_id' => $contract->id, 'premise_id' => $premise->id],
             );
         }
 
         return $contract->fresh(['premise', 'submittedBy']);
+    }
+
+    private function applicationState(Premise $premise, RentalContract $contract): string
+    {
+        $date = static function (mixed $value): ?string {
+            if ($value instanceof \DateTimeInterface) {
+                return $value->format('Y-m-d');
+            }
+
+            return filled($value) ? (string) $value : null;
+        };
+
+        return json_encode([
+            'nama_ptj' => $premise->nama_ptj,
+            'negeri' => $premise->negeri,
+            'daerah' => $premise->daerah,
+            'alamat_penuh' => $premise->alamat_penuh,
+            'jenis_bangunan' => $premise->jenis_bangunan,
+            'nama_pemilik' => $premise->nama_pemilik,
+            'kadar_sewa' => (string) $premise->kadar_sewa,
+            'kadar_sewa_bulanan' => (string) $contract->kadar_sewa_bulanan,
+            'keluasan_mp' => (string) $contract->keluasan_mp,
+            'tarikh_mula_tawaran' => $date($contract->tarikh_mula_tawaran),
+            'sah_sehingga' => $date($contract->sah_sehingga),
+            'remark' => $contract->remark,
+            'no_fail_rujukan' => $contract->no_fail_rujukan,
+            'tarikh_surat_niat' => $date($contract->tarikh_surat_niat),
+            'admin_proceed_progress' => $contract->admin_proceed_progress,
+        ], JSON_THROW_ON_ERROR);
     }
 
     /**

@@ -38,10 +38,10 @@ class TwoFactorChallengeController extends Controller
         }
 
         $code = (string) $request->validated('code');
-        $valid = Totp::verify((string) $user->two_factor_secret, $code)
-            || $user->consumeRecoveryCode($code);
+        $validTotp = Totp::verify((string) $user->two_factor_secret, $code);
+        $usedRecoveryCode = ! $validTotp && $user->consumeRecoveryCode($code);
 
-        if (! $valid) {
+        if (! $validTotp && ! $usedRecoveryCode) {
             throw ValidationException::withMessages([
                 'code' => ['Kod pengesahan tidak sah.'],
             ]);
@@ -56,6 +56,15 @@ class TwoFactorChallengeController extends Controller
             'login',
             'Pengguna log masuk ke sistem.',
         );
+
+        if ($usedRecoveryCode) {
+            ActivityLogger::log(
+                $user,
+                'recovery_code_used',
+                'Kod pemulihan digunakan untuk log masuk.',
+                performedBy: $user,
+            );
+        }
 
         return redirect($user->homeRoute());
     }
