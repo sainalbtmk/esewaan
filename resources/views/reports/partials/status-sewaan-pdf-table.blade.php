@@ -40,7 +40,7 @@
                     <td class="{{ RentalStatusReport::isBakiBulanKritikal($contract) ? 'baki-negatif' : '' }}">{{ $bakiBulan === null ? '–' : number_format($bakiBulan) }}</td>
                     <td>{{ ContractNegeriReport::kadarSewa($contract) }}</td>
                     <td class="kategori">{{ RentalStatusReport::kategoriLabel($contract) }}</td>
-                    <td class="{{ $diterima ? 'status-terima' : 'status-belum' }}">{{ $diterima ? 'Terima' : 'Belum Terima' }}</td>
+                    <td class="{{ $diterima ? 'status-terima' : 'status-belum' }}">{{ RentalStatusReport::receivedStatusLabel($contract) }}</td>
                     <td>{{ $contract->laporan_status_rumusan ?? '–' }}</td>
                     <td>{{ $contract->laporan_status_tindakan ?? '–' }}</td>
                 </tr>

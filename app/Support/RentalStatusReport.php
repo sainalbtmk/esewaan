@@ -17,6 +17,8 @@ class RentalStatusReport
 
     public const SECTION_KE = 'ke';
 
+    public const SECTION_MINIT = 'minit';
+
     public const SECTION_HQ = 'hq';
 
     public const SECTION_PTJ = 'ptj';
@@ -35,6 +37,7 @@ class RentalStatusReport
             self::SECTION_PUU => 'Semakan PUU',
             self::SECTION_MOF => 'Pertimbangan MOF',
             self::SECTION_KE => 'Pertimbangan KE',
+            self::SECTION_MINIT => 'Minit Ceraian Kelulusan Kos',
             self::SECTION_HQ => 'Semakan Ibu Pejabat',
             self::SECTION_PTJ => 'Tindakan PTJ',
         ];
@@ -365,6 +368,7 @@ class RentalStatusReport
             self::SECTION_BPH => ['Pertimbangan BPH', '#F5B301'],
             self::SECTION_MOF => ['Pertimbangan MOF', '#F472B6'],
             self::SECTION_KE => ['Pertimbangan KE', '#2DD4BF'],
+            self::SECTION_MINIT => ['Minit Ceraian Kelulusan Kos', '#6366F1'],
             self::SECTION_PUU => ['Semakan PUU', '#A78BFA'],
             self::SECTION_PTJ => ['Tindakan PTJ', '#FB923C'],
             self::SECTION_HQ => ['Semakan Ibu Pejabat', '#60A5FA'],
@@ -393,23 +397,34 @@ class RentalStatusReport
     }
 
     /**
+     * Same stage as Senarai Permohonan. A required MOF or KE step is not
+     * current until that checklist item is actually ticked.
+     *
      * @return array{section: string, rumusan: string, tindakan: string, diterima: bool}
      */
     private static function hqReviewPlacement(RentalContract $contract): array
     {
-        if (HqJrpChecklist::requiresMofCheckbox($contract) && ! self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_MOF_COMMENTS)) {
-            return self::row(self::SECTION_MOF, 'Pertimbangan MOF', 'MOF', true);
+        return match (HqJrpChecklist::pendingHqReviewStatusLabel($contract)) {
+            HqJrpChecklist::STATUS_MINIT_CERAIAN => self::row(
+                self::SECTION_MINIT,
+                HqJrpChecklist::STATUS_MINIT_CERAIAN,
+                'CP',
+                true,
+            ),
+            HqJrpChecklist::STATUS_PERMOHONAN_MOF => self::row(self::SECTION_MOF, 'Pertimbangan MOF', 'MOF', true),
+            HqJrpChecklist::STATUS_PERMOHONAN_KE => self::row(self::SECTION_KE, 'Pertimbangan KE', 'KE', true),
+            HqJrpChecklist::STATUS_PERMOHONAN_BPH => self::row(self::SECTION_BPH, 'Pertimbangan BPH', 'BPH', true),
+            default => self::row(self::SECTION_HQ, 'Menunggu Semakan Ibu Pejabat', 'CP', true),
+        };
+    }
+
+    public static function receivedStatusLabel(RentalContract $contract): string
+    {
+        if (! (bool) ($contract->laporan_status_diterima ?? false)) {
+            return 'Belum Terima';
         }
 
-        if (HqJrpChecklist::requiresKePath($contract) && ! self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_EPU_COMMENTS)) {
-            return self::row(self::SECTION_KE, 'Pertimbangan KE', 'KE', true);
-        }
-
-        if (! self::checklistChecked($contract, HqJrpChecklist::AADK_RECEIVE_BPH_APPROVAL)) {
-            return self::row(self::SECTION_BPH, 'Pertimbangan BPH', 'BPH', true);
-        }
-
-        return self::row(self::SECTION_HQ, 'Menunggu Semakan Ibu Pejabat', 'CP', true);
+        return $contract->applicationStatusLabel();
     }
 
     /**
@@ -459,16 +474,5 @@ class RentalStatusReport
         );
 
         return $rejected && ! $approved;
-    }
-
-    private static function checklistChecked(RentalContract $contract, string $key): bool
-    {
-        $checklist = $contract->hq_jrp_checklist;
-
-        if (! is_array($checklist)) {
-            return false;
-        }
-
-        return filter_var($checklist[$key] ?? false, FILTER_VALIDATE_BOOLEAN) === true;
     }
 }

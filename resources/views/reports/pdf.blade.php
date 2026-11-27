@@ -164,7 +164,7 @@
                     <td>{{ $contract->premise?->negeri ?? '–' }}</td>
                     <td>{{ $contract->premise?->daerah ?: '–' }}</td>
                     <td>{{ \App\Support\ApplicationCategories::label($contract->kategori_permohonan) }}</td>
-                    <td>{{ $contract->workflowLabel() }}</td>
+                    <td>{{ $contract->applicationStatusLabel() }}</td>
                     <td>
                         @php
                             $endDate = $contract->contractEndDate();

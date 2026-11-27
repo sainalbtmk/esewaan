@@ -11,6 +11,7 @@ use App\Support\BuildingTypes;
 use App\Support\ContractNegeriReport;
 use App\Support\HqJrpChecklist;
 use App\Support\RentalStatusReport;
+use App\Support\StatusTindakan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -217,6 +218,9 @@ test('admin hq can generate laporan status sewaan grouped by current stage', fun
         'kategori_permohonan' => ApplicationCategories::PINDAH,
         'keluasan_mp' => 100,
         'kadar_sewa_bulanan' => 3500,
+        'hq_jrp_checklist' => [
+            HqJrpChecklist::AADK_SUBMIT_BPH => true,
+        ],
     ]);
 
     $parent = createReportContract(
@@ -240,6 +244,9 @@ test('admin hq can generate laporan status sewaan grouped by current stage', fun
         'keluasan_mp' => 120,
         'kadar_sewa_bulanan' => 2000,
         'tarikh_tamat' => $mofEnd->toDateString(),
+        'hq_jrp_checklist' => [
+            HqJrpChecklist::MOF => true,
+        ],
     ]);
 
     $puu = createReportContract(
@@ -457,7 +464,12 @@ test('laporan status sewaan places large premises under pertimbangan ke', functi
         'Pahang',
         now()->addMonths(5)->toDateString(),
     );
-    $contract->update(['keluasan_mp' => 500]);
+    $contract->update([
+        'keluasan_mp' => 500,
+        'hq_jrp_checklist' => [
+            HqJrpChecklist::EPU => true,
+        ],
+    ]);
     $contract->premise->update(['nama_ptj' => 'AADK KE Pahang']);
 
     $this->actingAs($admin)
@@ -471,6 +483,70 @@ test('laporan status sewaan places large premises under pertimbangan ke', functi
         ->assertSee('Pertimbangan KE');
 });
 
+test('laporan uses the same hq review status as senarai permohonan', function () {
+    $admin = User::factory()->create(['role' => 'admin_hq']);
+
+    $minit = createReportContract(
+        RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ,
+        'W.P. Kuala Lumpur',
+    );
+    $minit->update([
+        'kategori_permohonan' => ApplicationCategories::PINDAH,
+        'keluasan_mp' => 731,
+        'hq_jrp_checklist' => [
+            HqJrpChecklist::KP => true,
+            'dates' => [HqJrpChecklist::KP => '2026-11-25'],
+        ],
+    ]);
+    $minit->premise->update([
+        'nama_ptj' => 'AADK Brickfields (Test Report)',
+        'daerah' => 'Brickfields',
+    ]);
+
+    expect($minit->fresh()->applicationStatusLabel())->toBe(HqJrpChecklist::STATUS_MINIT_CERAIAN)
+        ->and(RentalStatusReport::placement($minit->fresh()))
+        ->section->toBe(RentalStatusReport::SECTION_MINIT)
+        ->rumusan->toBe(HqJrpChecklist::STATUS_MINIT_CERAIAN)
+        ->tindakan->toBe('CP');
+
+    $ringkasan = $this->actingAs($admin)
+        ->get(route('reports.index', [
+            'jenis' => HqReportService::TYPE_RINGKASAN,
+            'negeri' => 'W.P. Kuala Lumpur',
+            'daerah' => 'Brickfields',
+        ]));
+
+    $ringkasan->assertSuccessful()
+        ->assertSee('AADK Brickfields (Test Report)')
+        ->assertSee(HqJrpChecklist::STATUS_MINIT_CERAIAN)
+        ->assertDontSee('Menunggu semakan Ibu Pejabat')
+        ->assertDontSee('Pertimbangan BPH/SUPS')
+        ->assertDontSee('Pertimbangan KE');
+
+    expect($ringkasan->viewData('report')['summary']['permohonanBaharu'])->toBe(1)
+        ->and(collect($ringkasan->viewData('report')['statusBreakdown'])->firstWhere('key', StatusTindakan::MINIT_CERAIAN_KELULUSAN_KOS)['count'] ?? null)->toBe(1)
+        ->and(collect($ringkasan->viewData('report')['statusBreakdown'])->pluck('key'))
+        ->not->toContain(StatusTindakan::PERTIMBANGAN_BPH_SUPS, StatusTindakan::PERTIMBANGAN_KE);
+
+    $status = $this->actingAs($admin)
+        ->get(route('reports.index', [
+            'jenis' => HqReportService::TYPE_STATUS_SEWAAN,
+            'negeri' => 'W.P. Kuala Lumpur',
+            'daerah' => 'Brickfields',
+        ]));
+
+    $status->assertSuccessful()
+        ->assertSee('Minit Ceraian Kelulusan Kos (1)')
+        ->assertSee(HqJrpChecklist::STATUS_MINIT_CERAIAN)
+        ->assertDontSee('Pertimbangan BPH (1)')
+        ->assertDontSee('>Terima<', false);
+
+    $group = collect($status->viewData('report')['statusGroups'])->firstWhere('key', RentalStatusReport::SECTION_MINIT);
+
+    expect($group['rows']->pluck('id')->all())->toBe([$minit->id])
+        ->and(RentalStatusReport::receivedStatusLabel($group['rows']->first()))->toBe(HqJrpChecklist::STATUS_MINIT_CERAIAN);
+});
+
 test('laporan status sewaan keeps lanjutan out of pertimbangan ke', function () {
     $admin = User::factory()->create(['role' => 'admin_hq']);
 
@@ -482,6 +558,9 @@ test('laporan status sewaan keeps lanjutan out of pertimbangan ke', function () 
     $contract->update([
         'kategori_permohonan' => ApplicationCategories::LANJUTAN,
         'keluasan_mp' => 800,
+        'hq_jrp_checklist' => [
+            HqJrpChecklist::AADK_SUBMIT_BPH => true,
+        ],
     ]);
     $contract->premise->update(['nama_ptj' => 'AADK Lanjutan Perak']);
 

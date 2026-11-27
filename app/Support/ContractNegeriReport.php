@@ -105,6 +105,10 @@ class ContractNegeriReport
 
     public static function rumusan(RentalContract $contract): string
     {
+        if ($contract->workflow_tahap === RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ) {
+            return HqJrpChecklist::pendingHqReviewStatusLabel($contract);
+        }
+
         $notes = $contract->applicationFormNotes();
 
         if (filled($notes['rumusan_status'])) {
@@ -135,6 +139,15 @@ class ContractNegeriReport
 
     public static function tindakan(RentalContract $contract): string
     {
+        if ($contract->workflow_tahap === RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ) {
+            return match (HqJrpChecklist::pendingHqReviewStatusLabel($contract)) {
+                HqJrpChecklist::STATUS_PERMOHONAN_MOF => 'MOF',
+                HqJrpChecklist::STATUS_PERMOHONAN_KE => 'KE',
+                HqJrpChecklist::STATUS_PERMOHONAN_BPH => 'BPH',
+                default => 'Cawangan Pembangunan',
+            };
+        }
+
         $notes = $contract->applicationFormNotes();
 
         if (filled($notes['tindakan'])) {

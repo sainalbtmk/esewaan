@@ -146,7 +146,8 @@ class StatusTindakan
             'Pinda Perjanjian', 'Tandatangan Pemilik Premis' => self::PINDAAN_SYOR_PUU_TANDATANGAN_PEMILIK,
             'Tandatangan Penyewa (AADK)' => self::TANDATANGAN_PENYEWA_AADK,
             'Mati setem' => self::TINDAKAN_METERI_SETEM,
-            'Menunggu Semakan Ibu Pejabat', 'Pengesahan Ibu Pejabat' => self::SEMAKAN_CP_SEBELUM_BPH,
+            HqJrpChecklist::STATUS_MINIT_CERAIAN => self::MINIT_CERAIAN_KELULUSAN_KOS,
+            'Menunggu Semakan Ibu Pejabat', 'Semakan Ibu Pejabat', 'Pengesahan Ibu Pejabat' => self::SEMAKAN_CP_SEBELUM_BPH,
             default => null,
         };
     }

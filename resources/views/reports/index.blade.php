@@ -181,7 +181,7 @@
                                 <td class="px-4 py-3 text-slate-700">{{ $contract->premise?->negeri ?? '–' }}</td>
                                 <td class="px-4 py-3 text-slate-700">{{ $contract->premise?->daerah ?: '–' }}</td>
                                 <td class="px-4 py-3 text-slate-700">{{ \App\Support\ApplicationCategories::label($contract->kategori_permohonan) }}</td>
-                                <td class="px-4 py-3 text-slate-700">{{ $contract->workflowLabel() }}</td>
+                                <td class="px-4 py-3 text-slate-700">{{ $contract->applicationStatusLabel() }}</td>
                                 <td class="px-4 py-3 text-slate-700">
                                     @php
                                         $endDate = $contract->contractEndDate();

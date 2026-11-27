@@ -181,7 +181,8 @@ test('dashboard shows accurate counts based on current workflow data', function 
     expect($breakdown)->toHaveCount(13)
         ->and(collect($breakdown)->firstWhere('key', StatusTindakan::SEMAKAN_CP_SEBELUM_BPH)['status'])->toBe('Semakan Cawangan Pembangunan')
         ->and(collect($breakdown)->firstWhere('key', StatusTindakan::BARU_TERIMA_PERMOHONAN)['count'])->toBe(2)
-        ->and(collect($breakdown)->firstWhere('key', StatusTindakan::PERTIMBANGAN_BPH_SUPS)['count'])->toBe(1)
+        ->and(collect($breakdown)->firstWhere('key', StatusTindakan::SEMAKAN_CP_SEBELUM_BPH)['count'])->toBe(1)
+        ->and(collect($breakdown)->firstWhere('key', StatusTindakan::PERTIMBANGAN_BPH_SUPS)['count'])->toBe(0)
         ->and(collect($breakdown)->firstWhere('key', StatusTindakan::SEDIA_DRAF_PERJANJIAN)['count'])->toBe(1)
         ->and(collect($breakdown)->firstWhere('key', StatusTindakan::SEMAKAN_CP_SEBELUM_PUU)['count'])->toBe(0)
         ->and(collect($breakdown)->firstWhere('key', StatusTindakan::SEMAKAN_PUU)['count'])->toBe(1)
@@ -224,7 +225,10 @@ test('dashboard portfolio pie groups contracts and lists urgent follow-ups', fun
     $puu->premise->update(['nama_ptj' => 'AADK Semakan PUU']);
 
     $bph = createDashboardContract(RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ, 'Kedah');
-    $bph->update(['keluasan_mp' => 100]);
+    $bph->update([
+        'keluasan_mp' => 100,
+        'hq_jrp_checklist' => [HqJrpChecklist::AADK_SUBMIT_BPH => true],
+    ]);
     $bph->premise->update(['nama_ptj' => 'AADK Pertimbangan BPH']);
 
     $sentParent = createDashboardContract(
@@ -233,7 +237,9 @@ test('dashboard portfolio pie groups contracts and lists urgent follow-ups', fun
         now()->addMonths(4)->toDateString(),
     );
     $sentParent->premise->update(['nama_ptj' => 'AADK Sudah Hantar']);
-    createDashboardFollowUp($sentParent, RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
+    createDashboardFollowUp($sentParent, RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ)->update([
+        'hq_jrp_checklist' => [HqJrpChecklist::AADK_SUBMIT_BPH => true],
+    ]);
 
     $ptj = createDashboardContract(RentalContract::WORKFLOW_PENYEDIAAN_DRAF_PERJANJIAN, 'Perak');
     $ptj->premise->update(['nama_ptj' => 'AADK Sedia Draf Perak']);
@@ -449,11 +455,11 @@ test('status tindakan counts rise after hantar ke ibu pejabat and fall when each
 
     $counts = dashboardStatusCounts($this->actingAs($admin)->get(route('dashboard')));
 
-    expect($counts[StatusTindakan::SEMAKAN_CP_SEBELUM_BPH])->toBe(1)
+    expect($counts[StatusTindakan::SEMAKAN_CP_SEBELUM_BPH])->toBe(5)
         ->and($counts[StatusTindakan::MINIT_CERAIAN_KELULUSAN_KOS])->toBe(0)
-        ->and($counts[StatusTindakan::PERTIMBANGAN_MOF])->toBe(0)
+        ->and($counts[StatusTindakan::PERTIMBANGAN_MOF])->toBe(1)
         ->and($counts[StatusTindakan::PERTIMBANGAN_KE])->toBe(0)
-        ->and($counts[StatusTindakan::PERTIMBANGAN_BPH_SUPS])->toBe(8)
+        ->and($counts[StatusTindakan::PERTIMBANGAN_BPH_SUPS])->toBe(3)
         ->and($counts[StatusTindakan::SEDIA_DRAF_PERJANJIAN])->toBe(0)
         ->and($counts[StatusTindakan::SEMAKAN_CP_SEBELUM_PUU])->toBe(0)
         ->and($counts[StatusTindakan::SEMAKAN_PUU])->toBe(1)
@@ -467,8 +473,9 @@ test('status tindakan counts rise after hantar ke ibu pejabat and fall when each
     $negeriAdmin = User::factory()->create(['role' => 'admin_negeri', 'negeri' => 'Johor']);
     $negeriCounts = dashboardStatusCounts($this->actingAs($negeriAdmin)->get(route('dashboard')));
 
-    expect($negeriCounts[StatusTindakan::SEMAKAN_CP_SEBELUM_BPH])->toBe(1)
-        ->and($negeriCounts[StatusTindakan::PERTIMBANGAN_BPH_SUPS])->toBe(7)
+    expect($negeriCounts[StatusTindakan::SEMAKAN_CP_SEBELUM_BPH])->toBe(4)
+        ->and($negeriCounts[StatusTindakan::PERTIMBANGAN_MOF])->toBe(1)
+        ->and($negeriCounts[StatusTindakan::PERTIMBANGAN_BPH_SUPS])->toBe(3)
         ->and($negeriCounts[StatusTindakan::SEDIA_DRAF_PERJANJIAN])->toBe(0)
         ->and($negeriCounts[StatusTindakan::SEMAKAN_PUU])->toBe(1)
         ->and($negeriCounts[StatusTindakan::KUIRI_PUU])->toBe(1)
@@ -484,11 +491,17 @@ test('pertimbangan mof and ke counts follow the portfolio placement until the re
     );
     $parent->update(['kadar_sewa_bulanan' => 1000]);
     $mof = createDashboardFollowUp($parent, RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ);
-    $mof->update(['kadar_sewa_bulanan' => 2000]);
+    $mof->update([
+        'kadar_sewa_bulanan' => 2000,
+        'hq_jrp_checklist' => [HqJrpChecklist::MOF => true],
+    ]);
     $mof->premise->update(['nama_ptj' => 'Premis Pertimbangan MOF']);
 
     $ke = createDashboardContract(RentalContract::WORKFLOW_MENUNGGU_SEMAKAN_HQ, 'Johor');
-    $ke->update(['keluasan_mp' => 500]);
+    $ke->update([
+        'keluasan_mp' => 500,
+        'hq_jrp_checklist' => [HqJrpChecklist::EPU => true],
+    ]);
     $ke->premise->update(['nama_ptj' => 'Premis Pertimbangan KE']);
 
     $raised = dashboardStatusCounts($this->actingAs($admin)->get(route('dashboard')));

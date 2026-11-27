@@ -54,7 +54,7 @@
                                     'px-2 py-2 text-center font-bold uppercase',
                                     'text-emerald-700' => $diterima,
                                     'text-red-700' => ! $diterima,
-                                ])>{{ $diterima ? 'Terima' : 'Belum Terima' }}</td>
+                                ])>{{ RentalStatusReport::receivedStatusLabel($contract) }}</td>
                                 <td class="px-2 py-2 text-slate-800">{{ $contract->laporan_status_rumusan ?? '–' }}</td>
                                 <td class="px-2 py-2 font-semibold text-slate-900">{{ $contract->laporan_status_tindakan ?? '–' }}</td>
                             </tr>
